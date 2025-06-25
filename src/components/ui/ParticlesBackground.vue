@@ -11,7 +11,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 
 const particleCount = 30 // Reduced from 50 for better performance
 

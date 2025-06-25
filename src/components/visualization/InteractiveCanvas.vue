@@ -79,9 +79,6 @@ const {
   fullscreen: props.fullscreen
 })
 
-// Development mode check
-const isDevelopment = computed(() => process.env.NODE_ENV === 'development')
-
 // Dynamic canvas classes based on mode
 const canvasClasses = computed(() => [
   'interactive-canvas',

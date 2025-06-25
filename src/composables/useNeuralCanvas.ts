@@ -1,7 +1,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
-import { D3Grid, createD3Grid, gridUtils, type GridConfig, type DecisionBoundaryConfig } from '@/utils/d3Grid'
+import { D3Grid, createD3Grid, type GridConfig, type DecisionBoundaryConfig } from '@/utils/d3Grid'
 import { D3SvgRenderer, createD3SvgRenderer, renderUtils, type RenderConfig } from '@/utils/d3SvgRenderer'
 import { gridUpdateService, gridUpdates } from '@/services/gridUpdateService'
 import type { DataPoint, Neuron } from '@/types'

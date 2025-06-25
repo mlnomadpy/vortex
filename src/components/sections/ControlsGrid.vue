@@ -202,7 +202,7 @@ function handleFileSelected(file: File) {
 
 function handleNeuronFileSelected(file: File) {
   // Load neurons from CSV
-  parseCSV(file).then(data => {
+  parseCSV(file).then(_data => {
     // Implementation for loading neurons
     notificationStore.addNotification({
       message: 'Neurons loaded successfully!',

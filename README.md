@@ -98,6 +98,37 @@ npm run dev
 | `npm run preview` | Preview production build locally |
 | `npm run lint` | Lint and fix code with ESLint |
 | `npm run type-check` | Run TypeScript type checking |
+| `npm run deploy` | Deploy to GitHub Pages |
+
+---
+
+## 🚀 Deployment
+
+### GitHub Pages (Automatic)
+
+The project is configured for automatic deployment to GitHub Pages using GitHub Actions:
+
+1. **Enable GitHub Pages** in your repository settings:
+   - Go to Settings → Pages
+   - Select "GitHub Actions" as the source
+
+2. **Push to main branch** - The deployment will happen automatically via GitHub Actions
+
+3. **Access your site** at: `https://yourusername.github.io/vortex/`
+
+### Manual Deployment
+
+For manual deployment to GitHub Pages:
+
+```bash
+# Install gh-pages if not already installed
+npm install
+
+# Build and deploy
+npm run deploy
+```
+
+**Note**: Make sure to update the `base` path in `vite.config.js` if your repository name is different from "vortex".
 
 ---
 

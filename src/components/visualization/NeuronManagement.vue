@@ -150,42 +150,6 @@ const averageScore = computed(() =>
   props.selectedNeuron ? props.getAverageScore(props.selectedNeuron) : 0
 )
 
-// Star path generator function
-function generateStarPath(
-  centerX: number, 
-  centerY: number, 
-  outerRadius: number = 12, 
-  innerRadius: number = 5, 
-  points: number = 5
-): string {
-  const angleIncrement = (Math.PI * 2) / points
-  const halfAngleIncrement = angleIncrement / 2
-  
-  let path = ''
-  
-  for (let i = 0; i < points; i++) {
-    // Outer point
-    const outerAngle = i * angleIncrement - Math.PI / 2 // Start from top
-    const outerX = centerX + Math.cos(outerAngle) * outerRadius
-    const outerY = centerY + Math.sin(outerAngle) * outerRadius
-    
-    // Inner point
-    const innerAngle = outerAngle + halfAngleIncrement
-    const innerX = centerX + Math.cos(innerAngle) * innerRadius
-    const innerY = centerY + Math.sin(innerAngle) * innerRadius
-    
-    if (i === 0) {
-      path += `M ${outerX} ${outerY}`
-    } else {
-      path += ` L ${outerX} ${outerY}`
-    }
-    
-    path += ` L ${innerX} ${innerY}`
-  }
-  
-  path += ' Z' // Close the path
-  return path
-}
 </script>
 
 <style scoped>

@@ -6,7 +6,6 @@ import { CONFIG } from '@/config'
 import {
   calculateSimilarityScore,
   applyActivationFunction,
-  getPrediction as mathGetPrediction,
   computeCategoricalCrossEntropyLoss,
   calculateNeuronGradient,
   calculateAccuracy as mathCalculateAccuracy,
