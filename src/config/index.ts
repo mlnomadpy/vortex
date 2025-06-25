@@ -16,7 +16,8 @@ export const CONFIG: Config = {
   },
   gradientDescent: {
     learningRate: 0.01,
-    epochs: 100
+    epochs: 100,
+    speed: 1.0 // Animation speed multiplier (1.0 = normal speed)
   }
 }
 

@@ -28,6 +28,41 @@ export interface Metric {
   area: number
 }
 
+// New types for optimization tracking
+export interface OptimizationStep {
+  step: number
+  loss: number
+  accuracy: number
+  timestamp: number
+  neurons: Array<{
+    id: number
+    x: number
+    y: number
+    deltaX?: number
+    deltaY?: number
+  }>
+}
+
+export interface OptimizationHistory {
+  steps: OptimizationStep[]
+  isRunning: boolean
+  currentStep: number
+  totalSteps: number
+  config: {
+    learningRate: number
+    epochs: number
+    speed: number // Speed multiplier for animation
+  }
+}
+
+export interface NeuronMovement {
+  neuronId: number
+  oldPosition: { x: number; y: number }
+  newPosition: { x: number; y: number }
+  step: number
+  gradient: { x: number; y: number }
+}
+
 export type SimilarityMetric = 'dotProduct' | 'euclidean' | 'myProduct'
 export type ActivationFunction = 'none' | 'softmax' | 'softermax' | 'sigmoid' | 'relu' | 'gelu'
 
@@ -55,6 +90,7 @@ export interface Config {
   gradientDescent: {
     learningRate: number
     epochs: number
+    speed: number
   }
 }
 

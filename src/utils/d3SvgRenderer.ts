@@ -1,6 +1,6 @@
 import * as d3 from 'd3'
 import type { GridCell } from './d3Grid'
-import type { DataPoint, Neuron } from '@/types'
+import type { DataPoint, Neuron, NeuronMovement } from '@/types'
 import { getClassColor } from '@/utils/colors'
 
 export interface RenderConfig {
@@ -19,6 +19,7 @@ export class D3SvgRenderer {
   private axesGroup!: d3.Selection<SVGGElement, unknown, null, undefined>
   private dataPointsGroup!: d3.Selection<SVGGElement, unknown, null, undefined>
   private neuronsGroup!: d3.Selection<SVGGElement, unknown, null, undefined>
+  private movementGroup!: d3.Selection<SVGGElement, unknown, null, undefined>
 
   constructor(
     svgElement: SVGSVGElement,
@@ -41,6 +42,7 @@ export class D3SvgRenderer {
     this.axesGroup = this.svg.append('g').attr('class', 'axes-group')
     this.dataPointsGroup = this.svg.append('g').attr('class', 'data-points-group')
     this.neuronsGroup = this.svg.append('g').attr('class', 'neurons-group')
+    this.movementGroup = this.svg.append('g').attr('class', 'movement-group')
   }
 
   /**
@@ -292,6 +294,23 @@ export class D3SvgRenderer {
   }
 
   /**
+   * Darken a color by a given factor
+   */
+  private darkenColor(color: string, factor: number): string {
+    // Simple color darkening - convert hex to RGB, darken, convert back
+    const hex = color.replace('#', '')
+    const r = parseInt(hex.substr(0, 2), 16)
+    const g = parseInt(hex.substr(2, 2), 16)
+    const b = parseInt(hex.substr(4, 2), 16)
+    
+    const darkR = Math.round(r * (1 - factor))
+    const darkG = Math.round(g * (1 - factor))
+    const darkB = Math.round(b * (1 - factor))
+    
+    return `#${darkR.toString(16).padStart(2, '0')}${darkG.toString(16).padStart(2, '0')}${darkB.toString(16).padStart(2, '0')}`
+  }
+
+  /**
    * Render neurons with star shapes
    */
   renderNeurons(
@@ -303,13 +322,15 @@ export class D3SvgRenderer {
       animated?: boolean
       onHover?: (event: MouseEvent, neuron: Neuron) => void
       onClick?: (event: MouseEvent, neuron: Neuron) => void
+      disableTransitions?: boolean
     } = {}
   ): void {
     const {
       starGenerator = this.generateStarPath,
       animated = true,
       onHover,
-      onClick
+      onClick,
+      disableTransitions = false
     } = options
 
     // Data binding
@@ -339,7 +360,7 @@ export class D3SvgRenderer {
     // Update selection
     const updateSelection = enterSelection.merge(selection as any)
 
-    if (animated) {
+    if (animated && !disableTransitions) {
       updateSelection
         .transition()
         .duration(300)
@@ -360,6 +381,168 @@ export class D3SvgRenderer {
       .duration(200)
       .style('opacity', 0)
       .remove()
+  }
+
+  /**
+   * Render neuron movement trails and gradients during optimization
+   */
+  renderNeuronMovements(
+    movements: NeuronMovement[],
+    xScale: d3.ScaleLinear<number, number>,
+    yScale: d3.ScaleLinear<number, number>,
+    options: {
+      maxTrailLength?: number
+      showGradients?: boolean
+      fadeOlderMovements?: boolean
+      neurons?: Neuron[]
+    } = {}
+  ): void {
+    const { maxTrailLength = 10, showGradients = true, fadeOlderMovements = true, neurons = [] } = options
+
+    // Group movements by neuron
+    const movementsByNeuron = new Map<number, NeuronMovement[]>()
+    movements.forEach(movement => {
+      if (!movementsByNeuron.has(movement.neuronId)) {
+        movementsByNeuron.set(movement.neuronId, [])
+      }
+      movementsByNeuron.get(movement.neuronId)!.push(movement)
+    })
+
+    // Clear previous movements
+    this.movementGroup.selectAll('*').remove()
+
+    movementsByNeuron.forEach((neuronMovements, neuronId) => {
+      const recentMovements = neuronMovements.slice(-maxTrailLength)
+      
+      // Find neuron color
+      const neuron = neurons.find(n => n.id === neuronId)
+      const neuronColor = neuron ? neuron.color : '#8b5cf6'
+      
+      // Render movement trail
+      this.renderMovementTrail(recentMovements, xScale, yScale, { 
+        fadeOlderMovements, 
+        neuronColor 
+      })
+      
+      // Render gradient arrows
+      if (showGradients && recentMovements.length > 0) {
+        this.renderGradientArrows(recentMovements, xScale, yScale, { neuronColor })
+      }
+    })
+  }
+
+  /**
+   * Render movement trail for a neuron
+   */
+  private renderMovementTrail(
+    movements: NeuronMovement[],
+    xScale: d3.ScaleLinear<number, number>,
+    yScale: d3.ScaleLinear<number, number>,
+    options: { fadeOlderMovements: boolean; neuronColor: string }
+  ): void {
+    if (movements.length < 2) return
+
+    const { fadeOlderMovements, neuronColor } = options
+    const neuronId = movements[0].neuronId
+
+    // Create line generator
+    const line = d3.line<NeuronMovement>()
+      .x(d => xScale(d.newPosition.x))
+      .y(d => yScale(d.newPosition.y))
+      .curve(d3.curveCardinal)
+
+    // Render trail path with neuron color
+    this.movementGroup
+      .append('path')
+      .datum(movements)
+      .attr('class', `movement-trail neuron-${neuronId}`)
+      .attr('d', line)
+      .attr('stroke', neuronColor)
+      .attr('stroke-width', 3)
+      .attr('fill', 'none')
+      .style('opacity', 0.7)
+
+    // Render position points with fading effect and neuron color
+    movements.forEach((movement, index) => {
+      const opacity = fadeOlderMovements ? 
+        0.3 + (index / movements.length) * 0.7 : 0.8
+
+      this.movementGroup
+        .append('circle')
+        .attr('class', `movement-point neuron-${neuronId}`)
+        .attr('cx', xScale(movement.newPosition.x))
+        .attr('cy', yScale(movement.newPosition.y))
+        .attr('r', 2)
+        .attr('fill', neuronColor)
+        .style('opacity', opacity)
+    })
+  }
+
+  /**
+   * Render gradient arrows for optimization direction
+   */
+  private renderGradientArrows(
+    movements: NeuronMovement[],
+    xScale: d3.ScaleLinear<number, number>,
+    yScale: d3.ScaleLinear<number, number>,
+    options: { neuronColor: string } = { neuronColor: '#ef4444' }
+  ): void {
+    const latestMovement = movements[movements.length - 1]
+    const gradient = latestMovement.gradient
+    const { neuronColor } = options
+    
+    // Skip if gradient is too small
+    const gradientMagnitude = Math.sqrt(gradient.x * gradient.x + gradient.y * gradient.y)
+    if (gradientMagnitude < 0.01) return
+
+    const centerX = xScale(latestMovement.newPosition.x)
+    const centerY = yScale(latestMovement.newPosition.y)
+    
+    // Scale gradient for visibility
+    const scale = 30
+    const endX = centerX + gradient.x * scale
+    const endY = centerY - gradient.y * scale // Flip Y for screen coordinates
+
+    // Create arrow path
+    const arrowPath = this.createArrowPath(centerX, centerY, endX, endY)
+
+    // Use a darker version of the neuron color for gradient arrows
+    const darkerColor = this.darkenColor(neuronColor, 0.3)
+
+    this.movementGroup
+      .append('path')
+      .attr('class', `gradient-arrow neuron-${latestMovement.neuronId}`)
+      .attr('d', arrowPath)
+      .attr('stroke', darkerColor)
+      .attr('stroke-width', 2)
+      .attr('fill', darkerColor)
+      .style('opacity', 0.8)
+  }
+
+  /**
+   * Create arrow path for gradient visualization
+   */
+  private createArrowPath(startX: number, startY: number, endX: number, endY: number): string {
+    const headLength = 8
+    const headAngle = Math.PI / 6
+
+    // Calculate angle
+    const angle = Math.atan2(endY - startY, endX - startX)
+
+    // Arrow head points
+    const headX1 = endX - headLength * Math.cos(angle - headAngle)
+    const headY1 = endY - headLength * Math.sin(angle - headAngle)
+    const headX2 = endX - headLength * Math.cos(angle + headAngle)
+    const headY2 = endY - headLength * Math.sin(angle + headAngle)
+
+    return `M ${startX} ${startY} L ${endX} ${endY} M ${endX} ${endY} L ${headX1} ${headY1} M ${endX} ${endY} L ${headX2} ${headY2}`
+  }
+
+  /**
+   * Clear movement visualizations
+   */
+  clearMovements(): void {
+    this.movementGroup.selectAll('*').remove()
   }
 
   /**
@@ -429,6 +612,7 @@ export class D3SvgRenderer {
     this.axesGroup.selectAll('*').remove()
     this.dataPointsGroup.selectAll('*').remove()
     this.neuronsGroup.selectAll('*').remove()
+    this.movementGroup.selectAll('*').remove()
   }
 
   /**
@@ -459,7 +643,8 @@ export class D3SvgRenderer {
       grid: this.gridGroup,
       axes: this.axesGroup,
       dataPoints: this.dataPointsGroup,
-      neurons: this.neuronsGroup
+      neurons: this.neuronsGroup,
+      movements: this.movementGroup
     }
   }
 }

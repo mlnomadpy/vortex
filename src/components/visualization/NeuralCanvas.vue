@@ -11,23 +11,29 @@
       />
     </div>
 
-    <!-- Bottom section with stats, neuron management, and loss landscape -->
+    <!-- Bottom section with stats, neuron management, and visualization panels -->
     <div class="bottom-section">
-      <!-- Stats Card -->
-      <div class="stats-container">
-        <StatsCard
-          :accuracy="store.accuracy"
-          :data-points-count="store.filteredDataPoints.length"
-          :neurons-count="store.neurons.length"
-          :active-classes-count="store.activeClasses.length"
-          :canvas-width="canvasComponent?.canvasConfig?.width || 600"
-          :canvas-height="canvasComponent?.canvasConfig?.height || 600"
-          :cell-size="canvasComponent?.cellSize || 0"
-          :avg-loss="avgLoss"
-        />
+      <!-- Left Column: Stats and Optimization Controls -->
+      <div class="left-column">
+        <div class="stats-container">
+          <StatsCard
+            :accuracy="store.accuracy"
+            :data-points-count="store.filteredDataPoints.length"
+            :neurons-count="store.neurons.length"
+            :active-classes-count="store.activeClasses.length"
+            :canvas-width="canvasComponent?.canvasConfig?.width || 600"
+            :canvas-height="canvasComponent?.canvasConfig?.height || 600"
+            :cell-size="canvasComponent?.cellSize || 0"
+            :avg-loss="avgLoss"
+          />
+        </div>
+        
+        <div class="optimization-container">
+          <OptimizationControls />
+        </div>
       </div>
 
-      <!-- Neuron Management Panel -->
+      <!-- Middle Column: Neuron Management -->
       <div class="neuron-management-container">
         <NeuronManagement
           v-if="canvasComponent"
@@ -44,9 +50,11 @@
         />
       </div>
 
-      <!-- Loss Landscape Panel -->
-      <div class="loss-landscape-container">
-        <LossLandscape />
+      <!-- Right Column: Loss History and Landscape -->
+      <div class="right-column">
+        <div class="loss-history-container">
+          <LossHistoryChart />
+        </div>
       </div>
     </div>
   </div>
@@ -58,7 +66,8 @@ import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import StatsCard from './StatsCard.vue'
 import NeuronManagement from './NeuronManagement.vue'
 import InteractiveCanvas from './InteractiveCanvas.vue'
-import LossLandscape from './LossLandscape.vue'
+import LossHistoryChart from './LossHistoryChart.vue'
+import OptimizationControls from './OptimizationControls.vue'
 import type { Neuron } from '@/types'
 
 interface Props {
@@ -113,8 +122,19 @@ function selectNeuron(neuron: Neuron) {
   width: 100%;
 }
 
-.stats-container {
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   flex: 0 0 250px;
+}
+
+.stats-container {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.optimization-container {
   display: flex;
   justify-content: flex-start;
 }
@@ -127,8 +147,19 @@ function selectNeuron(neuron: Neuron) {
   overflow: hidden;
 }
 
-.loss-landscape-container {
+.right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   flex: 0 0 320px;
+}
+
+.loss-history-container {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.loss-landscape-container {
   background: rgb(var(--bg-secondary));
   border: 1px solid rgb(var(--border-primary));
   border-radius: 0.5rem;

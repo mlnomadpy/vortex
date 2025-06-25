@@ -156,8 +156,24 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
         yScale,
         {
           animated: true,
-          onHover: handleNeuronHover,
-          onClick: handleNeuronClick
+          onClick: handleNeuronClick,
+          // onHover: handleNeuronHover, // Removed hover functionality
+          disableTransitions: store.optimizationHistory.isRunning
+        }
+      )
+    }
+
+    // Render neuron movements during optimization
+    if (store.neuronMovements.length > 0) {
+      d3Renderer.renderNeuronMovements(
+        store.neuronMovements,
+        xScale,
+        yScale,
+        {
+          maxTrailLength: 15,
+          showGradients: true,
+          fadeOlderMovements: true,
+          neurons: store.neurons
         }
       )
     }
@@ -258,12 +274,7 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
     })
   }
 
-  function handleNeuronHover(event: MouseEvent, neuron: Neuron): void {
-    showTooltip(event, `
-      <div>Neuron ${neuron.id}</div>
-      <div>Position: (${neuron.x.toFixed(2)}, ${neuron.y.toFixed(2)})</div>
-    `)
-  }
+  // Neuron hover functionality removed
 
   /**
    * Utility functions
@@ -543,6 +554,44 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
       // Only re-render data points, not grid
       if (d3Renderer) {
         throttledRender()
+      }
+    }
+  )
+
+  // Watch for optimization running state
+  watch(
+    () => store.optimizationHistory.isRunning,
+    (isRunning) => {
+      if (isRunning) {
+        // During optimization, force more frequent renders
+        if (d3Renderer) {
+          render() // Immediate render without throttling
+        }
+      } else {
+        // When optimization stops, do a final render
+        if (d3Renderer) {
+          throttledRender()
+        }
+      }
+    }
+  )
+
+  // Watch for neuron movement updates during optimization
+  watch(
+    () => store.neuronMovements.length,
+    () => {
+      if (store.optimizationHistory.isRunning && d3Renderer) {
+        render() // Immediate render for movement updates
+      }
+    }
+  )
+
+  // Watch for neuron position changes during optimization
+  watch(
+    () => store.neurons.map(n => `${n.id}-${n.x.toFixed(3)}-${n.y.toFixed(3)}`),
+    () => {
+      if (store.optimizationHistory.isRunning && d3Renderer) {
+        render() // Immediate render for position updates
       }
     }
   )

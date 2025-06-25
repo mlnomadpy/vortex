@@ -112,19 +112,49 @@ class NeuralWorkerManager {
     if (neurons.length === 0 || dataPoints.length === 0) return 0
     
     let totalLoss = 0
+    const numSamples = dataPoints.length
+    
     for (let point of dataPoints) {
+      // Get scores for all neurons
       const scores = neurons.map(n => this.calculateScore(n, point.x, point.y, similarityMetric))
-      const probabilities = this.applyActivation(scores.length > 1 ? scores : [scores[0], -scores[0]], activationFunction)
       
-      const correctClassIndex = neurons.findIndex(n => n.id === point.label)
-      if (correctClassIndex !== -1 && probabilities[correctClassIndex] > 0) {
-        totalLoss -= Math.log(probabilities[correctClassIndex])
+      // Apply activation function to get probabilities
+      // For categorical cross-entropy, we need proper probability distribution
+      let probabilities: number[]
+      
+      if (activationFunction === 'none') {
+        // For no activation, use softmax to get proper probabilities
+        const maxScore = Math.max(...scores)
+        const exps = scores.map(s => Math.exp(s - maxScore))
+        const sumExps = exps.reduce((a, b) => a + b, 0)
+        probabilities = exps.map(e => e / (sumExps + 1e-8)) // Add epsilon for stability
       } else {
-        totalLoss -= Math.log(1e-9)
+        probabilities = this.applyActivation(scores, activationFunction)
+      }
+      
+      // Ensure probabilities sum to 1 and are positive (numerical stability)
+      const probSum = probabilities.reduce((a, b) => a + b, 0)
+      if (probSum > 0) {
+        probabilities = probabilities.map(p => Math.max(p / probSum, 1e-8))
+      } else {
+        // Fallback to uniform distribution if all probabilities are 0
+        probabilities = probabilities.map(() => 1 / probabilities.length)
+      }
+      
+      // Find the neuron index that corresponds to the correct class
+      const correctClassIndex = neurons.findIndex(n => n.id === point.label)
+      
+      if (correctClassIndex !== -1) {
+        // Standard categorical cross-entropy: -log(p_correct_class)
+        const correctClassProbability = Math.max(probabilities[correctClassIndex], 1e-8)
+        totalLoss += -Math.log(correctClassProbability)
+      } else {
+        // If no neuron matches the class, add maximum penalty
+        totalLoss += -Math.log(1e-8)
       }
     }
     
-    return totalLoss / dataPoints.length
+    return totalLoss / numSamples
   }
 
   private calculateScore(neuron: Neuron, x: number, y: number, metric: string): number {
@@ -138,7 +168,9 @@ class NeuralWorkerManager {
       case 'euclidean':
         return -Math.sqrt(distSq)
       case 'myProduct':
-        return (x * neuron.x + y * neuron.y) / (Math.sqrt(distSq) + 1e-6)
+        const dotProd = x * neuron.x + y * neuron.y
+        const rawScore = (dotProd * dotProd) / (distSq + 1e-6)
+        return Math.min(rawScore, 50) // Cap at 50 to prevent exp() overflow
       default:
         return 0
     }

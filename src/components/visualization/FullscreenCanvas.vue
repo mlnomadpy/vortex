@@ -406,12 +406,40 @@ function reinitializeGrid() {
   }, 100)
 }
 
-function runGradientDescent() {
+async function runGradientDescent() {
+  if (store.neurons.length === 0 || store.filteredDataPoints.length === 0) {
+    notificationStore.addNotification({
+      message: 'Cannot start optimization: need neurons and data points',
+      type: 'warning',
+      duration: 3000
+    })
+    return
+  }
+  
   notificationStore.addNotification({
     message: 'Gradient descent started',
     type: 'info',
     duration: 2000
   })
+  
+  try {
+    await store.runGradientDescent()
+    
+    if (store.optimizationHistory.currentStep >= store.optimizationHistory.totalSteps) {
+      notificationStore.addNotification({
+        message: 'Optimization completed successfully!',
+        type: 'success',
+        duration: 3000
+      })
+    }
+  } catch (error) {
+    console.error('Optimization error:', error)
+    notificationStore.addNotification({
+      message: 'Optimization failed. Please try again.',
+      type: 'error',
+      duration: 4000
+    })
+  }
 }
 
 function handleKeydown(event: KeyboardEvent) {
