@@ -233,11 +233,6 @@ defineExpose({
 /* Neuron Styles */
 :deep(.neuron) {
   cursor: pointer;
-  transition: filter 0.2s ease, transform 0.2s ease;
-}
-
-:deep(.neuron:hover) {
-  transform: scale(1.05);
 }
 
 /* Regular mode neurons */
@@ -245,22 +240,11 @@ defineExpose({
         filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.2));
 }
 
-.regular-mode :deep(.neuron:hover) {
-        filter: drop-shadow(0 4px 8px rgb(0 0 0 / 0.3));
-}
-
 /* Fullscreen mode neurons */
 .fullscreen-mode :deep(.neuron) {
         filter: 
         drop-shadow(0 2px 4px rgb(0 0 0 / 0.4))
         drop-shadow(0 0 8px rgb(255 255 255 / 0.1));
-}
-
-.fullscreen-mode :deep(.neuron:hover) {
-        filter: 
-        drop-shadow(0 4px 8px rgb(0 0 0 / 0.5))
-        drop-shadow(0 0 12px rgb(255 255 255 / 0.2))
-        drop-shadow(0 0 20px rgb(var(--color-primary) / 0.3));
 }
 
 /* Grid Styles for Fullscreen */
