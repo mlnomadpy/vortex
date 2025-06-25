@@ -1,5 +1,5 @@
 <template>
-  <div class="absolute bottom-6 left-6 glass-effect rounded-xl p-4 shadow-theme-medium border-theme-primary min-w-[200px]">
+  <div class="glass-effect rounded-xl p-4 shadow-theme-medium border-theme-primary min-w-[200px]">
     <div class="grid grid-cols-1 gap-3">
       <div class="flex items-center justify-between">
         <span class="text-sm font-medium text-theme-secondary">Accuracy</span>

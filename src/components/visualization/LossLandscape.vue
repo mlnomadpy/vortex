@@ -1,5 +1,5 @@
 <template>
-  <div class="control-card p-4 relative">
+  <div class="p-4 relative">
     <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
           <div class="flex items-center glass-effect px-3 py-1 rounded-full text-sm font-semibold text-theme-primary">
       <ChartBarSquareIcon class="w-4 h-4 mr-2 text-indigo-500" />

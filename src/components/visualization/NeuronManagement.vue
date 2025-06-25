@@ -191,30 +191,22 @@ function generateStarPath(
 <style scoped>
 /* Compact Neuron Management Panels */
 .neuron-details-panel {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  width: 200px;
+  width: 100%;
   background: rgb(var(--bg-secondary));
   border: 1px solid rgb(var(--border-primary));
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   font-size: 11px;
-  z-index: 10;
 }
 
 .neurons-list-panel {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 180px;
+  width: 100%;
   max-height: 300px;
   background: rgb(var(--bg-secondary));
   border: 1px solid rgb(var(--border-primary));
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   font-size: 11px;
-  z-index: 10;
 }
 
 .panel-header {
@@ -422,18 +414,6 @@ function generateStarPath(
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .neuron-details-panel {
-    width: 180px;
-    top: 8px;
-    left: 8px;
-  }
-  
-  .neurons-list-panel {
-    width: 160px;
-    top: 8px;
-    right: 8px;
-  }
-  
   .coord-row {
     gap: 4px;
   }
