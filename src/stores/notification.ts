@@ -6,7 +6,7 @@ export const useNotificationStore = defineStore('notification', () => {
   const notifications = ref<NotificationItem[]>([])
   
   function addNotification(notification: Omit<NotificationItem, 'id'>) {
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9)
+    const id = Date.now().toString() + Math.random().toString(36).substring(2, 11)
     const newNotification: NotificationItem = {
       id,
       duration: 3000,

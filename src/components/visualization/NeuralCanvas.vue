@@ -26,9 +26,16 @@
           :width="cellSize"
           :height="cellSize"
           :fill="getCellColor(cell)"
+          stroke="rgba(200, 200, 200, 0.3)"
+          stroke-width="0.5"
           class="cell grid-cell"
         />
       </g>
+      
+      <!-- Debug text when boundaries are disabled -->
+      <text v-if="store.neurons.length > 0 && !store.showBoundaries" x="10" y="50" fill="orange" font-size="12" font-weight="bold">
+        Enable "Show Boundaries" to see decision boundaries
+      </text>
       
       <!-- Axes -->
       <g class="axes-group">
@@ -254,8 +261,8 @@ const tooltip = ref({
 
 // Performance optimizations
 const shouldShowGrid = computed(() => {
-  // Only show grid when there are neurons and not too many data points
-  return store.neurons.length > 0 && store.filteredDataPoints.length < 1000
+  // Show grid when boundaries are enabled and there are neurons
+  return store.showBoundaries && store.neurons.length > 0
 })
 
 // Grid cells - memoized and only computed when needed
@@ -308,6 +315,13 @@ function handleCanvasClick(event: MouseEvent) {
   
   // Add neuron using the coordinate utilities
   const newNeuron = neuronUtils.addNeuron(clampedX, clampedY)
+  
+  // Force cache clear and trigger re-render
+  cellColorCache.clear()
+  nextTick(() => {
+    // Force another cache clear after Vue has updated
+    cellColorCache.clear()
+  })
   
   notificationStore.addNotification({
     message: `Neuron ${newNeuron.id} added at (${clampedX.toFixed(2)}, ${clampedY.toFixed(2)})`,
@@ -379,7 +393,8 @@ const cellColorCache = new Map()
 const maxCacheSize = 1000
 
 function getCellColor(cell: any) {
-  const cacheKey = `${cell.gridX}-${cell.gridY}-${store.neurons.length}-${store.showBoundaries}`
+  // Simpler cache key - let the watch functions handle cache invalidation
+  const cacheKey = `${cell.gridX}-${cell.gridY}`
   
   if (cellColorCache.has(cacheKey)) {
     return cellColorCache.get(cacheKey)
@@ -401,31 +416,57 @@ function getCellColor(cell: any) {
     return color
   }
   
-  // Calculate prediction for this cell
-  const scores = store.neurons.map(neuron => store.calculateScore(neuron, worldX, worldY))
-  const probabilities = store.applyActivation(scores.length > 1 ? scores : [scores[0], -scores[0]])
+  // Calculate similarity scores for each neuron at this position
+  const rawScores = store.neurons.map(neuron => store.calculateScore(neuron, worldX, worldY))
   
-  // Find the class with highest probability
-  const maxProbIndex = probabilities.indexOf(Math.max(...probabilities))
-  const maxProb = probabilities[maxProbIndex]
+  // Apply activation function to the raw scores
+  const activatedScores = store.applyActivation(rawScores)
   
-  // Get color based on the winning neuron
+  // Find the neuron with the highest activated similarity score
+  let maxScore = -Infinity
+  let winningNeuronIndex = -1
+  
+  activatedScores.forEach((score, index) => {
+    if (score > maxScore) {
+      maxScore = score
+      winningNeuronIndex = index
+    }
+  })
+  
+  // Use the winning neuron's color
   let baseColor = '#f8fafc'
-  if (maxProbIndex < store.neurons.length) {
-    baseColor = store.neurons[maxProbIndex].color
+  let opacity = 0.05
+  
+  if (winningNeuronIndex >= 0 && store.neurons[winningNeuronIndex]) {
+    baseColor = store.neurons[winningNeuronIndex].color
+    // Make it much more visible with higher opacity
+    opacity = Math.max(0.4, Math.min(0.8, Math.abs(maxScore) * 0.3 + 0.4)) // Better dynamic opacity
   }
   
-  // Apply opacity based on confidence
-  const confidence = maxProb
-  const opacity = Math.max(0.1, Math.min(0.4, confidence * 0.6))
+  // Convert color to rgba format with better opacity
+  let color = baseColor
   
-  // Convert hex to rgba
-  const hex = baseColor.replace('#', '')
-  const r = parseInt(hex.substr(0, 2), 16)
-  const g = parseInt(hex.substr(2, 2), 16)
-  const b = parseInt(hex.substr(4, 2), 16)
+  if (baseColor.startsWith('#') && baseColor.length === 7) {
+    // Convert hex to rgba
+    const hex = baseColor.replace('#', '')
+    const r = parseInt(hex.substring(0, 2), 16)
+    const g = parseInt(hex.substring(2, 4), 16)
+    const b = parseInt(hex.substring(4, 6), 16)
+    color = `rgba(${r}, ${g}, ${b}, ${opacity})`
+  } else if (baseColor.startsWith('hsl')) {
+    // Convert HSL to HSLA by extracting values and applying opacity
+    const hslMatch = baseColor.match(/hsl\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)%,\s*(\d+(?:\.\d+)?)%\)/)
+    if (hslMatch) {
+      const h = parseFloat(hslMatch[1])
+      const s = parseFloat(hslMatch[2])
+      const l = parseFloat(hslMatch[3])
+      color = `hsla(${h}, ${s}%, ${l}%, ${opacity})`
+    }
+  } else {
+    // Fallback for any other color formats - use the base color with opacity
+    color = baseColor // Keep original color if we can't parse it
+  }
   
-  const color = `rgba(${r}, ${g}, ${b}, ${opacity})`
   cellColorCache.set(cacheKey, color)
   return color
 }
@@ -558,6 +599,12 @@ function removeNeuron(neuronId: number) {
   neuronUtils.removeNeuron(neuronId)
   selectedNeuron.value = null
   
+  // Force cache clear and trigger re-render
+  cellColorCache.clear()
+  nextTick(() => {
+    cellColorCache.clear()
+  })
+  
   notificationStore.addNotification({
     message: `Neuron ${neuronId} removed`,
     type: 'success',
@@ -618,9 +665,14 @@ onMounted(() => {
 })
 
 // Clear cache when neurons or settings change
-watch(() => [store.neurons.length, store.showBoundaries], () => {
+watch(() => [store.neurons.length, store.showBoundaries, store.similarityMetric, store.activationFunction], () => {
   cellColorCache.clear()
-})
+}, { deep: true })
+
+// Clear cache when neurons themselves change (not just length)
+watch(() => store.neurons, () => {
+  cellColorCache.clear()
+}, { deep: true })
 
 // Clear cache when data changes for performance
 watch(() => store.filteredDataPoints.length, () => {
