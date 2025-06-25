@@ -6,14 +6,15 @@
         <span>Training History</span>
       </div>
       <div class="chart-controls">
-        <button
+        <Button
           v-if="store.optimizationHistory.steps.length > 0"
           @click="clearHistory"
-          class="clear-btn"
+          variant="ghost"
+          size="icon-sm"
           title="Clear History"
         >
           <TrashIcon class="w-3 h-3" />
-        </button>
+        </Button>
       </div>
     </div>
     
@@ -65,6 +66,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { ChartBarIcon, TrashIcon } from '@/components/ui/icons'
+import { Button } from '@/components/ui'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import * as d3 from 'd3'
 import type { OptimizationStep } from '@/types'

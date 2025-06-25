@@ -31,18 +31,21 @@
       </div>
       
       <!-- Toggle for extended stats -->
-      <button
+      <Button
         @click="showExtendedStats = !showExtendedStats"
-        class="text-xs text-blue-500 hover:text-blue-600 transition-colors mt-2"
+        variant="link"
+        size="sm"
+        class="text-xs mt-2 p-0 h-auto"
       >
         {{ showExtendedStats ? 'Show Less' : 'Show More' }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { Button } from '@/components/ui'
 
 interface Props {
   accuracy: number

@@ -2,6 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
 /* CSS Variables for Theme System */
 :root {
   /* Light Theme Colors */
@@ -154,38 +201,80 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 2rem;
+  }
+  
   body {
     font-family: 'Inter', sans-serif;
     background: rgb(var(--bg-gradient-from));
     background: linear-gradient(to bottom right, rgb(var(--bg-gradient-from)), rgb(var(--bg-gradient-to)));
     color: rgb(var(--text-primary));
     min-height: 100vh;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
   }
   
   /* Global performance optimizations */
   * {
     box-sizing: border-box;
   }
+  
+  /* Smooth scrolling for all scrollable elements */
+  * {
+    scroll-behavior: smooth;
+  }
+  
+  /* Enhanced momentum scrolling on iOS */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
-/* Custom scrollbar styling with theme support */
+/* Enhanced scrollbar styling with smooth interactions */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
   background: rgb(var(--bg-tertiary));
-  border-radius: 8px;
+  border-radius: 10px;
+  margin: 2px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, rgb(var(--color-primary)), rgb(var(--color-secondary)));
-  border-radius: 8px;
-  transition: background 0.2s ease;
+  background: linear-gradient(135deg, rgb(var(--color-primary)), rgb(var(--color-secondary)));
+  border-radius: 10px;
+  border: 2px solid rgb(var(--bg-tertiary));
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  min-height: 24px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, rgb(var(--color-primary-hover)), rgb(var(--color-secondary-hover)));
+  background: linear-gradient(135deg, rgb(var(--color-primary-hover)), rgb(var(--color-secondary-hover)));
+  border-color: rgb(var(--bg-secondary));
+  transform: scale(1.1);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, rgb(var(--color-primary-dark)), rgb(var(--color-primary)));
+}
+
+::-webkit-scrollbar-corner {
+  background: rgb(var(--bg-tertiary));
+}
+
+/* Thin scrollbars for compact areas */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  border: 1px solid rgb(var(--bg-tertiary));
+  min-height: 16px;
 }
 
 /* Utility Classes for Theme Variables */
@@ -274,10 +363,97 @@
   }
 }
 
-/* Animation Performance */
+/* Button enhancements for compact layouts */
+@layer components {
+  .button-group {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+  }
+  
+  .button-group-tight {
+    display: flex;
+    gap: 0.125rem;
+    align-items: center;
+  }
+  
+  .toolbar-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .toolbar-section .controls-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+}
+
+/* Smooth scrolling enhancements */
+@layer utilities {
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+  
+  .scroll-auto {
+    scroll-behavior: auto;
+  }
+  
+  .overscroll-contain {
+    overscroll-behavior: contain;
+  }
+  
+  .overscroll-none {
+    overscroll-behavior: none;
+  }
+  
+  /* Custom scroll containers */
+  .scroll-container {
+    scrollbar-gutter: stable;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+  
+  .scroll-container-x {
+    scrollbar-gutter: stable;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+  
+  /* Enhanced momentum scrolling */
+  .momentum-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+  }
+  
+  /* Performance optimized scrolling */
+  .perf-scroll {
+    will-change: scroll-position;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+}
+
+/* Animation Performance and Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   * {
-    transition: none !important;
-    animation: none !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Enhance scrolling performance on mobile */
+@media (max-width: 768px) {
+  body {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  
+  * {
+    -webkit-overflow-scrolling: touch;
   }
 }

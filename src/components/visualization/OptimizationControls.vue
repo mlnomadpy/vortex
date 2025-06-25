@@ -65,36 +65,39 @@
       
       <!-- Action Buttons -->
       <div class="action-section">
-        <button
+        <Button
           v-if="!isRunning"
           @click="startOptimization"
           :disabled="!canOptimize"
-          class="action-btn start-btn"
+          variant="default"
+          size="sm"
           title="Start Gradient Descent"
         >
-          <RocketLaunchIcon class="w-4 h-4" />
-          <span>Start</span>
-        </button>
+          <RocketLaunchIcon class="w-4 h-4 mr-1" />
+          Start
+        </Button>
         
-        <button
+        <Button
           v-else
           @click="stopOptimization"
-          class="action-btn stop-btn"
+          variant="destructive"
+          size="sm"
           title="Stop Optimization"
         >
-          <StopIcon class="w-4 h-4" />
-          <span>Stop</span>
-        </button>
+          <StopIcon class="w-4 h-4 mr-1" />
+          Stop
+        </Button>
         
-        <button
+        <Button
           @click="resetOptimization"
           :disabled="isRunning"
-          class="action-btn reset-btn"
+          variant="outline"
+          size="sm"
           title="Reset History"
         >
-          <ArrowPathIcon class="w-4 h-4" />
-          <span>Reset</span>
-        </button>
+          <ArrowPathIcon class="w-4 h-4 mr-1" />
+          Reset
+        </Button>
       </div>
       
       <!-- Progress Bar -->
@@ -137,6 +140,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { CogIcon, RocketLaunchIcon, StopIcon, ArrowPathIcon } from '@/components/ui/icons'
+import { Button } from '@/components/ui'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
 

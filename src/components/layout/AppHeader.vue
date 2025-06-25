@@ -45,14 +45,15 @@
         
         <!-- Actions -->
         <div class="flex items-center space-x-3">
-          <button 
+          <Button 
             @click="toggleTheme"
-            class="p-2 text-theme-secondary hover:text-theme-primary transition-colors rounded-lg interactive-bg"
+            variant="ghost"
+            size="icon"
             title="Toggle theme"
           >
-            <SunIcon v-if="isDark" class="w-5 h-5" />
-            <MoonIcon v-else class="w-5 h-5" />
-          </button>
+            <SunIcon v-if="isDark" class="w-4 h-4" />
+            <MoonIcon v-else class="w-4 h-4" />
+          </Button>
           
           <a 
             href="https://github.com/yourusername/vortex" 
@@ -73,6 +74,7 @@
 
 <script setup lang="ts">
 import { SunIcon, MoonIcon } from '@/components/ui/icons'
+import { Button } from '@/components/ui'
 import { useTheme } from '@/composables/useTheme'
 
 const { isDark, toggleTheme } = useTheme()

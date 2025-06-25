@@ -24,38 +24,42 @@
           </template>
         </FileUpload>
         
-        <button 
+        <Button 
           @click="loadData"
           :disabled="!selectedFile || isLoading"
-          class="compact-btn primary"
+          variant="default"
+          size="xs"
           title="Load Data"
         >
           <component 
             :is="isLoading ? 'div' : PlayIcon" 
-            :class="isLoading ? 'loading-spinner w-3 h-3' : 'w-3 h-3'"
+            :class="isLoading ? 'loading-spinner w-3 h-3 mr-1' : 'w-3 h-3 mr-1'"
           />
-          <span class="btn-text">Load</span>
-        </button>
+          Load
+        </Button>
         
-        <button 
+        <Button 
           @click="exportData"
           :disabled="store.dataPoints.length === 0"
-          class="compact-btn secondary"
+          variant="outline"
+          size="xs"
           title="Export Data"
         >
-          <ArrowDownTrayIcon class="w-3 h-3" />
-          <span class="btn-text">Export</span>
-        </button>
+          <ArrowDownTrayIcon class="w-3 h-3 mr-1" />
+          Export
+        </Button>
         
-        <a 
+        <Button 
+          as="a"
           href="https://colab.research.google.com/drive/1o9eogdqXhd2iRZnworQA_2oIwSuX8WsN?usp=sharing" 
           target="_blank" 
-          class="compact-btn link"
+          variant="ghost"
+          size="xs"
           title="Generate Your Own Data"
         >
-          <ArrowTopRightOnSquareIcon class="w-3 h-3" />
-          <span class="btn-text">Generate</span>
-        </a>
+          <ArrowTopRightOnSquareIcon class="w-3 h-3 mr-1" />
+          Generate
+        </Button>
       </div>
     </div>
 
@@ -82,25 +86,27 @@
           </template>
         </FileUpload>
         
-        <button 
+        <Button 
           @click="saveNeurons"
           :disabled="store.neurons.length === 0"
-          class="compact-btn success"
+          variant="outline"
+          size="xs"
           title="Save Neurons"
         >
-          <DocumentArrowDownIcon class="w-3 h-3" />
-          <span class="btn-text">Save</span>
-        </button>
+          <DocumentArrowDownIcon class="w-3 h-3 mr-1" />
+          Save
+        </Button>
         
-        <button 
+        <Button 
           @click="store.removeLastNeuron()"
           :disabled="store.neurons.length === 0"
-          class="compact-btn error"
+          variant="destructive"
+          size="xs"
           title="Remove Last Neuron"
         >
-          <TrashIcon class="w-3 h-3" />
-          <span class="btn-text">Remove</span>
-        </button>
+          <TrashIcon class="w-3 h-3 mr-1" />
+          Remove
+        </Button>
       </div>
     </div>
 
@@ -114,15 +120,16 @@
         <span>Optimization</span>
       </div>
       <div class="controls-row">
-        <button 
+        <Button 
           @click="runGradientDescent"
           :disabled="store.neurons.length === 0 || store.filteredDataPoints.length === 0"
-          class="compact-btn warning"
+          variant="default"
+          size="xs"
           title="Run Gradient Descent"
         >
-          <RocketLaunchIcon class="w-3 h-3" />
-          <span class="btn-text">Optimize</span>
-        </button>
+          <RocketLaunchIcon class="w-3 h-3 mr-1" />
+          Optimize
+        </Button>
       </div>
     </div>
 
@@ -186,6 +193,7 @@ import {
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
 import FileUpload from '@/components/ui/FileUpload.vue'
+import { Button } from '@/components/ui'
 import { parseCSV, exportToCSV } from '@/utils/csvUtils'
 
 const store = useNeuralNetworkStore()

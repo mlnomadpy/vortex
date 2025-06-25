@@ -8,50 +8,55 @@
         <span>View</span>
       </div>
       <div class="controls-row">
-        <button 
+        <Button 
           @click="toggleColorMode"
-          :class="['compact-btn', store.showPredictedColors ? 'active' : '']"
+          :variant="store.showPredictedColors ? 'default' : 'outline'"
+          size="xs"
           title="Toggle Color Mode"
         >
           <EyeIcon class="w-3 h-3" />
-          <span class="btn-text">{{ store.showPredictedColors ? 'Predicted' : 'Actual' }}</span>
-        </button>
+          <span class="ml-1">{{ store.showPredictedColors ? 'Predicted' : 'Actual' }}</span>
+        </Button>
         
-        <button 
+        <Button 
           @click="toggleBoundaries"
-          :class="['compact-btn', store.showBoundaries ? 'active' : '']"
+          :variant="store.showBoundaries ? 'default' : 'outline'"
+          size="xs"
           title="Toggle Decision Boundaries"
         >
           <Square3Stack3DIcon class="w-3 h-3" />
-          <span class="btn-text">Boundaries</span>
-        </button>
+          <span class="ml-1">Boundaries</span>
+        </Button>
         
-        <button 
+        <Button 
           @click="toggleDataPoints"
-          :class="['compact-btn', store.showDataPoints ? 'active' : '']"
+          :variant="store.showDataPoints ? 'default' : 'outline'"
+          size="xs"
           title="Toggle Data Points"
         >
           <ChartLineIcon class="w-3 h-3" />
-          <span class="btn-text">Points</span>
-        </button>
+          <span class="ml-1">Points</span>
+        </Button>
         
-        <button 
+        <Button 
           @click="toggleFullscreen"
-          class="compact-btn"
+          variant="ghost"
+          size="xs"
           title="Open Fullscreen"
         >
           <CurveIcon class="w-3 h-3" />
-          <span class="btn-text">Fullscreen</span>
-        </button>
+          <span class="ml-1">Fullscreen</span>
+        </Button>
         
-        <button 
+        <Button 
           @click="resetView"
-          class="compact-btn warning"
+          variant="destructive"
+          size="xs"
           title="Reset View"
         >
           <ArrowPathIcon class="w-3 h-3" />
-          <span class="btn-text">Reset</span>
-        </button>
+          <span class="ml-1">Reset</span>
+        </Button>
       </div>
     </div>
 
@@ -148,41 +153,46 @@
         <span>Presets</span>
       </div>
       <div class="controls-row">
-        <button
+        <Button
           @click="setCoordinatePreset('standard')"
-          class="preset-btn"
+          variant="outline"
+          size="xs"
           title="[-1, 1]"
         >
           ±1
-        </button>
-        <button
+        </Button>
+        <Button
           @click="setCoordinatePreset('extended')"
-          class="preset-btn"
+          variant="outline"
+          size="xs"
           title="[-5, 5]"
         >
           ±5
-        </button>
-        <button
+        </Button>
+        <Button
           @click="setCoordinatePreset('large')"
-          class="preset-btn"
+          variant="outline"
+          size="xs"
           title="[-10, 10]"
         >
           ±10
-        </button>
-        <button
+        </Button>
+        <Button
           @click="setCoordinatePreset('positive')"
-          class="preset-btn"
+          variant="outline"
+          size="xs"
           title="[0, 10]"
         >
           0-10
-        </button>
-        <button
+        </Button>
+        <Button
           @click="autoFitToData"
-          class="preset-btn auto-fit"
+          variant="default"
+          size="xs"
           title="Auto-fit to Data"
         >
           Auto
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -190,6 +200,7 @@
 
 <script setup lang="ts">
 import { EyeIcon, Square3Stack3DIcon, ArrowPathIcon, ChartLineIcon, CurveIcon, CogIcon } from '@/components/ui/icons'
+import { Button } from '@/components/ui'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
 

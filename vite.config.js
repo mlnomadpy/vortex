@@ -5,8 +5,8 @@ import { resolve } from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   // Set base path for GitHub Pages deployment
-  // For repository pages: '/repository-name/'
-  // For user/organization pages: '/'
+  // For custom domain at root: '/'
+  // For subdirectory: '/vortex/'
   base: process.env.NODE_ENV === 'production' ? '/vortex/' : '/',
   plugins: [vue()],
   resolve: {
@@ -21,5 +21,6 @@ export default defineConfig({
   build: {
     target: 'esnext',
     outDir: 'dist',
+    assetsDir: 'assets',
   },
 })

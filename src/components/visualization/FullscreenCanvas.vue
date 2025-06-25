@@ -1,42 +1,46 @@
 <template>
-  <div v-if="isVisible" class="fullscreen-canvas-overlay">
+  <div v-if="isVisible" class="fullscreen-canvas-overlay scroll-smooth momentum-scroll">
     <!-- Compact Toolbar -->
     <div class="toolbar">
       <!-- Top Section - Main Controls -->
       <div class="toolbar-section">
-        <button
+        <Button
           @click="$emit('close')"
-          class="toolbar-btn close-btn"
+          variant="destructive"
+          size="icon-sm"
           title="Exit Fullscreen (Esc)"
         >
-          <XMarkIcon class="w-5 h-5" />
-        </button>
+          <XMarkIcon class="w-4 h-4" />
+        </Button>
         
         <div class="toolbar-divider"></div>
         
-        <button
+        <Button
           @click="toggleBoundaries"
-          :class="['toolbar-btn', { active: store.showBoundaries }]"
+          :variant="store.showBoundaries ? 'default' : 'outline'"
+          size="icon-sm"
           title="Toggle Decision Boundaries (Reinitializes Grid)"
         >
           <Square3Stack3DIcon class="w-4 h-4" />
-        </button>
+        </Button>
         
-        <button
+        <Button
           @click="toggleDataPoints"
-          :class="['toolbar-btn', { active: store.showDataPoints }]"
+          :variant="store.showDataPoints ? 'default' : 'outline'"
+          size="icon-sm"
           title="Toggle Data Points"
         >
           <ChartLineIcon class="w-4 h-4" />
-        </button>
+        </Button>
         
-        <button
+        <Button
           @click="togglePredictedColors"
-          :class="['toolbar-btn', { active: store.showPredictedColors }]"
+          :variant="store.showPredictedColors ? 'default' : 'outline'"
+          size="icon-sm"
           title="Toggle Predicted Colors"
         >
           <EyeIcon class="w-4 h-4" />
-        </button>
+        </Button>
       </div>
 
       <!-- Grid Controls -->
@@ -54,14 +58,15 @@
         />
         <span class="toolbar-value">{{ store.gridSize }}×{{ store.gridSize }}</span>
         
-        <button
+        <Button
           @click="reinitializeGrid"
-          class="toolbar-btn action-btn"
+          variant="outline"
+          size="icon-sm"
           title="Force Grid Reinitialization"
           :disabled="!store.showBoundaries"
         >
           <ArrowPathIcon class="w-3 h-3" />
-        </button>
+        </Button>
       </div>
 
       <!-- Coordinate Ranges -->
@@ -107,10 +112,10 @@
       <div class="toolbar-section">
         <div class="toolbar-label">Presets</div>
         <div class="preset-buttons">
-          <button @click="setCoordinatePreset('standard')" class="preset-btn" title="[-1, 1]">±1</button>
-          <button @click="setCoordinatePreset('extended')" class="preset-btn" title="[-5, 5]">±5</button>
-          <button @click="setCoordinatePreset('large')" class="preset-btn" title="[-10, 10]">±10</button>
-          <button @click="autoFitToData" class="preset-btn auto-fit" title="Auto-fit to Data">Auto</button>
+          <Button @click="setCoordinatePreset('standard')" variant="outline" size="xs" title="[-1, 1]">±1</Button>
+          <Button @click="setCoordinatePreset('extended')" variant="outline" size="xs" title="[-5, 5]">±5</Button>
+          <Button @click="setCoordinatePreset('large')" variant="outline" size="xs" title="[-10, 10]">±10</Button>
+          <Button @click="autoFitToData" variant="default" size="xs" title="Auto-fit to Data">Auto</Button>
         </div>
       </div>
 
@@ -134,31 +139,34 @@
 
       <!-- Actions -->
       <div class="toolbar-section">
-        <button
+        <Button
           @click="store.removeLastNeuron()"
           :disabled="store.neurons.length === 0"
-          class="toolbar-btn action-btn"
+          variant="destructive"
+          size="icon-sm"
           title="Remove Last Neuron"
         >
           <TrashIcon class="w-4 h-4" />
-        </button>
+        </Button>
         
-        <button
+        <Button
           @click="runGradientDescent"
           :disabled="store.neurons.length === 0 || store.filteredDataPoints.length === 0"
-          class="toolbar-btn action-btn"
+          variant="default"
+          size="icon-sm"
           title="Run Gradient Descent"
         >
           <RocketLaunchIcon class="w-4 h-4" />
-        </button>
+        </Button>
         
-        <button
+        <Button
           @click="store.reset()"
-          class="toolbar-btn reset-btn"
+          variant="destructive"
+          size="icon-sm"
           title="Reset Everything"
         >
           <ArrowPathIcon class="w-4 h-4" />
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -236,6 +244,7 @@ import {
   RocketLaunchIcon, 
   ArrowPathIcon 
 } from '@/components/ui/icons'
+import { Button } from '@/components/ui'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
 import InteractiveCanvas from './InteractiveCanvas.vue'

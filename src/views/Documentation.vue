@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen">
+  <div class="min-h-screen scroll-smooth momentum-scroll">
     <AppHeader />
     
     <main class="container mx-auto px-6 py-8 max-w-4xl">
@@ -84,6 +84,15 @@
               </div>
             </div>
           </section>
+
+          <section class="mb-8">
+            <h2 class="text-2xl font-bold text-theme-primary mb-4">UI Components</h2>
+            <p class="mb-4">
+              This application now uses Shadcn UI components for consistent, accessible design.
+              Here's a showcase of the available button variants:
+            </p>
+            <ButtonShowcase />
+          </section>
           
         </div>
         
@@ -94,6 +103,7 @@
 
 <script setup lang="ts">
 import AppHeader from '@/components/layout/AppHeader.vue'
+import ButtonShowcase from '@/components/examples/ButtonShowcase.vue'
 </script>
 
 <style scoped>

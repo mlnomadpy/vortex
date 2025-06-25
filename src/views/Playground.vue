@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen">
+  <div class="min-h-screen scroll-smooth momentum-scroll">
     <AppHeader />
     
     <main class="container mx-auto px-6 py-8 max-w-7xl">
@@ -20,24 +20,30 @@
             <div class="control-card p-6">
               <h3 class="font-bold text-lg text-theme-primary mb-4">Quick Presets</h3>
               <div class="space-y-2">
-                <button 
+                <Button 
                   @click="loadPreset('spiral')"
-                  class="modern-button px-4 py-2 text-sm w-full"
+                  variant="default"
+                  size="xs"
+                  class="w-full"
                 >
                   Spiral Dataset
-                </button>
-                <button 
+                </Button>
+                <Button 
                   @click="loadPreset('clusters')"
-                  class="modern-button px-4 py-2 text-sm w-full"
+                  variant="secondary"
+                  size="xs"
+                  class="w-full"
                 >
                   Clustered Data
-                </button>
-                <button 
+                </Button>
+                <Button 
                   @click="loadPreset('xor')"
-                  class="modern-button px-4 py-2 text-sm w-full"
+                  variant="outline"
+                  size="xs"
+                  class="w-full"
                 >
                   XOR Problem
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -59,24 +65,30 @@
             <div class="control-card p-6">
               <h3 class="font-bold text-lg text-theme-primary mb-4">Experiments</h3>
               <div class="space-y-3">
-                <button 
+                <Button 
                   @click="runExperiment('noise')"
-                  class="modern-button px-4 py-2 text-sm w-full btn-warning"
+                  variant="destructive"
+                  size="xs"
+                  class="w-full"
                 >
                   Add Noise
-                </button>
-                <button 
+                </Button>
+                <Button 
                   @click="runExperiment('shuffle')"
-                  class="modern-button px-4 py-2 text-sm w-full btn-warning"
+                  variant="destructive"
+                  size="xs"
+                  class="w-full"
                 >
                   Shuffle Labels
-                </button>
-                <button 
+                </Button>
+                <Button 
                   @click="runExperiment('cluster')"
-                  class="modern-button px-4 py-2 text-sm w-full btn-success"
+                  variant="default"
+                  size="xs"
+                  class="w-full"
                 >
                   Auto-cluster
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -95,6 +107,7 @@ import ClassToggles from '@/components/sections/ClassToggles.vue'
 import NeuralCanvas from '@/components/visualization/NeuralCanvas.vue'
 import MetricsPanel from '@/components/visualization/MetricsPanel.vue'
 import LossLandscape from '@/components/visualization/LossLandscape.vue'
+import { Button } from '@/components/ui'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
 import type { DataPoint } from '@/types'

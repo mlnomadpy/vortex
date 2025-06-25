@@ -1,20 +1,19 @@
 <template>
   <div 
     v-if="store.allClasses.length > 0"
-    class="class-toolbar mb-4"
+    class="class-toolbar mb-4 momentum-scroll scrollbar-thin"
   >
     <div class="section-label">
       <span>Classes</span>
     </div>
     <div class="class-buttons">
-      <button
+      <Button
         v-for="classLabel in sortedClasses"
         :key="classLabel"
         @click="store.toggleClass(classLabel)"
-        :class="[
-          'class-btn',
-          store.activeClasses.includes(classLabel) ? 'active' : 'inactive'
-        ]"
+        :variant="store.activeClasses.includes(classLabel) ? 'default' : 'outline'"
+        size="xs"
+        :class="`class-btn ${store.activeClasses.includes(classLabel) ? 'active' : 'inactive'}`"
         :style="{ 
           '--class-color': getClassColor(classLabel)
         }"
@@ -23,7 +22,7 @@
         <div class="class-indicator"></div>
         <span class="class-label">{{ classLabel }}</span>
         <span class="class-count">{{ getClassCount(classLabel) }}</span>
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -31,6 +30,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
+import { Button } from '@/components/ui'
 import { getClassColor } from '@/utils/colors'
 
 const store = useNeuralNetworkStore()

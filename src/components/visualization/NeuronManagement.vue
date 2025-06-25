@@ -9,13 +9,14 @@
         <div class="neuron-icon" :style="{ backgroundColor: selectedNeuron.color }"></div>
         <span class="neuron-name">N{{ selectedNeuron.id }}</span>
       </div>
-      <button 
+      <Button 
         @click="$emit('close')" 
-        class="close-btn"
+        variant="ghost"
+        size="icon-sm"
         title="Close Panel"
       >
         ×
-      </button>
+      </Button>
     </div>
     
     <div class="panel-content">
@@ -78,13 +79,14 @@
 
       <!-- Actions -->
       <div class="control-group">
-        <button
+        <Button
           @click="$emit('remove', selectedNeuron.id)"
-          class="remove-btn"
+          variant="destructive"
+          size="xs"
           title="Remove Neuron"
         >
           Remove
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -97,7 +99,7 @@
     <div class="panel-header">
       <span class="list-title">Neurons ({{ neurons.length }})</span>
     </div>
-    <div class="neurons-list">
+    <div class="neurons-list momentum-scroll scrollbar-thin">
       <div
         v-for="neuron in neurons"
         :key="neuron.id"
@@ -115,6 +117,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Button } from '@/components/ui'
 import type { Neuron } from '@/types'
 
 interface Props {

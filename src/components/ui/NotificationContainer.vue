@@ -14,12 +14,14 @@
               class="w-5 h-5 mr-2 flex-shrink-0"
             />
             <span class="flex-1">{{ notification.message }}</span>
-            <button
+            <Button
               @click="removeNotification(notification.id)"
-              class="ml-2 p-1 hover:bg-white/20 rounded transition-colors duration-150"
+              variant="ghost"
+              size="icon-sm"
+              class="ml-2 hover:bg-white/20"
             >
-              <XMarkIcon class="w-4 h-4" />
-            </button>
+              <XMarkIcon class="w-3 h-3" />
+            </Button>
           </div>
         </div>
       </TransitionGroup>
@@ -36,6 +38,7 @@ import {
   XCircleIcon,
   XMarkIcon 
 } from '@/components/ui/icons'
+import { Button } from '@/components/ui'
 import { useNotificationStore } from '@/stores/notification'
 
 const notificationStore = useNotificationStore()

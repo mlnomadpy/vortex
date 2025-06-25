@@ -5,12 +5,14 @@
   >
     <div class="flex items-center justify-between mb-2">
       <h3 class="font-bold text-yellow-500">Grid Updates</h3>
-      <button 
+      <Button 
         @click="showDebug = false"
+        variant="ghost"
+        size="icon-sm"
         class="text-theme-tertiary hover:text-white"
       >
         ×
-      </button>
+      </Button>
     </div>
     
     <div class="space-y-1">
@@ -38,7 +40,7 @@
       
       <div v-if="recentUpdates.length > 0" class="border-t border-theme-secondary pt-2 mt-2">
         <div class="text-yellow-500 mb-1">Recent Updates:</div>
-        <div class="max-h-24 overflow-y-auto space-y-1">
+        <div class="max-h-24 overflow-y-auto space-y-1 momentum-scroll scrollbar-thin">
           <div 
             v-for="update in recentUpdates.slice(0, 5)" 
             :key="update.id"
@@ -53,30 +55,34 @@
       </div>
       
       <div class="border-t border-theme-secondary pt-2 mt-2">
-        <button 
+        <Button 
           @click="flushUpdates"
-          class="text-red-500 hover:text-red-400 text-xs"
+          variant="destructive"
+          size="xs"
           :disabled="stats.queueSize === 0"
         >
           Flush Queue
-        </button>
+        </Button>
       </div>
     </div>
   </div>
   
   <!-- Toggle button when debug panel is hidden -->
-  <button
+  <Button
     v-else
     @click="showDebug = true"
-    class="fixed top-4 left-4 bg-black/60 text-white p-2 rounded text-xs z-50 hover:bg-black/80"
+    variant="secondary"
+    size="icon-sm"
+    class="fixed top-4 left-4 bg-black/60 text-white z-50 hover:bg-black/80"
     title="Show Grid Update Debug"
   >
     🔧
-  </button>
+  </Button>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { Button } from '@/components/ui'
 import { gridUpdateService, gridUpdateStats, type GridUpdateRequest } from '@/services/gridUpdateService'
 
 const showDebug = ref(false)

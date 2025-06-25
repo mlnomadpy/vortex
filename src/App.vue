@@ -1,5 +1,5 @@
 <template>
-  <div id="app" class="min-h-screen">
+  <div id="app" class="min-h-screen scroll-smooth momentum-scroll">
     <!-- Background particles effect -->
     <ParticlesBackground />
     
