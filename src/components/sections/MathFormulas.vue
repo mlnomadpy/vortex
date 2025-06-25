@@ -50,7 +50,7 @@ const formulas = [
   {
     name: 'Softermax',
     icon: CurveIcon,
-    latex: '\\(\\text{softermax}(x_i) = \\frac{1 + x_i}{\\sum_{j} (1 + x_j)}\\)',
+    latex: '\\(\\text{softermax}(x_i) = \\frac{x_i^n}{\\epsilon + \\sum_{j} ( x_j)^n}\\)',
     description: 'Gentler version of softmax'
   },
   {

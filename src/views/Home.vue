@@ -43,10 +43,17 @@
         
       </div>
     </main>
+
+    <!-- Fullscreen Canvas -->
+    <FullscreenCanvas 
+      :isVisible="showFullscreen" 
+      @close="showFullscreen = false" 
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import HeroSection from '@/components/sections/HeroSection.vue'
@@ -57,6 +64,21 @@ import NeuralCanvas from '@/components/visualization/NeuralCanvas.vue'
 import MetricsPanel from '@/components/visualization/MetricsPanel.vue'
 import LossLandscape from '@/components/visualization/LossLandscape.vue'
 import MathFormulas from '@/components/sections/MathFormulas.vue'
+import FullscreenCanvas from '@/components/visualization/FullscreenCanvas.vue'
+
+const showFullscreen = ref(false)
+
+function handleToggleFullscreen() {
+  showFullscreen.value = true
+}
+
+onMounted(() => {
+  window.addEventListener('toggle-fullscreen', handleToggleFullscreen)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('toggle-fullscreen', handleToggleFullscreen)
+})
 </script>
 
 <style scoped>

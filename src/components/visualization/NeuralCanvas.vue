@@ -16,8 +16,15 @@
       style="max-width: 100%; height: auto;"
       @click="handleCanvasClick"
     >
+      <!-- Define clipping path for grid -->
+      <defs>
+        <clipPath id="canvas-clip">
+          <rect :width="config.width" :height="config.height" />
+        </clipPath>
+      </defs>
+      
       <!-- Grid - Only render when needed and with reduced density -->
-      <g v-if="shouldShowGrid && gridCells.length > 0" class="grid-group">
+      <g v-if="shouldShowGrid && gridCells.length > 0" class="grid-group" clip-path="url(#canvas-clip)">
         <rect
           v-for="(cell, index) in visibleGridCells"
           :key="`grid-${index}`"
@@ -46,7 +53,7 @@
       </g>
       
       <!-- Data Points - Rendered with higher z-index -->
-      <g class="data-points-group" style="z-index: 10;">
+      <g v-if="store.showDataPoints" class="data-points-group" style="z-index: 10;">
         <!-- Debug info -->
         <text v-if="store.filteredDataPoints.length === 0" x="10" y="30" fill="red" font-size="14" font-weight="bold">
           No data points visible ({{ store.dataPoints.length }} total, {{ store.filteredDataPoints.length }} filtered)
@@ -77,13 +84,13 @@
       
       <!-- Neurons -->
       <g class="neurons-group">
-        <circle
+        <path
           v-for="neuron in store.neurons"
           :key="`neuron-${neuron.id}`"
-          :cx="xScale(neuron.x)"
-          :cy="yScale(neuron.y)"
-          :r="8"
+          :d="generateStarPath(xScale(neuron.x), yScale(neuron.y))"
           :fill="neuron.color"
+          stroke="black"
+          stroke-width="2"
           class="neuron"
           @click="(event) => handleNeuronClick(event, neuron)"
         />
@@ -112,7 +119,16 @@
     <div v-if="selectedNeuron" class="absolute top-6 left-6 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-200 min-w-[280px] max-w-[350px]">
       <div class="flex items-center justify-between mb-3">
         <h3 class="font-bold text-lg text-gray-800 flex items-center">
-          <div class="w-4 h-4 rounded-full mr-2" :style="{ backgroundColor: selectedNeuron.color }"></div>
+          <div class="w-4 h-4 mr-2 relative">
+            <svg class="w-full h-full" viewBox="0 0 24 24">
+              <path 
+                :d="generateStarPath(12, 12, 8, 3)"
+                :fill="selectedNeuron.color"
+                stroke="black"
+                stroke-width="1"
+              />
+            </svg>
+          </div>
           Neuron {{ selectedNeuron.id }}
         </h3>
         <button @click="selectedNeuron = null" class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -133,8 +149,8 @@
                 v-model.number="selectedNeuron.x"
                 type="number"
                 step="0.01"
-                min="-1"
-                max="1"
+                :min="store.coordinateRanges.xMin"
+                :max="store.coordinateRanges.xMax"
                 class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 @change="updateNeuronPosition"
               />
@@ -145,8 +161,8 @@
                 v-model.number="selectedNeuron.y"
                 type="number"
                 step="0.01"
-                min="-1"
-                max="1"
+                :min="store.coordinateRanges.yMin"
+                :max="store.coordinateRanges.yMax"
                 class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 @change="updateNeuronPosition"
               />
@@ -203,7 +219,16 @@
           @click="selectNeuron(neuron)"
         >
           <div class="flex items-center">
-            <div class="w-3 h-3 rounded-full mr-2" :style="{ backgroundColor: neuron.color }"></div>
+            <div class="w-3 h-3 mr-2 relative">
+              <svg class="w-full h-full" viewBox="0 0 24 24">
+                <path 
+                  :d="generateStarPath(12, 12, 8, 3)"
+                  :fill="neuron.color"
+                  stroke="black"
+                  stroke-width="1"
+                />
+              </svg>
+            </div>
             <span class="text-sm font-medium">Neuron {{ neuron.id }}</span>
           </div>
           <div class="text-xs text-gray-500">
@@ -237,19 +262,65 @@ const notificationStore = useNotificationStore()
 
 const canvasRef = ref<SVGElement>()
 const tooltipRef = ref<HTMLElement>()
-const selectedNeuron = ref<Neuron | null>(null)
-
-const config = {
-  width: 600,
-  height: 600,
-  numCells: 30 // Reduced from 50 to 30 for better performance
+interface Props {
+  fullscreen?: boolean
 }
 
-const cellSize = config.width / config.numCells
+const props = defineProps<Props>()
+const selectedNeuron = ref<Neuron | null>(null)
 
-// Scales
-const xScale = d3.scaleLinear().domain([-1, 1]).range([0, config.width])
-const yScale = d3.scaleLinear().domain([-1, 1]).range([config.height, 0])
+const config = computed(() => ({
+  width: props.fullscreen ? Math.min(window.innerWidth - 200, 1200) : 600,
+  height: props.fullscreen ? Math.min(window.innerHeight - 200, 800) : 600
+}))
+
+const cellSize = computed(() => {
+  // Grid size now represents the desired size of each cell in pixels
+  // Scale it based on canvas size for consistency
+  const baseSize = 600 // Base canvas size
+  const scaleFactor = config.value.width / baseSize
+  return (store.gridSize / 5) * scaleFactor // Divide by 5 to make the slider values more intuitive
+})
+
+// Star path generator function
+function generateStarPath(centerX: number, centerY: number, outerRadius: number = 12, innerRadius: number = 5, points: number = 5): string {
+  const angleIncrement = (Math.PI * 2) / points
+  const halfAngleIncrement = angleIncrement / 2
+  
+  let path = ''
+  
+  for (let i = 0; i < points; i++) {
+    // Outer point
+    const outerAngle = i * angleIncrement - Math.PI / 2 // Start from top
+    const outerX = centerX + Math.cos(outerAngle) * outerRadius
+    const outerY = centerY + Math.sin(outerAngle) * outerRadius
+    
+    // Inner point
+    const innerAngle = outerAngle + halfAngleIncrement
+    const innerX = centerX + Math.cos(innerAngle) * innerRadius
+    const innerY = centerY + Math.sin(innerAngle) * innerRadius
+    
+    if (i === 0) {
+      path += `M ${outerX} ${outerY}`
+    } else {
+      path += ` L ${outerX} ${outerY}`
+    }
+    
+    path += ` L ${innerX} ${innerY}`
+  }
+  
+  path += ' Z' // Close the path
+  return path
+}
+
+// Scales - now dynamic based on coordinate ranges
+const xScale = computed(() => d3.scaleLinear()
+  .domain([store.coordinateRanges.xMin, store.coordinateRanges.xMax])
+  .range([0, config.value.width]))
+
+const yScale = computed(() => d3.scaleLinear()
+  .domain([store.coordinateRanges.yMin, store.coordinateRanges.yMax])
+  .range([config.value.height, 0]))
 
 // Tooltip state
 const tooltip = ref({
@@ -270,11 +341,24 @@ const gridCells = computed(() => {
   if (!shouldShowGrid.value) return []
   
   const cells = []
-  for (let i = 0; i < config.numCells; i++) {
-    for (let j = 0; j < config.numCells; j++) {
+  const currentCellSize = cellSize.value
+  const canvasWidth = config.value.width
+  const canvasHeight = config.value.height
+  
+  // Calculate how many cells fit in each dimension
+  const cellsX = Math.ceil(canvasWidth / currentCellSize)
+  const cellsY = Math.ceil(canvasHeight / currentCellSize)
+  
+  for (let i = 0; i < cellsX; i++) {
+    for (let j = 0; j < cellsY; j++) {
+      const x = i * currentCellSize
+      const y = j * currentCellSize
+      
+      // Add all cells - SVG will clip them naturally at canvas bounds
+      // This ensures full coverage even if cells extend slightly beyond
       cells.push({
-        x: i * cellSize,
-        y: j * cellSize,
+        x,
+        y,
         gridX: i,
         gridY: j
       })
@@ -309,9 +393,9 @@ function handleCanvasClick(event: MouseEvent) {
   // Convert to normalized coordinates
   const normalized = coordinateUtils.toNormalizedCoordinates(coords.canvasX, coords.canvasY)
   
-  // Ensure coordinates are within valid range [-1, 1]
-  const clampedX = Math.max(-1, Math.min(1, normalized.x))
-  const clampedY = Math.max(-1, Math.min(1, normalized.y))
+  // Ensure coordinates are within valid range
+  const clampedX = Math.max(store.coordinateRanges.xMin, Math.min(store.coordinateRanges.xMax, normalized.x))
+  const clampedY = Math.max(store.coordinateRanges.yMin, Math.min(store.coordinateRanges.yMax, normalized.y))
   
   // Add neuron using the coordinate utilities
   const newNeuron = neuronUtils.addNeuron(clampedX, clampedY)
@@ -344,15 +428,15 @@ const coordinateUtils = {
   
   toNormalizedCoordinates(canvasX: number, canvasY: number): { x: number; y: number } {
     return {
-      x: xScale.invert(canvasX),
-      y: yScale.invert(canvasY)
+      x: xScale.value.invert(canvasX),
+      y: yScale.value.invert(canvasY)
     }
   },
   
   toCanvasCoordinates(normalizedX: number, normalizedY: number): { x: number; y: number } {
     return {
-      x: xScale(normalizedX),
-      y: yScale(normalizedY)
+      x: xScale.value(normalizedX),
+      y: yScale.value(normalizedY)
     }
   }
 }
@@ -393,8 +477,9 @@ const cellColorCache = new Map()
 const maxCacheSize = 1000
 
 function getCellColor(cell: any) {
-  // Simpler cache key - let the watch functions handle cache invalidation
-  const cacheKey = `${cell.gridX}-${cell.gridY}`
+  // Include cell size and position in cache key to handle dynamic grid sizing
+  const currentCellSize = cellSize.value
+  const cacheKey = `${cell.x}-${cell.y}-${currentCellSize.toFixed(2)}`
   
   if (cellColorCache.has(cacheKey)) {
     return cellColorCache.get(cacheKey)
@@ -407,8 +492,8 @@ function getCellColor(cell: any) {
   }
   
   // Convert grid position to world coordinates
-  const worldX = xScale.invert(cell.x + cellSize/2)
-  const worldY = yScale.invert(cell.y + cellSize/2)
+  const worldX = xScale.value.invert(cell.x + currentCellSize/2)
+  const worldY = yScale.value.invert(cell.y + currentCellSize/2)
   
   if (store.neurons.length === 0) {
     const color = '#f8fafc'
@@ -512,7 +597,8 @@ function handleNeuronClick(event: MouseEvent, neuron: Neuron) {
 }
 
 function showTooltip(event: MouseEvent, cell: any) {
-  const centerCoords = coordinateUtils.toNormalizedCoordinates(cell.x + cellSize / 2, cell.y + cellSize / 2)
+  const currentCellSize = cellSize.value
+  const centerCoords = coordinateUtils.toNormalizedCoordinates(cell.x + currentCellSize / 2, cell.y + currentCellSize / 2)
   const centerX = centerCoords.x
   const centerY = centerCoords.y
   
@@ -569,8 +655,8 @@ function updateNeuronPosition() {
   if (!selectedNeuron.value) return
   
   // Clamp values to valid range
-  selectedNeuron.value.x = Math.max(-1, Math.min(1, selectedNeuron.value.x))
-  selectedNeuron.value.y = Math.max(-1, Math.min(1, selectedNeuron.value.y))
+  selectedNeuron.value.x = Math.max(store.coordinateRanges.xMin, Math.min(store.coordinateRanges.xMax, selectedNeuron.value.x))
+  selectedNeuron.value.y = Math.max(store.coordinateRanges.yMin, Math.min(store.coordinateRanges.yMax, selectedNeuron.value.y))
   
   // Clear cache when neuron position changes
   cellColorCache.clear()
@@ -665,9 +751,14 @@ onMounted(() => {
 })
 
 // Clear cache when neurons or settings change
-watch(() => [store.neurons.length, store.showBoundaries, store.similarityMetric, store.activationFunction], () => {
+watch(() => [store.neurons.length, store.showBoundaries, store.similarityMetric, store.activationFunction, store.gridSize, store.coordinateRanges], () => {
   cellColorCache.clear()
 }, { deep: true })
+
+// Clear cache specifically when cell size changes (grid size or canvas dimensions)
+watch(() => cellSize.value, () => {
+  cellColorCache.clear()
+})
 
 // Clear cache when neurons themselves change (not just length)
 watch(() => store.neurons, () => {
@@ -748,11 +839,10 @@ watch(() => store.filteredDataPoints.length, () => {
 }
 
 .neuron {
-  stroke: white;
-  stroke-width: 2;
   cursor: pointer;
   transform: translateZ(0);
   will-change: transform;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 .cell {

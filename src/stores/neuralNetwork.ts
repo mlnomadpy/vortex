@@ -12,6 +12,14 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   const activationFunction = ref<'none' | 'softmax' | 'softermax' | 'sigmoid' | 'relu' | 'gelu'>('none')
   const showPredictedColors = ref(true)
   const showBoundaries = ref(false)
+  const showDataPoints = ref(true)
+  const gridSize = ref(50)
+  const coordinateRanges = ref({
+    xMin: -1,
+    xMax: 1,
+    yMin: -1,
+    yMax: 1
+  })
   const selectedNeuronForLandscape = ref<Neuron | null>(null)
   
   // Computed - optimized with memoization
@@ -169,6 +177,14 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
     activationFunction.value = 'none'
     showPredictedColors.value = true
     showBoundaries.value = false
+    showDataPoints.value = true
+    gridSize.value = 50
+    coordinateRanges.value = {
+      xMin: -1,
+      xMax: 1,
+      yMin: -1,
+      yMax: 1
+    }
   }
   
   return {
@@ -181,6 +197,9 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
     activationFunction,
     showPredictedColors,
     showBoundaries,
+    showDataPoints,
+    gridSize,
+    coordinateRanges,
     selectedNeuronForLandscape,
     
     // Computed
