@@ -14,6 +14,7 @@ self.onmessage = function(e) {
   }
 };
 
+// Centralized similarity score calculation
 function calculateScore(neuron, x, y, metric) {
   const dx = x - neuron.x;
   const dy = y - neuron.y;
@@ -27,12 +28,14 @@ function calculateScore(neuron, x, y, metric) {
     case 'myProduct':
       const dotProd = x * neuron.x + y * neuron.y;
       const rawScore = (dotProd * dotProd) / (distSq + 1e-6);
-      return Math.min(rawScore, 50); // Cap at 50 to prevent exp() overflow
+      // Clamp to prevent softmax overflow
+      return Math.min(rawScore, 50);
     default:
-      return 0;
+      throw new Error(`Unknown similarity metric: ${metric}`);
   }
 }
 
+// Centralized activation function
 function applyActivation(scores, activationFunction) {
   if (activationFunction === 'none' || scores.length === 0) return scores;
   
@@ -53,7 +56,7 @@ function applyActivation(scores, activationFunction) {
     case 'gelu':
       return scores.map(s => 0.5 * s * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (s + 0.044715 * Math.pow(s, 3)))));
     default:
-      return scores;
+      throw new Error(`Unknown activation function: ${activationFunction}`);
   }
 }
 

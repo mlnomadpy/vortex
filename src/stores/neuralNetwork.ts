@@ -3,6 +3,16 @@ import { ref, computed } from 'vue'
 import type { DataPoint, Neuron, OptimizationHistory, OptimizationStep, NeuronMovement } from '@/types'
 import { getNeuronColor } from '@/utils/colors'
 import { CONFIG } from '@/config'
+import {
+  calculateSimilarityScore,
+  applyActivationFunction,
+  getPrediction as mathGetPrediction,
+  computeCategoricalCrossEntropyLoss,
+  calculateNeuronGradient,
+  calculateAccuracy as mathCalculateAccuracy,
+  getActivationDerivative as mathGetActivationDerivative,
+  clamp
+} from '@/utils/mathCore'
 
 export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   // State
@@ -45,17 +55,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   })
   
   const accuracy = computed(() => {
-    if (filteredDataPoints.value.length === 0 || neurons.value.length === 0) return 0
-    
-    let correctCount = 0
-    filteredDataPoints.value.forEach(point => {
-      const prediction = getPrediction(point.x, point.y)
-      if (prediction.winningNeuron && prediction.winningNeuron.id === point.label) {
-        correctCount++
-      }
-    })
-    
-    return (correctCount / filteredDataPoints.value.length) * 100
+    return mathCalculateAccuracy(filteredDataPoints.value, neurons.value, similarityMetric.value, activationFunction.value) * 100
   })
   
   // Get the latest loss from optimization history
@@ -113,47 +113,11 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   }
   
   function calculateScore(neuron: Neuron, x: number, y: number): number {
-    const dx = x - neuron.x
-    const dy = y - neuron.y
-    const distSq = dx * dx + dy * dy
-    
-    switch (similarityMetric.value) {
-      case 'dotProduct':
-        return x * neuron.x + y * neuron.y
-      case 'euclidean':
-        return -Math.sqrt(distSq)
-      case 'myProduct':
-        const dotProd = x * neuron.x + y * neuron.y
-        const rawScore = (dotProd * dotProd) / (distSq + 1e-6)
-        // Clamp the score to prevent softmax overflow
-        return Math.min(rawScore, 50) // Cap at 50 to prevent exp() overflow
-      default:
-        return 0
-    }
+    return calculateSimilarityScore(neuron, x, y, similarityMetric.value)
   }
   
   function applyActivation(scores: number[]): number[] {
-    if (activationFunction.value === 'none' || scores.length === 0) return scores
-    
-    switch (activationFunction.value) {
-      case 'softmax':
-        const max = Math.max(...scores)
-        const exps = scores.map(s => Math.exp(s - max))
-        const sum = exps.reduce((a, b) => a + b, 0)
-        return exps.map(e => e / sum)
-      case 'softermax':
-        const transformed = scores.map(s => 1 + s)
-        const sum2 = transformed.reduce((a, b) => a + b, 0)
-        return transformed.map(s => s / sum2)
-      case 'sigmoid':
-        return scores.map(s => 1 / (1 + Math.exp(-s)))
-      case 'relu':
-        return scores.map(s => Math.max(0, s))
-      case 'gelu':
-        return scores.map(s => 0.5 * s * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (s + 0.044715 * Math.pow(s, 3)))))
-      default:
-        return scores
-    }
+    return applyActivationFunction(scores, activationFunction.value)
   }
   
   function getPrediction(x: number, y: number): { winningNeuron: Neuron | null, scores: number[] } {
@@ -176,168 +140,17 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   }
   
   function computeLoss(data: DataPoint[]): number {
-    if (neurons.value.length === 0 || data.length === 0) return 0
-    
-    let totalLoss = 0
-    const numSamples = data.length
-    
-    data.forEach(point => {
-      // Get scores for all neurons
-      const scores = neurons.value.map(n => calculateScore(n, point.x, point.y))
-      
-      // Apply activation function to get probabilities
-      // For categorical cross-entropy, we need proper probability distribution
-      let probabilities: number[]
-      
-      if (activationFunction.value === 'none') {
-        // For no activation, use softmax to get proper probabilities
-        const maxScore = Math.max(...scores)
-        const exps = scores.map(s => Math.exp(s - maxScore))
-        const sumExps = exps.reduce((a, b) => a + b, 0)
-        probabilities = exps.map(e => e / (sumExps + 1e-8)) // Add epsilon for stability
-      } else {
-        probabilities = applyActivation(scores)
-      }
-      
-      // Ensure probabilities sum to 1 and are positive (numerical stability)
-      const probSum = probabilities.reduce((a, b) => a + b, 0)
-      if (probSum > 0) {
-        probabilities = probabilities.map(p => Math.max(p / probSum, 1e-8))
-      } else {
-        // Fallback to uniform distribution if all probabilities are 0
-        probabilities = probabilities.map(() => 1 / probabilities.length)
-      }
-      
-      // Find the neuron index that corresponds to the correct class
-      const correctClassIndex = neurons.value.findIndex(n => n.id === point.label)
-      
-      if (correctClassIndex !== -1) {
-        // Standard categorical cross-entropy: -log(p_correct_class)
-        const correctClassProbability = Math.max(probabilities[correctClassIndex], 1e-8)
-        totalLoss += -Math.log(correctClassProbability)
-      } else {
-        // If no neuron matches the class, add maximum penalty
-        totalLoss += -Math.log(1e-8)
-      }
-    })
-    
-    return totalLoss / numSamples
+    return computeCategoricalCrossEntropyLoss(data, neurons.value, similarityMetric.value, activationFunction.value)
   }
   
   // Calculate gradient for a neuron
   function calculateGradient(neuron: Neuron, data: DataPoint[]): { x: number; y: number } {
-    if (data.length === 0) return { x: 0, y: 0 }
-    
-    let gradX = 0
-    let gradY = 0
-    const numSamples = data.length
-    
-    data.forEach(point => {
-      const scores = neurons.value.map(n => calculateScore(n, point.x, point.y))
-      
-      // Get probabilities using the same logic as loss computation
-      let probabilities: number[]
-      
-      if (activationFunction.value === 'none') {
-        // For no activation, use softmax to get proper probabilities
-        const maxScore = Math.max(...scores)
-        const exps = scores.map(s => Math.exp(s - maxScore))
-        const sumExps = exps.reduce((a, b) => a + b, 0)
-        probabilities = exps.map(e => e / (sumExps + 1e-8))
-      } else {
-        probabilities = applyActivation(scores)
-      }
-      
-      // Ensure probabilities sum to 1
-      const probSum = probabilities.reduce((a, b) => a + b, 0)
-      if (probSum > 0) {
-        probabilities = probabilities.map(p => p / probSum)
-      }
-      
-      const correctClassIndex = neurons.value.findIndex(n => n.id === point.label)
-      const neuronIndex = neurons.value.findIndex(n => n.id === neuron.id)
-      
-      if (correctClassIndex !== -1 && neuronIndex !== -1) {
-        // For categorical cross-entropy with softmax:
-        // gradient = (predicted_probability - target) for the correct class
-        // where target is 1 for correct class, 0 for others
-        const target = correctClassIndex === neuronIndex ? 1 : 0
-        const predicted = probabilities[neuronIndex]
-        
-        // The gradient of categorical cross-entropy w.r.t. the logits (scores)
-        // when using softmax is simply: predicted - target
-        const error = predicted - target
-        
-        // Apply chain rule for different similarity metrics
-        switch (similarityMetric.value) {
-          case 'dotProduct':
-            gradX += error * point.x
-            gradY += error * point.y
-            break
-          case 'euclidean':
-            const dx = point.x - neuron.x
-            const dy = point.y - neuron.y
-            const dist = Math.sqrt(dx * dx + dy * dy) + 1e-6
-            gradX += error * dx / dist
-            gradY += error * dy / dist
-            break
-          case 'myProduct':
-            const dx2 = point.x - neuron.x
-            const dy2 = point.y - neuron.y
-            const distSq = dx2 * dx2 + dy2 * dy2 + 1e-6
-            const dotProd = point.x * neuron.x + point.y * neuron.y
-            // Gradient for f = (dotProd)² / distSq
-            // Using quotient rule: ∂f/∂neuron.x = (distSq * ∂(dotProd²)/∂neuron.x - dotProd² * ∂(distSq)/∂neuron.x) / distSq²
-            // ∂(dotProd²)/∂neuron.x = 2 * dotProd * point.x
-            // ∂(distSq)/∂neuron.x = 2 * (neuron.x - point.x)
-            const numeratorX = distSq * 2 * dotProd * point.x - dotProd * dotProd * 2 * (neuron.x - point.x)
-            const gradientX = numeratorX / (distSq * distSq)
-            gradX += error * gradientX
-            
-            const numeratorY = distSq * 2 * dotProd * point.y - dotProd * dotProd * 2 * (neuron.y - point.y)
-            const gradientY = numeratorY / (distSq * distSq)
-            gradY += error * gradientY
-            break
-        }
-      }
-    })
-    
-    return { x: gradX / numSamples, y: gradY / numSamples }
+    return calculateNeuronGradient(neuron, data, neurons.value, similarityMetric.value, activationFunction.value)
   }
   
   // Get derivative of activation function at given index
   function getActivationDerivative(scores: number[], neuronIndex: number): number {
-    if (activationFunction.value === 'none' || scores.length === 0) return 1
-    
-    const score = scores[neuronIndex]
-    const activatedScores = applyActivation(scores)
-    const activatedScore = activatedScores[neuronIndex]
-    
-    switch (activationFunction.value) {
-      case 'softmax':
-        // For softmax: derivative is p_i * (1 - p_i) for diagonal terms
-        // and -p_i * p_j for off-diagonal terms
-        // Simplified to just use p_i * (1 - p_i) for the target neuron
-        return activatedScore * (1 - activatedScore)
-      case 'softermax':
-        // For softermax: derivative of normalized scores
-        const sum = scores.map(s => 1 + s).reduce((a, b) => a + b, 0)
-        return 1 / sum - (1 + score) / (sum * sum)
-      case 'sigmoid':
-        // For sigmoid: derivative is sigmoid(x) * (1 - sigmoid(x))
-        return activatedScore * (1 - activatedScore)
-      case 'relu':
-        // For ReLU: derivative is 1 if x > 0, else 0
-        return score > 0 ? 1 : 0
-      case 'gelu':
-        // For GELU: derivative is more complex
-        const tanh_term = Math.tanh(Math.sqrt(2 / Math.PI) * (score + 0.044715 * Math.pow(score, 3)))
-        const sech2_term = 1 - tanh_term * tanh_term // sech^2 = 1 - tanh^2
-        const inner_derivative = Math.sqrt(2 / Math.PI) * (1 + 3 * 0.044715 * score * score)
-        return 0.5 * (1 + tanh_term) + 0.5 * score * sech2_term * inner_derivative
-      default:
-        return 1
-    }
+    return mathGetActivationDerivative(scores, neuronIndex, activationFunction.value)
   }
   
   // Gradient descent optimization
@@ -379,10 +192,8 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
         const newY = neuron.y - config.learningRate * gradient.y
         
         // Clamp to coordinate ranges
-        neuron.x = Math.max(coordinateRanges.value.xMin, 
-                   Math.min(coordinateRanges.value.xMax, newX))
-        neuron.y = Math.max(coordinateRanges.value.yMin, 
-                   Math.min(coordinateRanges.value.yMax, newY))
+        neuron.x = clamp(newX, coordinateRanges.value.xMin, coordinateRanges.value.xMax)
+        neuron.y = clamp(newY, coordinateRanges.value.yMin, coordinateRanges.value.yMax)
         
         const newPosition = { x: neuron.x, y: neuron.y }
         
