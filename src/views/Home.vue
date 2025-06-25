@@ -84,10 +84,10 @@ onUnmounted(() => {
 <style scoped>
 /* Main container styles moved from global CSS */
 .main-container {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--viz-overlay);
   backdrop-filter: blur(24px);
   border-radius: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-heavy);
   transform: translateZ(0);
   will-change: transform;
 }

@@ -1,51 +1,67 @@
 <template>
-  <div class="control-card p-6">
-    <div class="flex items-center justify-center mb-4">
-      <ChartBarIcon class="w-6 h-6 text-blue-600 mr-3" />
-      <h3 class="text-xl font-bold text-gray-800">Neuron Metrics</h3>
+  <div class="compact-metrics-panel">
+    <div class="panel-header">
+      <ChartBarIcon class="w-4 h-4" />
+      <span class="panel-title">Metrics</span>
     </div>
     
-    <div v-if="store.neurons.length === 0" class="text-center text-gray-500 py-8">
-      <CpuChipIcon class="w-12 h-12 mx-auto mb-2 opacity-50" />
-      <p>Add neurons to see metrics</p>
+    <div v-if="store.neurons.length === 0" class="empty-state">
+      <CpuChipIcon class="w-8 h-8 opacity-30" />
+      <span class="empty-text">No neurons</span>
     </div>
     
-    <svg 
-      v-else
-      ref="chartRef"
-      :width="config.width" 
-      :height="config.height" 
-      class="w-full"
-      style="max-width: 100%; height: auto;"
-    >
-      <!-- Bars -->
-      <g class="bars-group">
-        <rect
-          v-for="(metric, index) in metrics"
-          :key="`bar-${metric.neuron.id}`"
-          :x="barXScale(metric.neuron.id)"
-          :y="barYScale(metric.area)"
-          :width="barXScale.bandwidth()"
-          :height="config.height - barYScale(metric.area)"
-          :fill="metric.neuron.color"
-          class="transition-all duration-300 hover:brightness-110"
-          @mouseover="(event) => showMetricTooltip(event, metric)"
-          @mouseleave="hideTooltip"
-        />
-      </g>
+    <div v-else class="metrics-content">
+      <!-- Compact chart -->
+      <svg 
+        ref="chartRef"
+        :width="config.width" 
+        :height="config.height" 
+        class="metrics-chart"
+      >
+        <!-- Bars -->
+        <g class="bars-group">
+          <rect
+            v-for="metric in metrics"
+            :key="`bar-${metric.neuron.id}`"
+            :x="barXScale(String(metric.neuron.id)) || 0"
+            :y="barYScale(metric.area)"
+            :width="barXScale.bandwidth()"
+            :height="config.height - barYScale(metric.area)"
+            :fill="metric.neuron.color"
+            class="metric-bar"
+            @mouseover="(event) => showMetricTooltip(event, metric)"
+            @mouseleave="hideTooltip"
+          />
+        </g>
+        
+        <!-- Y-axis -->
+        <g class="y-axis" />
+        
+        <!-- X-axis -->
+        <g class="x-axis" :transform="`translate(0, ${config.height})`" />
+      </svg>
       
-      <!-- Y-axis -->
-      <g class="y-axis" />
-      
-      <!-- X-axis -->
-      <g class="x-axis" :transform="`translate(0, ${config.height})`" />
-    </svg>
+      <!-- Compact metrics list -->
+      <div class="metrics-list">
+        <div
+          v-for="metric in metrics"
+          :key="`metric-${metric.neuron.id}`"
+          class="metric-row"
+        >
+          <div class="metric-neuron">
+            <div class="metric-icon" :style="{ backgroundColor: metric.neuron.color }"></div>
+            <span class="metric-label">N{{ metric.neuron.id }}</span>
+          </div>
+          <span class="metric-value">{{ (metric.area * 100).toFixed(0) }}%</span>
+        </div>
+      </div>
+    </div>
     
-    <!-- Tooltip -->
+    <!-- Compact tooltip -->
     <div
       v-if="tooltip.visible"
       ref="tooltipRef"
-      class="absolute pointer-events-none z-20 bg-gray-900/95 text-white px-3 py-2 rounded-lg text-sm transition-all duration-200"
+      class="metrics-tooltip"
       :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
       v-html="tooltip.content"
     />
@@ -108,7 +124,7 @@ const metrics = computed(() => {
 // D3 scales
 const barXScale = computed(() => 
   d3.scaleBand()
-    .domain(metrics.value.map(m => m.neuron.id))
+    .domain(metrics.value.map(m => String(m.neuron.id)))
     .range([0, config.width])
     .padding(0.1)
 )
@@ -167,3 +183,190 @@ onMounted(() => {
   updateAxes()
 })
 </script>
+
+<style scoped>
+/* Compact Metrics Panel */
+.compact-metrics-panel {
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-primary));
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-size: 11px;
+  position: relative;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgb(var(--border-secondary));
+  background: rgb(var(--bg-primary));
+  border-radius: 6px 6px 0 0;
+}
+
+.panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgb(var(--text-primary));
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 10px;
+  gap: 6px;
+}
+
+.empty-text {
+  font-size: 10px;
+  color: rgb(var(--text-tertiary));
+}
+
+.metrics-content {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metrics-chart {
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+.metric-bar {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.metric-bar:hover {
+  opacity: 0.8;
+  stroke: rgba(0, 0, 0, 0.3);
+  stroke-width: 1;
+}
+
+.metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 6px;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+}
+
+.metric-row:hover {
+  background: rgb(var(--bg-tertiary));
+}
+
+.metric-neuron {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.metric-icon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.metric-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgb(var(--text-primary));
+}
+
+.metric-value {
+  font-size: 9px;
+  font-weight: 500;
+  color: rgb(var(--text-secondary));
+  min-width: 28px;
+  text-align: right;
+}
+
+.metrics-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 1.3;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+/* D3 axis styling */
+:deep(.y-axis) text,
+:deep(.x-axis) text {
+  font-size: 8px;
+  fill: rgb(var(--text-tertiary));
+}
+
+:deep(.y-axis) path,
+:deep(.x-axis) path,
+:deep(.y-axis) line,
+:deep(.x-axis) line {
+  stroke: rgb(var(--border-tertiary));
+  stroke-width: 1;
+}
+
+:deep(.y-axis) .tick text {
+  font-size: 7px;
+}
+
+:deep(.x-axis) .tick text {
+  font-size: 8px;
+}
+
+/* Custom scrollbar for metrics list */
+.metrics-list::-webkit-scrollbar {
+  width: 3px;
+}
+
+.metrics-list::-webkit-scrollbar-track {
+  background: rgb(var(--bg-tertiary));
+  border-radius: 2px;
+}
+
+.metrics-list::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-tertiary));
+  border-radius: 2px;
+}
+
+.metrics-list::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-primary));
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .metrics-content {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  
+  .metrics-list {
+    max-height: 80px;
+  }
+  
+  .metric-row {
+    padding: 2px 4px;
+  }
+}
+</style>

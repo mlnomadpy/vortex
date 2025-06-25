@@ -1,39 +1,39 @@
 <template>
-  <div class="absolute bottom-6 left-6 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-200 min-w-[200px]">
+  <div class="absolute bottom-6 left-6 glass-effect rounded-xl p-4 shadow-theme-medium border-theme-primary min-w-[200px]">
     <div class="grid grid-cols-1 gap-3">
       <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-gray-600">Accuracy</span>
+        <span class="text-sm font-medium text-theme-secondary">Accuracy</span>
         <span class="metric-value">{{ accuracy.toFixed(1) }}%</span>
       </div>
       <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-gray-600">Data Points</span>
+        <span class="text-sm font-medium text-theme-secondary">Data Points</span>
         <span class="metric-value">{{ dataPointsCount }}</span>
       </div>
       <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-gray-600">Neurons</span>
+        <span class="text-sm font-medium text-theme-secondary">Neurons</span>
         <span class="metric-value">{{ neuronsCount }}</span>
       </div>
       
       <!-- Additional metrics -->
-      <div v-if="showExtendedStats" class="border-t pt-3 space-y-2">
+      <div v-if="showExtendedStats" class="border-t border-theme-primary pt-3 space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-sm font-medium text-gray-600">Active Classes</span>
+          <span class="text-sm font-medium text-theme-secondary">Active Classes</span>
           <span class="metric-value">{{ activeClassesCount }}</span>
         </div>
         <div class="flex items-center justify-between">
-          <span class="text-sm font-medium text-gray-600">Grid Cells</span>
+          <span class="text-sm font-medium text-theme-secondary">Grid Cells</span>
           <span class="metric-value">{{ estimatedGridCells }}</span>
         </div>
         <div v-if="avgLoss !== null" class="flex items-center justify-between">
-          <span class="text-sm font-medium text-gray-600">Avg Loss</span>
-          <span class="metric-value">{{ avgLoss.toFixed(3) }}</span>
+          <span class="text-sm font-medium text-theme-secondary">Avg Loss</span>
+          <span class="metric-value text-orange-500">{{ avgLoss.toFixed(3) }}</span>
         </div>
       </div>
       
       <!-- Toggle for extended stats -->
       <button
         @click="showExtendedStats = !showExtendedStats"
-        class="text-xs text-blue-600 hover:text-blue-800 transition-colors mt-2"
+        class="text-xs text-blue-500 hover:text-blue-600 transition-colors mt-2"
       >
         {{ showExtendedStats ? 'Show Less' : 'Show More' }}
       </button>
@@ -71,6 +71,6 @@ const estimatedGridCells = computed(() => {
 
 <style scoped>
 .metric-value {
-  @apply text-lg font-bold text-blue-600;
+  @apply text-lg font-bold text-blue-500;
 }
 </style> 

@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import type { D3Grid } from '@/utils/d3Grid'
 
 export type UpdatePriority = 'immediate' | 'high' | 'normal' | 'low'
-export type UpdateType = 'neuron-add' | 'neuron-remove' | 'neuron-move' | 'neuron-color' | 'boundary-toggle' | 'metric-change' | 'data-change' | 'resize' | 'grid-size'
+export type UpdateType = 'neuron-add' | 'neuron-remove' | 'neuron-move' | 'neuron-color' | 'boundary-toggle' | 'metric-change' | 'data-change' | 'resize' | 'grid-size' | 'reinitialize'
 
 export interface GridUpdateRequest {
   id: string
@@ -43,7 +43,8 @@ export class GridUpdateService {
     'metric-change': { priority: 'immediate', batchable: false },
     'data-change': { priority: 'normal', batchable: true },
     'resize': { priority: 'immediate', batchable: false },
-    'grid-size': { priority: 'immediate', batchable: false }
+    'grid-size': { priority: 'immediate', batchable: false },
+    'reinitialize': { priority: 'immediate', batchable: false }
   }
 
   private registeredGrids: Map<string, D3Grid> = new Map()
@@ -223,6 +224,7 @@ export class GridUpdateService {
           
         case 'resize':
         case 'grid-size':
+        case 'reinitialize':
           grid.clearCache()
           break
       }
@@ -283,5 +285,8 @@ export const gridUpdates = {
     gridUpdateService.scheduleUpdate('resize', { oldSize, newSize }),
     
   gridSizeChanged: (oldSize: number, newSize: number) => 
-    gridUpdateService.scheduleUpdate('grid-size', { oldSize, newSize })
+    gridUpdateService.scheduleUpdate('grid-size', { oldSize, newSize }),
+    
+  reinitializeGrid: (reason?: string) => 
+    gridUpdateService.scheduleUpdate('reinitialize', { reason })
 } 

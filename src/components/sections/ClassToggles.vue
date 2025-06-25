@@ -1,32 +1,37 @@
 <template>
   <div 
     v-if="store.allClasses.length > 0"
-    class="flex flex-wrap gap-3 justify-center mb-6 p-4 glass-effect rounded-2xl"
+    class="class-toolbar mb-4"
   >
-    <button
-      v-for="classLabel in sortedClasses"
-      :key="classLabel"
-      @click="store.toggleClass(classLabel)"
-      :class="[
-        'class-toggle px-4 py-2 rounded-lg text-white font-semibold transition-all duration-300 cursor-pointer',
-        store.activeClasses.includes(classLabel) ? 'active scale-105 shadow-lg' : 'opacity-70 grayscale hover:scale-102'
-      ]"
-      :style="{ 
-        backgroundColor: getClassColor(classLabel),
-        boxShadow: store.activeClasses.includes(classLabel) ? `0 0 20px 2px ${getClassColor(classLabel)}40` : ''
-      }"
-    >
-      Class {{ classLabel }}
-      <span class="ml-2 text-xs opacity-75">
-        ({{ getClassCount(classLabel) }})
-      </span>
-    </button>
+    <div class="section-label">
+      <span>Classes</span>
+    </div>
+    <div class="class-buttons">
+      <button
+        v-for="classLabel in sortedClasses"
+        :key="classLabel"
+        @click="store.toggleClass(classLabel)"
+        :class="[
+          'class-btn',
+          store.activeClasses.includes(classLabel) ? 'active' : 'inactive'
+        ]"
+        :style="{ 
+          '--class-color': getClassColor(classLabel)
+        }"
+        :title="`Class ${classLabel} (${getClassCount(classLabel)} points)`"
+      >
+        <div class="class-indicator"></div>
+        <span class="class-label">{{ classLabel }}</span>
+        <span class="class-count">{{ getClassCount(classLabel) }}</span>
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
+import { getClassColor } from '@/utils/colors'
 
 const store = useNeuralNetworkStore()
 
@@ -34,36 +39,156 @@ const sortedClasses = computed(() =>
   [...store.allClasses].sort((a, b) => a - b)
 )
 
-function getClassColor(classLabel: number) {
-  return `hsl(${(classLabel * 360 / 10) % 360}, 70%, 60%)`
-}
-
 function getClassCount(classLabel: number) {
   return store.dataPoints.filter(point => point.label === classLabel).length
 }
 </script>
 
 <style scoped>
-/* Glass effect styles moved from global CSS */
-.glass-effect {
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transform: translateZ(0);
-  will-change: transform;
+/* Compact Class Toolbar */
+.class-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-primary));
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  min-height: 28px;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
-.class-toggle.active {
-  filter: brightness(100%);
-  transform: scale(1.05);
+.section-label {
+  font-size: 8px;
+  font-weight: 600;
+  color: rgb(var(--text-secondary));
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.class-toggle:not(.active) {
-  filter: brightness(60%) grayscale(30%);
-  opacity: 0.7;
+.class-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
-.class-toggle:hover {
-  transform: scale(1.02);
+.class-btn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  font-size: 8px;
+  font-weight: 500;
+  border: 1px solid rgb(var(--border-secondary));
+  border-radius: 2px;
+  background: rgb(var(--bg-primary));
+  color: rgb(var(--text-primary));
+  cursor: pointer;
+  transition: all 0.1s ease;
+  white-space: nowrap;
+  min-height: 18px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.class-btn:hover {
+  background: rgb(var(--bg-tertiary));
+  border-color: rgb(var(--border-tertiary));
+  transform: translateY(-1px);
+}
+
+.class-btn.active {
+  background: var(--class-color);
+  color: white;
+  border-color: var(--class-color);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+.class-btn.inactive {
+  opacity: 0.6;
+  filter: grayscale(50%);
+}
+
+.class-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--class-color);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.class-btn.active .class-indicator {
+  background: white;
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.class-label {
+  font-size: 7px;
+  font-weight: 600;
+}
+
+.class-count {
+  font-size: 6px;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+/* Custom scrollbar */
+.class-toolbar::-webkit-scrollbar {
+  height: 3px;
+}
+
+.class-toolbar::-webkit-scrollbar-track {
+  background: rgb(var(--bg-tertiary));
+  border-radius: 2px;
+}
+
+.class-toolbar::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-tertiary));
+  border-radius: 2px;
+}
+
+.class-toolbar::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-primary));
+}
+
+/* Keep single line on all screen sizes */
+@media (max-width: 768px) {
+  .class-toolbar {
+    gap: 4px;
+    padding: 2px 4px;
+    min-height: 24px;
+  }
+  
+  .class-buttons {
+    gap: 1px;
+  }
+  
+  .class-btn {
+    padding: 1px 3px;
+    min-height: 16px;
+  }
+  
+  .section-label {
+    font-size: 7px;
+  }
+  
+  .class-count {
+    display: none;
+  }
+  
+  .class-label {
+    font-size: 6px;
+  }
+  
+  .class-indicator {
+    width: 5px;
+    height: 5px;
+  }
 }
 </style>

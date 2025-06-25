@@ -4,10 +4,10 @@
     class="fixed top-4 left-4 bg-black/80 text-white p-3 rounded-lg text-xs font-mono z-50 min-w-[200px]"
   >
     <div class="flex items-center justify-between mb-2">
-      <h3 class="font-bold text-yellow-400">Grid Updates</h3>
+      <h3 class="font-bold text-yellow-500">Grid Updates</h3>
       <button 
         @click="showDebug = false"
-        class="text-gray-400 hover:text-white"
+        class="text-theme-tertiary hover:text-white"
       >
         ×
       </button>
@@ -21,41 +21,41 @@
       
       <div class="flex justify-between">
         <span>Processing:</span>
-        <span :class="stats.isProcessing ? 'text-orange-400' : 'text-green-400'">
+        <span :class="stats.isProcessing ? 'text-orange-500' : 'text-green-500'">
           {{ stats.isProcessing ? 'Yes' : 'No' }}
         </span>
       </div>
       
       <div class="flex justify-between">
         <span>Registered Grids:</span>
-        <span class="text-blue-400">{{ stats.registeredGrids }}</span>
+        <span class="text-blue-500">{{ stats.registeredGrids }}</span>
       </div>
       
       <div class="flex justify-between">
         <span>Last Update:</span>
-        <span class="text-gray-400">{{ lastUpdateText }}</span>
+        <span class="text-theme-tertiary">{{ lastUpdateText }}</span>
       </div>
       
-      <div v-if="recentUpdates.length > 0" class="border-t border-gray-600 pt-2 mt-2">
-        <div class="text-yellow-400 mb-1">Recent Updates:</div>
+      <div v-if="recentUpdates.length > 0" class="border-t border-theme-secondary pt-2 mt-2">
+        <div class="text-yellow-500 mb-1">Recent Updates:</div>
         <div class="max-h-24 overflow-y-auto space-y-1">
           <div 
             v-for="update in recentUpdates.slice(0, 5)" 
             :key="update.id"
-            class="text-xs text-gray-300"
+            class="text-xs text-theme-tertiary"
           >
-            <span class="text-cyan-400">{{ update.type }}</span>
-            <span v-if="update.metadata" class="text-gray-500">
+                    <span class="text-cyan-500">{{ update.type }}</span>
+        <span v-if="update.metadata" class="text-theme-tertiary">
               • {{ formatMetadata(update.metadata) }}
             </span>
           </div>
         </div>
       </div>
       
-      <div class="border-t border-gray-600 pt-2 mt-2">
+      <div class="border-t border-theme-secondary pt-2 mt-2">
         <button 
           @click="flushUpdates"
-          class="text-red-400 hover:text-red-300 text-xs"
+          class="text-red-500 hover:text-red-400 text-xs"
           :disabled="stats.queueSize === 0"
         >
           Flush Queue
@@ -87,9 +87,9 @@ const stats = computed(() => gridUpdateStats.value)
 
 const queueSizeColor = computed(() => {
   const size = stats.value.queueSize
-  if (size === 0) return 'text-green-400'
-  if (size < 5) return 'text-yellow-400'
-  return 'text-red-400'
+  if (size === 0) return 'text-green-500'
+  if (size < 5) return 'text-yellow-500'
+  return 'text-red-500'
 })
 
 const lastUpdateText = computed(() => {
@@ -184,15 +184,15 @@ onUnmounted(() => {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+        background: rgb(var(--bg-secondary) / 0.1);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+        background: rgb(var(--bg-secondary) / 0.3);
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+        background: rgb(var(--bg-secondary) / 0.5);
 }
 </style> 

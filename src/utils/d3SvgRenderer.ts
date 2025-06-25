@@ -1,6 +1,7 @@
 import * as d3 from 'd3'
 import type { GridCell } from './d3Grid'
 import type { DataPoint, Neuron } from '@/types'
+import { getClassColor } from '@/utils/colors'
 
 export interface RenderConfig {
   width: number
@@ -14,10 +15,10 @@ export interface RenderConfig {
  */
 export class D3SvgRenderer {
   private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>
-  private gridGroup: d3.Selection<SVGGElement, unknown, null, undefined>
-  private axesGroup: d3.Selection<SVGGElement, unknown, null, undefined>
-  private dataPointsGroup: d3.Selection<SVGGElement, unknown, null, undefined>
-  private neuronsGroup: d3.Selection<SVGGElement, unknown, null, undefined>
+  private gridGroup!: d3.Selection<SVGGElement, unknown, null, undefined>
+  private axesGroup!: d3.Selection<SVGGElement, unknown, null, undefined>
+  private dataPointsGroup!: d3.Selection<SVGGElement, unknown, null, undefined>
+  private neuronsGroup!: d3.Selection<SVGGElement, unknown, null, undefined>
 
   constructor(
     svgElement: SVGSVGElement,
@@ -227,8 +228,8 @@ export class D3SvgRenderer {
   ): void {
     const {
       radius = 6,
-      getColor = (d) => `hsl(${(d.label * 360 / 10) % 360}, 70%, 60%)`,
-      getStroke = (d) => `hsl(${(d.label * 360 / 10) % 360}, 70%, 40%)`,
+      getColor = (d) => getClassColor(d.label, 70, 60),
+      getStroke = (d) => getClassColor(d.label, 70, 40),
       animated = true,
       onHover,
       onClick

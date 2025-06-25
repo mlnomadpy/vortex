@@ -1,5 +1,5 @@
 <template>
-  <div id="app" class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+  <div id="app" class="min-h-screen">
     <!-- Background particles effect -->
     <ParticlesBackground />
     
@@ -16,8 +16,10 @@ import { onMounted } from 'vue'
 import ParticlesBackground from '@/components/ui/ParticlesBackground.vue'
 import NotificationContainer from '@/components/ui/NotificationContainer.vue'
 import { useNotificationStore } from '@/stores/notification'
+import { useTheme } from '@/composables/useTheme'
 
 const notificationStore = useNotificationStore()
+const { initializeTheme } = useTheme()
 
 // Helper function to wait for MathJax to be ready
 const waitForMathJax = (): Promise<void> => {
@@ -34,6 +36,9 @@ const waitForMathJax = (): Promise<void> => {
 }
 
 onMounted(async () => {
+  // Initialize theme system
+  initializeTheme()
+  
   // Initialize MathJax when it's ready
   try {
     await waitForMathJax()

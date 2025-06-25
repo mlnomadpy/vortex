@@ -1,25 +1,25 @@
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    
-    <!-- Data Controls -->
-    <div class="control-card p-6">
-      <div class="flex items-center mb-4">
-        <DatabaseIcon class="w-6 h-6 text-blue-600 mr-3" />
-        <h3 class="font-bold text-lg text-gray-800">Data Controls</h3>
+  <!-- Compact Toolbar - Photoshop Style -->
+  <div class="compact-toolbar mb-4">
+    <!-- Data Section -->
+    <div class="toolbar-section">
+      <div class="section-label">
+        <DatabaseIcon class="w-4 h-4" />
+        <span>Data</span>
       </div>
-      <div class="space-y-3">
+      <div class="controls-row">
         <FileUpload
           accept=".csv"
           @file-selected="handleFileSelected"
-          class="w-full"
+          class="compact-upload"
         >
           <template #default="{ isDragging }">
             <div :class="[
-              'modern-button px-4 py-3 text-sm font-semibold cursor-pointer flex items-center justify-center w-full transition-all',
-              isDragging ? 'bg-blue-700' : ''
+              'compact-btn upload-btn',
+              isDragging ? 'dragging' : ''
             ]">
-              <ArrowUpTrayIcon class="w-5 h-5 mr-2" />
-              {{ selectedFileName || 'Choose CSV File' }}
+              <ArrowUpTrayIcon class="w-3 h-3" />
+              <span class="btn-text">{{ selectedFileName || 'CSV' }}</span>
             </div>
           </template>
         </FileUpload>
@@ -27,125 +27,132 @@
         <button 
           @click="loadData"
           :disabled="!selectedFile || isLoading"
-          class="modern-button px-4 py-3 text-sm font-semibold w-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+          class="compact-btn primary"
+          title="Load Data"
         >
           <component 
             :is="isLoading ? 'div' : PlayIcon" 
-            :class="isLoading ? 'loading-spinner w-5 h-5 mr-2' : 'w-5 h-5 mr-2'"
+            :class="isLoading ? 'loading-spinner w-3 h-3' : 'w-3 h-3'"
           />
-          {{ isLoading ? 'Loading...' : 'Load Data' }}
+          <span class="btn-text">Load</span>
         </button>
         
         <button 
           @click="exportData"
           :disabled="store.dataPoints.length === 0"
-          class="modern-button px-4 py-3 text-sm font-semibold w-full bg-gray-600 hover:bg-gray-700 flex items-center justify-center disabled:opacity-50"
+          class="compact-btn secondary"
+          title="Export Data"
         >
-          <ArrowDownTrayIcon class="w-5 h-5 mr-2" />
-          Export Data
+          <ArrowDownTrayIcon class="w-3 h-3" />
+          <span class="btn-text">Export</span>
         </button>
         
         <a 
           href="https://colab.research.google.com/drive/1o9eogdqXhd2iRZnworQA_2oIwSuX8WsN?usp=sharing" 
           target="_blank" 
-          class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center transition-colors"
+          class="compact-btn link"
+          title="Generate Your Own Data"
         >
-          <ArrowTopRightOnSquareIcon class="w-4 h-4 mr-2" />
-          Generate Your Own Data
+          <ArrowTopRightOnSquareIcon class="w-3 h-3" />
+          <span class="btn-text">Generate</span>
         </a>
       </div>
     </div>
 
-    <!-- Neuron Controls -->
-    <div class="control-card p-6">
-      <div class="flex items-center mb-4">
-        <CpuChipIcon class="w-6 h-6 text-green-600 mr-3" />
-        <h3 class="font-bold text-lg text-gray-800">Neuron Controls</h3>
-      </div>
-      <div class="space-y-3">
-        <div class="flex gap-2">
-          <FileUpload
-            accept=".csv"
-            @file-selected="handleNeuronFileSelected"
-            class="flex-1"
-          >
-            <template #default>
-              <div class="modern-button px-3 py-2 text-sm font-semibold cursor-pointer flex items-center justify-center w-full bg-green-600 hover:bg-green-700">
-                <DocumentArrowUpIcon class="w-4 h-4 mr-1" />
-                Load
-              </div>
-            </template>
-          </FileUpload>
-          
-          <button 
-            @click="saveNeurons"
-            :disabled="store.neurons.length === 0"
-            class="modern-button px-3 py-2 text-sm font-semibold bg-green-600 hover:bg-green-700 flex items-center disabled:opacity-50"
-          >
-            <DocumentArrowDownIcon class="w-4 h-4 mr-1" />
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- Divider -->
+    <div class="toolbar-divider"></div>
 
-    <!-- Optimization -->
-    <div class="control-card p-6">
-      <div class="flex items-center mb-4">
-        <CogIcon class="w-6 h-6 text-purple-600 mr-3" />
-        <h3 class="font-bold text-lg text-gray-800">Optimization</h3>
+    <!-- Neurons Section -->
+    <div class="toolbar-section">
+      <div class="section-label">
+        <CpuChipIcon class="w-4 h-4" />
+        <span>Neurons</span>
       </div>
-      <div class="space-y-3">
-        <button 
-          @click="runGradientDescent"
-          :disabled="store.neurons.length === 0 || store.filteredDataPoints.length === 0"
-          class="modern-button px-4 py-3 text-sm font-semibold w-full bg-purple-600 hover:bg-purple-700 flex items-center justify-center disabled:opacity-50"
+      <div class="controls-row">
+        <FileUpload
+          accept=".csv"
+          @file-selected="handleNeuronFileSelected"
+          class="compact-upload"
         >
-          <RocketLaunchIcon class="w-5 h-5 mr-2" />
-          Run Gradient Descent
+          <template #default>
+            <div class="compact-btn success">
+              <DocumentArrowUpIcon class="w-3 h-3" />
+              <span class="btn-text">Load</span>
+            </div>
+          </template>
+        </FileUpload>
+        
+        <button 
+          @click="saveNeurons"
+          :disabled="store.neurons.length === 0"
+          class="compact-btn success"
+          title="Save Neurons"
+        >
+          <DocumentArrowDownIcon class="w-3 h-3" />
+          <span class="btn-text">Save</span>
         </button>
         
         <button 
           @click="store.removeLastNeuron()"
           :disabled="store.neurons.length === 0"
-          class="modern-button px-4 py-3 text-sm font-semibold w-full bg-red-600 hover:bg-red-700 flex items-center justify-center disabled:opacity-50"
+          class="compact-btn error"
+          title="Remove Last Neuron"
         >
-          <TrashIcon class="w-5 h-5 mr-2" />
-          Remove Last Neuron
+          <TrashIcon class="w-3 h-3" />
+          <span class="btn-text">Remove</span>
         </button>
       </div>
     </div>
 
-    <!-- Settings -->
-    <div class="control-card p-6">
-      <div class="flex items-center mb-4">
-        <AdjustmentsHorizontalIcon class="w-6 h-6 text-indigo-600 mr-3" />
-        <h3 class="font-bold text-lg text-gray-800">Settings</h3>
+    <!-- Divider -->
+    <div class="toolbar-divider"></div>
+
+    <!-- Optimization Section -->
+    <div class="toolbar-section">
+      <div class="section-label">
+        <CogIcon class="w-4 h-4" />
+        <span>Optimization</span>
       </div>
-      <div class="space-y-3">
-        <div>
-          <label for="similarityMetric" class="block text-sm font-semibold text-gray-700 mb-2">
-            Similarity Metric
-          </label>
+      <div class="controls-row">
+        <button 
+          @click="runGradientDescent"
+          :disabled="store.neurons.length === 0 || store.filteredDataPoints.length === 0"
+          class="compact-btn warning"
+          title="Run Gradient Descent"
+        >
+          <RocketLaunchIcon class="w-3 h-3" />
+          <span class="btn-text">Optimize</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="toolbar-divider"></div>
+
+    <!-- Settings Section -->
+    <div class="toolbar-section">
+      <div class="section-label">
+        <AdjustmentsHorizontalIcon class="w-4 h-4" />
+        <span>Settings</span>
+      </div>
+      <div class="controls-row">
+        <div class="compact-select-group">
+          <label class="select-label">Similarity</label>
           <select 
-            id="similarityMetric" 
             v-model="store.similarityMetric"
-            class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="compact-select"
           >
             <option value="dotProduct">Dot Product</option>
-            <option value="euclidean">Euclidean Distance</option>
+            <option value="euclidean">Euclidean</option>
             <option value="myProduct">My Product</option>
           </select>
         </div>
         
-        <div>
-          <label for="activationFunction" class="block text-sm font-semibold text-gray-700 mb-2">
-            Activation Function
-          </label>
+        <div class="compact-select-group">
+          <label class="select-label">Activation</label>
           <select 
-            id="activationFunction" 
             v-model="store.activationFunction"
-            class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="compact-select"
           >
             <option value="none">None</option>
             <option value="softmax">Softmax</option>
@@ -299,61 +306,254 @@ function runGradientDescent() {
 </script>
 
 <style scoped>
-/* Control card styles moved from global CSS */
-.control-card {
-  background: linear-gradient(to bottom right, rgb(255 255 255), rgb(249 250 251));
-  border: 1px solid rgba(229 231 235, 0.8);
-  border-radius: 1rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
-              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: translateZ(0);
-  will-change: transform;
+/* Compact Toolbar - Photoshop Style */
+.compact-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-primary));
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  min-height: 28px;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
-.control-card:hover {
-  transform: translateY(-2px) translateZ(0);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
 }
 
-/* Modern button styles moved from global CSS */
-.modern-button {
-  background: linear-gradient(to right, rgb(37 99 235), rgb(79 70 229));
-  border: 0;
-  border-radius: 0.75rem;
-  color: white;
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 8px;
   font-weight: 600;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: translateZ(0);
-  will-change: transform;
+  color: rgb(var(--text-secondary));
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
-.modern-button:hover {
-  transform: translateY(-1px) translateZ(0);
-  box-shadow: 0 10px 25px -3px rgba(59, 130, 246, 0.25);
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
-.modern-button:active {
-  transform: translateY(0) translateZ(0);
-  transition-duration: 0.05s;
+.compact-btn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  font-size: 8px;
+  font-weight: 500;
+  border: 1px solid rgb(var(--border-secondary));
+  border-radius: 2px;
+  background: rgb(var(--bg-primary));
+  color: rgb(var(--text-primary));
+  cursor: pointer;
+  transition: all 0.1s ease;
+  white-space: nowrap;
+  min-height: 18px;
+  flex-shrink: 0;
 }
 
-.modern-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transform: translateX(-100%) translateZ(0);
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+.compact-btn:hover {
+  background: rgb(var(--bg-tertiary));
+  border-color: rgb(var(--border-tertiary));
 }
 
-.modern-button:hover::before {
-  transform: translateX(100%) translateZ(0);
+.compact-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.compact-btn.primary {
+  background: rgb(var(--color-primary));
+  color: white;
+  border-color: rgb(var(--color-primary));
+}
+
+.compact-btn.primary:hover:not(:disabled) {
+  background: rgb(var(--color-primary-hover));
+  border-color: rgb(var(--color-primary-hover));
+}
+
+.compact-btn.secondary {
+  background: rgb(var(--color-secondary));
+  color: white;
+  border-color: rgb(var(--color-secondary));
+}
+
+.compact-btn.secondary:hover:not(:disabled) {
+  background: rgb(var(--color-secondary-hover));
+  border-color: rgb(var(--color-secondary-hover));
+}
+
+.compact-btn.success {
+  background: rgb(var(--color-success));
+  color: white;
+  border-color: rgb(var(--color-success));
+}
+
+.compact-btn.success:hover:not(:disabled) {
+  background: rgb(var(--color-success-hover));
+  border-color: rgb(var(--color-success-hover));
+}
+
+.compact-btn.warning {
+  background: rgb(var(--color-warning));
+  color: white;
+  border-color: rgb(var(--color-warning));
+}
+
+.compact-btn.warning:hover:not(:disabled) {
+  background: rgb(var(--color-warning-hover));
+  border-color: rgb(var(--color-warning-hover));
+}
+
+.compact-btn.error {
+  background: rgb(var(--color-error));
+  color: white;
+  border-color: rgb(var(--color-error));
+}
+
+.compact-btn.error:hover:not(:disabled) {
+  background: rgb(var(--color-error-hover));
+  border-color: rgb(var(--color-error-hover));
+}
+
+.compact-btn.link {
+  background: transparent;
+  color: rgb(var(--color-primary));
+  border-color: rgb(var(--color-primary));
+}
+
+.compact-btn.link:hover {
+  background: rgb(var(--color-primary) / 0.1);
+}
+
+.upload-btn.dragging {
+  background: rgb(var(--color-primary) / 0.1);
+  border-color: rgb(var(--color-primary));
+  color: rgb(var(--color-primary));
+}
+
+.btn-text {
+  font-size: 7px;
+  font-weight: 500;
+}
+
+.compact-select-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.select-label {
+  font-size: 7px;
+  font-weight: 500;
+  color: rgb(var(--text-tertiary));
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.compact-select {
+  padding: 1px 3px;
+  font-size: 7px;
+  border: 1px solid rgb(var(--border-secondary));
+  border-radius: 2px;
+  background: rgb(var(--bg-primary));
+  color: rgb(var(--text-primary));
+  cursor: pointer;
+  min-width: 50px;
+}
+
+.compact-select:focus {
+  outline: none;
+  border-color: rgb(var(--color-primary));
+  box-shadow: 0 0 0 1px rgb(var(--color-primary) / 0.2);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 16px;
+  background: rgb(var(--border-secondary));
+  margin: 0 1px;
+  flex-shrink: 0;
+}
+
+.loading-spinner {
+  border: 1px solid transparent;
+  border-top: 1px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Custom scrollbar for horizontal overflow */
+.compact-toolbar::-webkit-scrollbar {
+  height: 3px;
+}
+
+.compact-toolbar::-webkit-scrollbar-track {
+  background: rgb(var(--bg-tertiary));
+  border-radius: 2px;
+}
+
+.compact-toolbar::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-tertiary));
+  border-radius: 2px;
+}
+
+.compact-toolbar::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-primary));
+}
+
+/* Remove responsive wrapping - keep single line always */
+@media (max-width: 768px) {
+  .compact-toolbar {
+    gap: 4px;
+    padding: 2px 4px;
+    min-height: 24px;
+  }
+  
+  .toolbar-section {
+    gap: 2px;
+  }
+  
+  .compact-btn {
+    padding: 1px 3px;
+    min-height: 16px;
+  }
+  
+  .btn-text {
+    font-size: 6px;
+  }
+  
+  .section-label {
+    font-size: 7px;
+  }
+  
+  .compact-select {
+    min-width: 40px;
+    font-size: 6px;
+  }
+  
+  .toolbar-divider {
+    height: 12px;
+  }
 }
 </style>

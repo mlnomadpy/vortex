@@ -5,6 +5,7 @@ import { D3Grid, createD3Grid, gridUtils, type GridConfig, type DecisionBoundary
 import { D3SvgRenderer, createD3SvgRenderer, renderUtils, type RenderConfig } from '@/utils/d3SvgRenderer'
 import { gridUpdateService, gridUpdates } from '@/services/gridUpdateService'
 import type { DataPoint, Neuron } from '@/types'
+import { getClassColor } from '@/utils/colors'
 
 export interface NeuralCanvasConfig {
   width: number
@@ -47,26 +48,17 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
   // Computed cell size using store's gridSize setting
   const cellSize = computed(() => {
     // gridSize represents the number of cells per dimension (25 = 25x25 grid)
-    // Calculate cell size by dividing canvas dimensions by number of cells
+    // Calculate actual cell size by dividing canvas dimensions by number of cells
     const gridCellCount = store.gridSize
     const { width, height } = canvasConfig.value
     
-    // Use the smaller dimension to ensure square cells
-    const canvasSize = Math.min(width, height)
-    const calculatedCellSize = canvasSize / gridCellCount
+    // Calculate cell size for each dimension (cells will be rectangular if canvas isn't square)
+    const cellWidth = width / gridCellCount
+    const cellHeight = height / gridCellCount
     
-    // Apply bounds to ensure usability and performance
-    const maxCellSize = canvasSize / 10 // At least 10 cells minimum
-    const minCellSize = 3 // Minimum visible cell size
-    
-    // Clamp to sensible bounds
-    const clampedSize = Math.max(minCellSize, Math.min(maxCellSize, calculatedCellSize))
-    
-    // Grid will be gridSize x gridSize cells
-    // At gridSize=25 on 600x600 canvas: 25x25 grid with 24px cells
-    // At gridSize=50 on 600x600 canvas: 50x50 grid with 12px cells  
-    // At gridSize=100 on 600x600 canvas: 100x100 grid with 6px cells
-    return clampedSize
+    // Return the smaller dimension to ensure all cells fit within the canvas
+    // This will be used by the renderer for consistent sizing
+    return Math.min(cellWidth, cellHeight)
   })
 
   // Grid configuration
@@ -74,6 +66,7 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
     width: canvasConfig.value.width,
     height: canvasConfig.value.height,
     cellSize: cellSize.value,
+    gridSize: store.gridSize, // Pass the actual grid size (number of cells per dimension)
     xDomain: [store.coordinateRanges.xMin, store.coordinateRanges.xMax],
     yDomain: [store.coordinateRanges.yMin, store.coordinateRanges.yMax]
   }))
@@ -280,12 +273,12 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
       const prediction = store.getPrediction(point.x, point.y)
       return prediction.winningNeuron ? prediction.winningNeuron.color : '#999999'
     } else {
-      return `hsl(${(point.label * 360 / 10) % 360}, 70%, 60%)`
+      return getClassColor(point.label, 70, 60)
     }
   }
 
   function getDataPointStroke(point: DataPoint): string {
-    return `hsl(${(point.label * 360 / 10) % 360}, 70%, 40%)`
+    return getClassColor(point.label, 70, 40)
   }
 
   function showTooltip(event: MouseEvent, content: string): void {
@@ -414,12 +407,66 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
     throttledRender()
   }
 
+  /**
+   * Completely reinitialize the grid system from scratch
+   */
+  function reinitializeGrid(): void {
+    if (!canvasRef.value) return
+
+    console.log('Performing complete grid reinitialization')
+    
+    // Notify user of reinitialization
+    notificationStore.addNotification({
+      message: 'Reinitializing grid and recalculating decision boundaries...',
+      type: 'info',
+      duration: 2000
+    })
+    
+    // Clear all existing state
+    if (d3Renderer) {
+      d3Renderer.clear()
+    }
+    
+    // Unregister from grid update service temporarily
+    gridUpdateService.unregisterGrid(gridId)
+    
+    // Create fresh D3 instances
+    d3Grid = createD3Grid(gridConfig.value)
+    d3Renderer = createD3SvgRenderer(canvasRef.value, renderConfig.value)
+    
+    // Create new throttled render function
+    throttledRender = renderUtils.createDebouncedRender(render, 50)
+    
+    // Re-register with grid update service
+    gridUpdateService.registerGrid(gridId, d3Grid, throttledRender)
+    
+    // Force immediate render with fresh state
+    render()
+    
+    console.log('Grid reinitialization complete')
+    
+    // Notify completion
+    setTimeout(() => {
+      notificationStore.addNotification({
+        message: 'Grid reinitialization complete!',
+        type: 'success',
+        duration: 1500
+      })
+    }, 100)
+  }
+
   // Watchers for reactive updates using grid update service
   watch(
     () => store.showBoundaries,
     (newValue, oldValue) => {
       if (newValue !== oldValue) {
-        gridUpdates.boundariesToggled(newValue)
+        if (newValue) {
+          // When boundaries are turned ON, completely reinitialize the grid
+          reinitializeGrid()
+        } else {
+          // When boundaries are turned OFF, just use the normal toggle
+          gridUpdates.boundariesToggled(newValue)
+        }
       }
     }
   )

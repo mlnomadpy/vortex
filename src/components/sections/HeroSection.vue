@@ -10,11 +10,11 @@
       Neural Network Playground
     </h1>
     
-    <h2 class="text-2xl font-semibold text-gray-700 mb-4 animate-fade-in" style="animation-delay: 0.1s;">
+    <h2 class="text-2xl font-semibold text-theme-secondary mb-4 animate-fade-in" style="animation-delay: 0.1s;">
       Classify Your Own Dataset
     </h2>
     
-    <p class="text-lg text-gray-600 max-w-4xl mx-auto leading-relaxed animate-fade-in" style="animation-delay: 0.2s;">
+    <p class="text-lg text-theme-secondary max-w-4xl mx-auto leading-relaxed animate-fade-in" style="animation-delay: 0.2s;">
       🚀 Upload your dataset (CSV with x, y, label), then interactively build a neural network. 
       🎯 Click on the canvas to add neurons, optimize using gradient descent, and explore how different 
       settings affect classification. 📊 Visualize the loss landscape for each neuron in real-time.
@@ -22,21 +22,21 @@
     
     <!-- Quick Stats -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 max-w-2xl mx-auto animate-fade-in" style="animation-delay: 0.3s;">
-      <div class="stats-card bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-        <div class="text-2xl font-bold text-blue-600">{{ dataPointCount }}</div>
-        <div class="text-sm text-gray-600">Data Points</div>
+      <div class="stats-card glass-effect rounded-xl p-4">
+        <div class="text-2xl font-bold text-blue-500">{{ dataPointCount }}</div>
+        <div class="text-sm text-theme-secondary">Data Points</div>
       </div>
-      <div class="stats-card bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-        <div class="text-2xl font-bold text-indigo-600">{{ neuronCount }}</div>
-        <div class="text-sm text-gray-600">Neurons</div>
+      <div class="stats-card glass-effect rounded-xl p-4">
+        <div class="text-2xl font-bold text-indigo-500">{{ neuronCount }}</div>
+        <div class="text-sm text-theme-secondary">Neurons</div>
       </div>
-      <div class="stats-card bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-        <div class="text-2xl font-bold text-purple-600">{{ classCount }}</div>
-        <div class="text-sm text-gray-600">Classes</div>
+      <div class="stats-card glass-effect rounded-xl p-4">
+        <div class="text-2xl font-bold text-purple-500">{{ classCount }}</div>
+        <div class="text-sm text-theme-secondary">Classes</div>
       </div>
-      <div class="stats-card bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-        <div class="text-2xl font-bold text-green-600">{{ accuracy }}%</div>
-        <div class="text-sm text-gray-600">Accuracy</div>
+      <div class="stats-card glass-effect rounded-xl p-4">
+        <div class="text-2xl font-bold text-green-500">{{ accuracy }}%</div>
+        <div class="text-sm text-theme-secondary">Accuracy</div>
       </div>
     </div>
   </section>
@@ -64,7 +64,7 @@ const accuracy = computed(() => store.accuracy.toFixed(1))
 
 .stats-card:hover {
   transform: translateY(-2px) translateZ(0);
-  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-light), var(--shadow-medium);
 }
 
 /* Performance optimization for reduced motion */

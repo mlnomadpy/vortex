@@ -1,74 +1,49 @@
 <template>
   <div class="control-card p-6 relative overflow-hidden">
-    <!-- Click Instructions -->
-    <div class="absolute top-4 right-4 z-10">
-      <div class="flex items-center space-x-2 text-sm text-gray-600 bg-white/90 px-3 py-1 rounded-full">
-        <CursorArrowRaysIcon class="w-4 h-4" />
-        <span>Click to add neurons</span>
-      </div>
-    </div>
+    <!-- Interactive Canvas -->
+    <InteractiveCanvas
+      ref="canvasComponent"
+      :width="600"
+      :height="600"
+      :fullscreen="props.fullscreen"
+      :show-instructions="true"
+    />
     
-    <!-- SVG Canvas -->
-    <svg
-      ref="canvasRef"
-      :width="canvasConfig.width"
-      :height="canvasConfig.height"
-      class="neural-canvas border border-gray-200 rounded-lg cursor-crosshair"
-      style="max-width: 100%; height: auto;"
-      @click="handleCanvasClick"
-      @mouseleave="hideTooltip"
-    >
-      <!-- Canvas content is rendered by D3 -->
-    </svg>
-
     <!-- Stats Card -->
     <StatsCard
       :accuracy="store.accuracy"
       :data-points-count="store.filteredDataPoints.length"
       :neurons-count="store.neurons.length"
       :active-classes-count="store.activeClasses.length"
-      :canvas-width="canvasConfig.width"
-      :canvas-height="canvasConfig.height"
-      :cell-size="cellSize"
+      :canvas-width="canvasComponent?.canvasConfig?.width || 600"
+      :canvas-height="canvasComponent?.canvasConfig?.height || 600"
+      :cell-size="canvasComponent?.cellSize || 0"
       :avg-loss="avgLoss"
     />
 
     <!-- Neuron Management Panels -->
     <NeuronManagement
+      v-if="canvasComponent"
       :neurons="store.neurons"
-      :selected-neuron="selectedNeuron"
+      :selected-neuron="canvasComponent.selectedNeuron"
       :coordinate-ranges="store.coordinateRanges"
-      :get-controlled-area="getControlledArea"
-      :get-average-score="getAverageScore"
+      :get-controlled-area="canvasComponent.getControlledArea"
+      :get-average-score="canvasComponent.getAverageScore"
       @select="selectNeuron"
-      @close="selectedNeuron = null"
-      @update-position="updateNeuronPosition"
-      @update-color="updateNeuronColor"
-      @remove="removeNeuron"
+      @close="() => canvasComponent!.selectedNeuron = null"
+      @update-position="canvasComponent.updateNeuronPosition"
+      @update-color="canvasComponent.updateNeuronColor"
+      @remove="canvasComponent.removeNeuron"
     />
-    
-    <!-- Tooltip -->
-    <CanvasTooltip
-      :visible="tooltip.visible"
-      :x="tooltip.x"
-      :y="tooltip.y"
-      :content="tooltip.content"
-    />
-    
-    <!-- Debug Panel (only in development) -->
-    <GridUpdateDebug v-if="isDevelopment" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { CursorArrowRaysIcon } from '@/components/ui/icons'
+import { computed, ref } from 'vue'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
-import { useNeuralCanvas } from '@/composables/useNeuralCanvas'
 import StatsCard from './StatsCard.vue'
 import NeuronManagement from './NeuronManagement.vue'
-import CanvasTooltip from './CanvasTooltip.vue'
-import GridUpdateDebug from './GridUpdateDebug.vue'
+import InteractiveCanvas from './InteractiveCanvas.vue'
 import type { Neuron } from '@/types'
 
 interface Props {
@@ -78,25 +53,8 @@ interface Props {
 const props = defineProps<Props>()
 const store = useNeuralNetworkStore()
 
-// Use the neural canvas composable
-const {
-  canvasRef,
-  selectedNeuron,
-  tooltip,
-  canvasConfig,
-  cellSize,
-  handleCanvasClick,
-  hideTooltip,
-  updateNeuronPosition,
-  updateNeuronColor,
-  removeNeuron,
-  getControlledArea,
-  getAverageScore
-} = useNeuralCanvas({
-  width: 600,
-  height: 600,
-  fullscreen: props.fullscreen
-})
+// Reference to the interactive canvas component
+const canvasComponent = ref<InstanceType<typeof InteractiveCanvas> | null>(null)
 
 // Computed average loss for stats
 const avgLoss = computed(() => {
@@ -106,56 +64,15 @@ const avgLoss = computed(() => {
   return store.computeLoss(store.filteredDataPoints)
 })
 
-// Development mode check
-const isDevelopment = computed(() => process.env.NODE_ENV === 'development')
-
 // Neuron selection
 function selectNeuron(neuron: Neuron) {
-  selectedNeuron.value = neuron
-  store.selectedNeuronForLandscape = neuron
+  if (canvasComponent.value) {
+    canvasComponent.value.selectedNeuron = neuron
+    store.selectedNeuronForLandscape = neuron
+  }
 }
 </script>
 
 <style scoped>
-.neural-canvas {
-  transition: all 0.2s ease;
-}
-
-.neural-canvas:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Ensure D3 rendered elements have proper styles */
-:deep(.grid-cell) {
-  transition: stroke 0.1s ease-out, stroke-width 0.1s ease-out;
-}
-
-:deep(.grid-cell:hover) {
-  stroke: rgb(156 163 175);
-  stroke-width: 2;
-}
-
-:deep(.data-point) {
-  opacity: 0.85;
-  cursor: pointer;
-  transition: stroke-width 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-              filter 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-:deep(.data-point:hover) {
-  stroke-width: 4;
-  filter: brightness(1.1);
-  transform: scale(1.05);
-}
-
-:deep(.neuron) {
-  cursor: pointer;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-  transition: filter 0.2s ease;
-}
-
-:deep(.neuron:hover) {
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
-}
+/* Styles are now handled by InteractiveCanvas component */
 </style>

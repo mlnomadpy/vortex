@@ -5,10 +5,10 @@
     <main class="container mx-auto px-6 py-8 max-w-7xl">
       <div class="main-container p-8">
         
-        <div class="text-center mb-8">
-          <h1 class="text-4xl font-bold text-gray-900 mb-4">Neural Network Playground</h1>
-          <p class="text-lg text-gray-600">Experiment freely with neural network configurations</p>
-        </div>
+            <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-theme-primary mb-4">Neural Network Playground</h1>
+      <p class="text-lg text-theme-secondary">Experiment freely with neural network configurations</p>
+    </div>
         
         <!-- Enhanced Controls for Playground -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
@@ -18,7 +18,7 @@
           <div>
             <!-- Quick presets -->
             <div class="control-card p-6">
-              <h3 class="font-bold text-lg text-gray-800 mb-4">Quick Presets</h3>
+              <h3 class="font-bold text-lg text-theme-primary mb-4">Quick Presets</h3>
               <div class="space-y-2">
                 <button 
                   @click="loadPreset('spiral')"
@@ -57,23 +57,23 @@
             
             <!-- Additional playground controls -->
             <div class="control-card p-6">
-              <h3 class="font-bold text-lg text-gray-800 mb-4">Experiments</h3>
+              <h3 class="font-bold text-lg text-theme-primary mb-4">Experiments</h3>
               <div class="space-y-3">
                 <button 
                   @click="runExperiment('noise')"
-                  class="modern-button px-4 py-2 text-sm w-full bg-yellow-600 hover:bg-yellow-700"
+                  class="modern-button px-4 py-2 text-sm w-full btn-warning"
                 >
                   Add Noise
                 </button>
                 <button 
                   @click="runExperiment('shuffle')"
-                  class="modern-button px-4 py-2 text-sm w-full bg-orange-600 hover:bg-orange-700"
+                  class="modern-button px-4 py-2 text-sm w-full btn-warning"
                 >
                   Shuffle Labels
                 </button>
                 <button 
                   @click="runExperiment('cluster')"
-                  class="modern-button px-4 py-2 text-sm w-full bg-teal-600 hover:bg-teal-700"
+                  class="modern-button px-4 py-2 text-sm w-full btn-success"
                 >
                   Auto-cluster
                 </button>
@@ -244,12 +244,12 @@ function autoCluster() {
 </script>
 
 <style scoped>
-/* Main container styles moved from global CSS */
+/* Main container styles with theme support */
 .main-container {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--viz-overlay);
   backdrop-filter: blur(24px);
   border-radius: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-heavy);
   transform: translateZ(0);
   will-change: transform;
 }

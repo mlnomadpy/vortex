@@ -5,6 +5,7 @@ export interface GridConfig {
   width: number
   height: number
   cellSize: number
+  gridSize?: number // Number of cells per dimension (optional, takes precedence over cellSize)
   xDomain: [number, number]
   yDomain: [number, number]
 }
@@ -73,21 +74,34 @@ export class D3Grid {
    * Returns an array of grid cells with world coordinates
    */
   generateGrid(): GridCell[] {
-    const { width, height, cellSize } = this.config
+    const { width, height, cellSize, gridSize } = this.config
     const cells: GridCell[] = []
 
-    // Calculate number of cells that fit in each dimension
-    const numCellsX = Math.ceil(width / cellSize)
-    const numCellsY = Math.ceil(height / cellSize)
+    let numCellsX: number
+    let numCellsY: number
+
+    if (gridSize !== undefined) {
+      // Use explicit grid size (number of cells per dimension)
+      numCellsX = gridSize
+      numCellsY = gridSize
+    } else {
+      // Fallback to calculating based on cell size
+      numCellsX = Math.ceil(width / cellSize)
+      numCellsY = Math.ceil(height / cellSize)
+    }
+
+    // Calculate actual cell size to fit exactly in the canvas
+    const actualCellWidth = width / numCellsX
+    const actualCellHeight = height / numCellsY
 
     for (let i = 0; i < numCellsX; i++) {
       for (let j = 0; j < numCellsY; j++) {
-        const x = i * cellSize
-        const y = j * cellSize
+        const x = i * actualCellWidth
+        const y = j * actualCellHeight
         
         // Convert to world coordinates for the center of the cell
-        const worldX = this.xScale.invert(x + cellSize / 2)
-        const worldY = this.yScale.invert(y + cellSize / 2)
+        const worldX = this.xScale.invert(x + actualCellWidth / 2)
+        const worldY = this.yScale.invert(y + actualCellHeight / 2)
 
         cells.push({
           x,

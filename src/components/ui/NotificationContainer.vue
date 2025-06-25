@@ -47,13 +47,13 @@ function notificationClasses(type: string) {
   
   switch (type) {
     case 'success':
-      return `${baseClasses} bg-green-500 border-green-400`
+      return `${baseClasses} btn-success`
     case 'error':
-      return `${baseClasses} bg-red-500 border-red-400`
+      return `${baseClasses} btn-error`
     case 'warning':
-      return `${baseClasses} bg-yellow-500 border-yellow-400`
+      return `${baseClasses} btn-warning`
     default:
-      return `${baseClasses} bg-blue-500 border-blue-400`
+      return `${baseClasses} btn-primary`
   }
 }
 

@@ -46,7 +46,7 @@ const getParticleStyle = (index: number) => {
 
 .particle {
   position: absolute;
-  background: radial-gradient(circle, rgba(102, 126, 234, 0.6) 0%, rgba(59, 130, 246, 0.3) 70%, transparent 100%);
+        background: radial-gradient(circle, rgb(var(--color-primary) / 0.6) 0%, rgb(var(--color-secondary) / 0.3) 70%, transparent 100%);
   border-radius: 50%;
   animation: floatParticle 6s ease-in-out infinite;
   transform: translateZ(0);

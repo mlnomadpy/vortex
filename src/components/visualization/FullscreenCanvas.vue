@@ -15,15 +15,15 @@
         <div class="toolbar-divider"></div>
         
         <button
-          @click="store.showBoundaries = !store.showBoundaries"
+          @click="toggleBoundaries"
           :class="['toolbar-btn', { active: store.showBoundaries }]"
-          title="Toggle Decision Boundaries"
+          title="Toggle Decision Boundaries (Reinitializes Grid)"
         >
           <Square3Stack3DIcon class="w-4 h-4" />
         </button>
         
         <button
-          @click="store.showDataPoints = !store.showDataPoints"
+          @click="toggleDataPoints"
           :class="['toolbar-btn', { active: store.showDataPoints }]"
           title="Toggle Data Points"
         >
@@ -31,7 +31,7 @@
         </button>
         
         <button
-          @click="store.showPredictedColors = !store.showPredictedColors"
+          @click="togglePredictedColors"
           :class="['toolbar-btn', { active: store.showPredictedColors }]"
           title="Toggle Predicted Colors"
         >
@@ -50,8 +50,18 @@
           step="5"
           class="toolbar-slider"
           title="Grid Density"
+          @input="onGridSizeChange"
         />
         <span class="toolbar-value">{{ store.gridSize }}×{{ store.gridSize }}</span>
+        
+        <button
+          @click="reinitializeGrid"
+          class="toolbar-btn action-btn"
+          title="Force Grid Reinitialization"
+          :disabled="!store.showBoundaries"
+        >
+          <ArrowPathIcon class="w-3 h-3" />
+        </button>
       </div>
 
       <!-- Coordinate Ranges -->
@@ -154,7 +164,19 @@
 
     <!-- Main Canvas Area -->
     <div class="canvas-container">
-      <NeuralCanvas :fullscreen="true" />
+      <InteractiveCanvas
+        ref="canvasComponent"
+        :fullscreen="true"
+        :show-instructions="false"
+      />
+      
+      <!-- Grid Processing Indicator -->
+      <div v-if="isGridProcessing" class="processing-overlay">
+        <div class="processing-content">
+          <div class="spinner"></div>
+          <div class="processing-text">Reinitializing Grid...</div>
+        </div>
+      </div>
       
       <!-- Fullscreen Stats Overlay -->
       <div class="stats-overlay">
@@ -170,6 +192,18 @@
           <span class="stat-label">Neurons</span>
           <span class="stat-value">{{ store.neurons.length }}</span>
         </div>
+        <div class="stat-item" v-if="store.showBoundaries">
+          <span class="stat-label">Grid Cells</span>
+          <span class="stat-value">{{ gridCellCount.toLocaleString() }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Active Classes</span>
+          <span class="stat-value">{{ store.activeClasses.length }}</span>
+        </div>
+        <div class="stat-item" v-if="avgLoss !== null">
+          <span class="stat-label">Avg Loss</span>
+          <span class="stat-value">{{ avgLoss.toFixed(3) }}</span>
+        </div>
       </div>
     </div>
 
@@ -181,12 +215,18 @@
       <div class="help-item">
         <kbd>Esc</kbd> Exit Fullscreen
       </div>
+      <div class="help-item">
+        <kbd>R</kbd> Reinitialize Grid
+      </div>
+      <div class="help-item">
+        <kbd>B</kbd> Toggle Boundaries
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, computed, ref } from 'vue'
 import { 
   XMarkIcon, 
   Square3Stack3DIcon, 
@@ -198,7 +238,7 @@ import {
 } from '@/components/ui/icons'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
-import NeuralCanvas from './NeuralCanvas.vue'
+import InteractiveCanvas from './InteractiveCanvas.vue'
 
 interface Props {
   isVisible: boolean
@@ -212,6 +252,22 @@ const emit = defineEmits<{
 
 const store = useNeuralNetworkStore()
 const notificationStore = useNotificationStore()
+
+// Reactive state
+const isGridProcessing = ref(false)
+
+// Reference to the interactive canvas component
+const canvasComponent = ref<InstanceType<typeof InteractiveCanvas> | null>(null)
+
+// Computed properties for stats
+const gridCellCount = computed(() => store.gridSize * store.gridSize)
+
+const avgLoss = computed(() => {
+  if (store.filteredDataPoints.length === 0 || store.neurons.length === 0) {
+    return null
+  }
+  return store.computeLoss(store.filteredDataPoints)
+})
 
 function setCoordinatePreset(preset: string) {
   switch (preset) {
@@ -275,6 +331,81 @@ function autoFitToData() {
   })
 }
 
+function toggleBoundaries() {
+  const wasEnabled = store.showBoundaries
+  store.showBoundaries = !store.showBoundaries
+  
+  if (!wasEnabled && store.showBoundaries) {
+    // When turning boundaries ON, show notification about reinitialization
+    notificationStore.addNotification({
+      message: 'Decision boundaries enabled - Grid will reinitialize automatically',
+      type: 'info',
+      duration: 3000
+    })
+  }
+}
+
+function toggleDataPoints() {
+  store.showDataPoints = !store.showDataPoints
+  
+  notificationStore.addNotification({
+    message: store.showDataPoints ? 'Data points shown' : 'Data points hidden',
+    type: 'success',
+    duration: 2000
+  })
+}
+
+function togglePredictedColors() {
+  store.showPredictedColors = !store.showPredictedColors
+  
+  notificationStore.addNotification({
+    message: store.showPredictedColors ? 'Showing predicted colors' : 'Showing true colors',
+    type: 'success',
+    duration: 2000
+  })
+}
+
+function onGridSizeChange() {
+  // Provide feedback when grid size changes
+  if (store.showBoundaries) {
+    notificationStore.addNotification({
+      message: `Grid density: ${store.gridSize}×${store.gridSize} (${store.gridSize * store.gridSize} cells)`,
+      type: 'info',
+      duration: 2000
+    })
+  }
+}
+
+function reinitializeGrid() {
+  if (!store.showBoundaries) {
+    notificationStore.addNotification({
+      message: 'Enable decision boundaries first to use grid reinitialization',
+      type: 'warning',
+      duration: 3000
+    })
+    return
+  }
+  
+  // Show processing indicator
+  isGridProcessing.value = true
+  
+  // Force a reinitialization by toggling boundaries twice
+  store.showBoundaries = false
+  setTimeout(() => {
+    store.showBoundaries = true
+    notificationStore.addNotification({
+      message: 'Grid manually reinitialized',
+      type: 'success',
+      duration: 2000
+    })
+    
+    // Hide processing indicator after a delay
+    setTimeout(() => {
+      isGridProcessing.value = false
+    }, 1000)
+  }, 100)
+}
+
 function runGradientDescent() {
   notificationStore.addNotification({
     message: 'Gradient descent started',
@@ -286,6 +417,14 @@ function runGradientDescent() {
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     emit('close')
+  } else if (event.key.toLowerCase() === 'r' && !event.ctrlKey && !event.metaKey) {
+    // R key for grid reinitialization
+    event.preventDefault()
+    reinitializeGrid()
+  } else if (event.key.toLowerCase() === 'b' && !event.ctrlKey && !event.metaKey) {
+    // B key for boundary toggle
+    event.preventDefault()
+    toggleBoundaries()
   }
 }
 
@@ -305,22 +444,21 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: #1a1a1a;
   z-index: 1000;
   display: flex;
   flex-direction: column;
 }
 
-/* Photoshop-style Toolbar */
+/* Photoshop-style Toolbar with theme support */
 .toolbar {
-  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
-  border-bottom: 1px solid #1a1a1a;
+  background: linear-gradient(to bottom, rgb(var(--bg-primary)), rgb(var(--bg-secondary)));
+  border-bottom: 1px solid rgb(var(--border-primary));
   padding: 8px 12px;
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-medium);
 }
 
 .toolbar-section {
@@ -328,24 +466,24 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(var(--bg-secondary) / 0.5);
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(var(--border-secondary));
 }
 
 .toolbar-divider {
   width: 1px;
   height: 24px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(var(--border-primary));
   margin: 0 4px;
 }
 
 .toolbar-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgb(var(--bg-secondary) / 0.5);
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 4px;
   padding: 6px;
-  color: #e0e0e0;
+  color: rgb(var(--text-primary));
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -354,13 +492,13 @@ onUnmounted(() => {
 }
 
 .toolbar-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgb(var(--bg-secondary));
+  border-color: rgb(var(--border-primary));
 }
 
 .toolbar-btn.active {
-  background: #0066cc;
-  border-color: #0066cc;
+  background: rgb(var(--color-primary));
+  border-color: rgb(var(--color-primary));
   color: white;
 }
 
@@ -370,38 +508,38 @@ onUnmounted(() => {
 }
 
 .close-btn {
-  background: #ff4444;
-  border-color: #ff4444;
+  background: rgb(var(--color-error));
+  border-color: rgb(var(--color-error));
   color: white;
 }
 
 .close-btn:hover {
-  background: #ff6666;
+  background: rgb(var(--color-error-hover));
 }
 
 .action-btn {
-  background: #00aa44;
-  border-color: #00aa44;
+  background: rgb(var(--color-success));
+  border-color: rgb(var(--color-success));
   color: white;
 }
 
 .action-btn:hover {
-  background: #00cc55;
+  background: rgb(var(--color-success-hover));
 }
 
 .reset-btn {
-  background: #ff8800;
-  border-color: #ff8800;
+  background: rgb(var(--color-warning));
+  border-color: rgb(var(--color-warning));
   color: white;
 }
 
 .reset-btn:hover {
-  background: #ffaa33;
+  background: rgb(var(--color-warning-hover));
 }
 
 .toolbar-label {
   font-size: 11px;
-  color: #ccc;
+  color: rgb(var(--text-secondary));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -411,7 +549,7 @@ onUnmounted(() => {
 .toolbar-slider {
   width: 80px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(var(--bg-tertiary));
   border-radius: 2px;
   outline: none;
   cursor: pointer;
@@ -421,14 +559,14 @@ onUnmounted(() => {
   appearance: none;
   width: 12px;
   height: 12px;
-  background: #0066cc;
+  background: rgb(var(--color-primary));
   border-radius: 50%;
   cursor: pointer;
 }
 
 .toolbar-value {
   font-size: 11px;
-  color: #ccc;
+  color: rgb(var(--text-secondary));
   min-width: 25px;
   text-align: center;
 }
@@ -441,33 +579,33 @@ onUnmounted(() => {
 .toolbar-input {
   width: 45px;
   padding: 2px 4px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgb(var(--bg-primary) / 0.8);
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 3px;
-  color: #e0e0e0;
+  color: rgb(var(--text-primary));
   font-size: 11px;
   text-align: center;
 }
 
 .toolbar-input:focus {
   outline: none;
-  border-color: #0066cc;
-  background: rgba(0, 102, 204, 0.1);
+  border-color: rgb(var(--color-primary));
+  background: rgb(var(--color-primary) / 0.1);
 }
 
 .toolbar-select {
   padding: 3px 6px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgb(var(--bg-primary) / 0.8);
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 3px;
-  color: #e0e0e0;
+  color: rgb(var(--text-primary));
   font-size: 11px;
   cursor: pointer;
 }
 
 .toolbar-select:focus {
   outline: none;
-  border-color: #0066cc;
+  border-color: rgb(var(--color-primary));
 }
 
 .preset-buttons {
@@ -477,37 +615,83 @@ onUnmounted(() => {
 
 .preset-btn {
   padding: 3px 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgb(var(--bg-secondary) / 0.5);
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 3px;
-  color: #e0e0e0;
+  color: rgb(var(--text-primary));
   font-size: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .preset-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(var(--bg-secondary));
 }
 
 .auto-fit {
-  background: #0066cc;
-  border-color: #0066cc;
+  background: rgb(var(--color-primary));
+  border-color: rgb(var(--color-primary));
   color: white;
 }
 
 .auto-fit:hover {
-  background: #0080ff;
+  background: rgb(var(--color-primary-hover));
 }
 
-/* Canvas Container */
+/* Canvas Container with theme support */
 .canvas-container {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  background: #0f0f0f;
+  background: rgb(var(--bg-primary));
+}
+
+/* Processing Overlay */
+.processing-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgb(0 0 0 / 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.processing-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: rgb(0 0 0 / 0.8);
+  border: 1px solid rgb(255 255 255 / 0.2);
+  border-radius: 12px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgb(255 255 255 / 0.3);
+  border-top: 3px solid rgb(var(--color-primary));
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.processing-text {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 /* Stats Overlay */
@@ -515,9 +699,9 @@ onUnmounted(() => {
   position: absolute;
   top: 20px;
   right: 20px;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgb(0 0 0 / 0.8);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 0.1);
   border-radius: 8px;
   padding: 12px;
   display: flex;
@@ -534,13 +718,13 @@ onUnmounted(() => {
 
 .stat-label {
   font-size: 12px;
-  color: #aaa;
+  color: rgb(var(--text-secondary));
   font-weight: 500;
 }
 
 .stat-value {
   font-size: 14px;
-  color: #fff;
+  color: rgb(var(--text-primary));
   font-weight: 700;
 }
 
@@ -554,7 +738,7 @@ onUnmounted(() => {
 }
 
 .help-item {
-  color: #888;
+  color: rgb(var(--text-secondary));
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -562,12 +746,12 @@ onUnmounted(() => {
 }
 
 kbd {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgb(var(--bg-secondary) / 0.1);
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 3px;
   padding: 2px 6px;
   font-size: 10px;
   font-family: monospace;
-  color: #ccc;
+  color: rgb(var(--text-primary));
 }
 </style> 

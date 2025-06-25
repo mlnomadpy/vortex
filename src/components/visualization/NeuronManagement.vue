@@ -1,59 +1,49 @@
 <template>
-  <!-- Neuron Details Panel -->
+  <!-- Compact Neuron Details Panel -->
   <div 
     v-if="selectedNeuron" 
-    class="absolute top-6 left-6 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-200 min-w-[280px] max-w-[350px]"
+    class="neuron-details-panel"
   >
-    <div class="flex items-center justify-between mb-3">
-      <h3 class="font-bold text-lg text-gray-800 flex items-center">
-        <div class="w-4 h-4 mr-2 relative">
-          <svg class="w-full h-full" viewBox="0 0 24 24">
-            <path 
-              :d="generateStarPath(12, 12, 8, 3)"
-              :fill="selectedNeuron.color"
-              stroke="black"
-              stroke-width="1"
-            />
-          </svg>
-        </div>
-        Neuron {{ selectedNeuron.id }}
-      </h3>
+    <div class="panel-header">
+      <div class="neuron-title">
+        <div class="neuron-icon" :style="{ backgroundColor: selectedNeuron.color }"></div>
+        <span class="neuron-name">N{{ selectedNeuron.id }}</span>
+      </div>
       <button 
         @click="$emit('close')" 
-        class="text-gray-400 hover:text-gray-600 transition-colors"
+        class="close-btn"
+        title="Close Panel"
       >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
+        ×
       </button>
     </div>
     
-    <div class="space-y-3">
+    <div class="panel-content">
       <!-- Position Controls -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Position</label>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-gray-500 mb-1">X</label>
+      <div class="control-group">
+        <label class="group-label">Position</label>
+        <div class="coord-row">
+          <div class="coord-input-group">
+            <label class="coord-label">X</label>
             <input
               v-model.number="selectedNeuron.x"
               type="number"
               step="0.01"
               :min="coordinateRanges.xMin"
               :max="coordinateRanges.xMax"
-              class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="coord-input"
               @change="$emit('update-position')"
             />
           </div>
-          <div>
-            <label class="block text-xs text-gray-500 mb-1">Y</label>
+          <div class="coord-input-group">
+            <label class="coord-label">Y</label>
             <input
               v-model.number="selectedNeuron.y"
               type="number"
               step="0.01"
               :min="coordinateRanges.yMin"
               :max="coordinateRanges.yMax"
-              class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="coord-input"
               @change="$emit('update-position')"
             />
           </div>
@@ -61,74 +51,63 @@
       </div>
 
       <!-- Color Control -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+      <div class="control-group">
+        <label class="group-label">Color</label>
         <input
           v-model="selectedNeuron.color"
           type="color"
-          class="w-full h-8 border border-gray-300 rounded cursor-pointer"
+          class="color-input"
           @change="$emit('update-color')"
         />
       </div>
 
       <!-- Neuron Stats -->
-      <div class="border-t pt-3">
-        <h4 class="text-sm font-medium text-gray-700 mb-2">Statistics</h4>
-        <div class="space-y-1 text-xs">
-          <div class="flex justify-between">
-            <span class="text-gray-600">Controlled Area:</span>
-            <span class="font-medium">{{ controlledArea.toFixed(1) }}%</span>
+      <div class="control-group">
+        <label class="group-label">Stats</label>
+        <div class="stats-row">
+          <div class="stat-item">
+            <span class="stat-label">Area</span>
+            <span class="stat-value">{{ controlledArea.toFixed(1) }}%</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">Avg. Score:</span>
-            <span class="font-medium">{{ averageScore.toFixed(3) }}</span>
+          <div class="stat-item">
+            <span class="stat-label">Score</span>
+            <span class="stat-value">{{ averageScore.toFixed(3) }}</span>
           </div>
         </div>
       </div>
 
       <!-- Actions -->
-      <div class="border-t pt-3">
+      <div class="control-group">
         <button
           @click="$emit('remove', selectedNeuron.id)"
-          class="w-full px-3 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+          class="remove-btn"
+          title="Remove Neuron"
         >
-          Remove Neuron
+          Remove
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Neurons List Panel -->
+  <!-- Compact Neurons List Panel -->
   <div 
     v-else-if="neurons.length > 0" 
-    class="absolute top-6 right-6 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-200 min-w-[250px]"
+    class="neurons-list-panel"
   >
-    <h3 class="font-bold text-lg text-gray-800 mb-3">
-      Neurons ({{ neurons.length }})
-    </h3>
-    <div class="space-y-2 max-h-48 overflow-y-auto">
+    <div class="panel-header">
+      <span class="list-title">Neurons ({{ neurons.length }})</span>
+    </div>
+    <div class="neurons-list">
       <div
         v-for="neuron in neurons"
         :key="neuron.id"
-        class="flex items-center justify-between p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
+        class="neuron-item"
         @click="$emit('select', neuron)"
+        :title="`Neuron ${neuron.id} at (${neuron.x.toFixed(2)}, ${neuron.y.toFixed(2)})`"
       >
-        <div class="flex items-center">
-          <div class="w-3 h-3 mr-2 relative">
-            <svg class="w-full h-full" viewBox="0 0 24 24">
-              <path 
-                :d="generateStarPath(12, 12, 8, 3)"
-                :fill="neuron.color"
-                stroke="black"
-                stroke-width="1"
-              />
-            </svg>
-          </div>
-          <span class="text-sm font-medium">Neuron {{ neuron.id }}</span>
-        </div>
-        <div class="text-xs text-gray-500">
-          ({{ neuron.x.toFixed(2) }}, {{ neuron.y.toFixed(2) }})
-        </div>
+        <div class="neuron-icon" :style="{ backgroundColor: neuron.color }"></div>
+        <span class="neuron-label">N{{ neuron.id }}</span>
+        <span class="neuron-coords">({{ neuron.x.toFixed(1) }}, {{ neuron.y.toFixed(1) }})</span>
       </div>
     </div>
   </div>
@@ -207,4 +186,301 @@ function generateStarPath(
   path += ' Z' // Close the path
   return path
 }
-</script> 
+</script>
+
+<style scoped>
+/* Compact Neuron Management Panels */
+.neuron-details-panel {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 200px;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-primary));
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 11px;
+  z-index: 10;
+}
+
+.neurons-list-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 180px;
+  max-height: 300px;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-primary));
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 11px;
+  z-index: 10;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgb(var(--border-secondary));
+  background: rgb(var(--bg-primary));
+  border-radius: 6px 6px 0 0;
+}
+
+.neuron-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.neuron-icon {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.neuron-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgb(var(--text-primary));
+}
+
+.list-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgb(var(--text-primary));
+}
+
+.close-btn {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: rgb(var(--text-tertiary));
+  cursor: pointer;
+  border-radius: 2px;
+  font-size: 14px;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.close-btn:hover {
+  background: rgb(var(--bg-tertiary));
+  color: rgb(var(--text-secondary));
+}
+
+.panel-content {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.group-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgb(var(--text-secondary));
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.coord-row {
+  display: flex;
+  gap: 6px;
+}
+
+.coord-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.coord-label {
+  font-size: 8px;
+  font-weight: 500;
+  color: rgb(var(--text-tertiary));
+  text-transform: uppercase;
+}
+
+.coord-input {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 10px;
+  border: 1px solid rgb(var(--border-secondary));
+  border-radius: 3px;
+  background: rgb(var(--bg-primary));
+  color: rgb(var(--text-primary));
+  text-align: center;
+}
+
+.coord-input:focus {
+  outline: none;
+  border-color: rgb(var(--color-primary));
+  box-shadow: 0 0 0 1px rgb(var(--color-primary) / 0.2);
+}
+
+.color-input {
+  width: 40px;
+  height: 24px;
+  border: 1px solid rgb(var(--border-secondary));
+  border-radius: 3px;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+}
+
+.color-input:focus {
+  outline: none;
+  border-color: rgb(var(--color-primary));
+}
+
+.stats-row {
+  display: flex;
+  gap: 8px;
+}
+
+.stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 8px;
+  color: rgb(var(--text-tertiary));
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgb(var(--text-primary));
+}
+
+.remove-btn {
+  padding: 6px 8px;
+  font-size: 10px;
+  font-weight: 500;
+  background: rgb(var(--color-error));
+  color: white;
+  border: 1px solid rgb(var(--color-error));
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.remove-btn:hover {
+  background: rgb(var(--color-error-hover));
+  border-color: rgb(var(--color-error-hover));
+}
+
+.neurons-list {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.neuron-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.neuron-item:hover {
+  background: rgb(var(--bg-tertiary));
+}
+
+.neuron-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgb(var(--text-primary));
+  min-width: 20px;
+}
+
+.neuron-coords {
+  font-size: 9px;
+  color: rgb(var(--text-tertiary));
+  margin-left: auto;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .neuron-details-panel {
+    width: 180px;
+    top: 8px;
+    left: 8px;
+  }
+  
+  .neurons-list-panel {
+    width: 160px;
+    top: 8px;
+    right: 8px;
+  }
+  
+  .coord-row {
+    gap: 4px;
+  }
+  
+  .coord-input {
+    padding: 3px 4px;
+    font-size: 9px;
+  }
+  
+  .stats-row {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .neuron-details-panel,
+  .neurons-list-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 200px;
+    z-index: 50;
+  }
+  
+  .neurons-list-panel {
+    max-height: 60vh;
+  }
+}
+
+/* Custom scrollbar for neurons list */
+.neurons-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.neurons-list::-webkit-scrollbar-track {
+  background: rgb(var(--bg-tertiary));
+  border-radius: 2px;
+}
+
+.neurons-list::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-tertiary));
+  border-radius: 2px;
+}
+
+.neurons-list::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-primary));
+}
+</style> 

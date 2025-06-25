@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { DataPoint, Neuron } from '@/types'
+import { getNeuronColor } from '@/utils/colors'
 
 export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   // State
@@ -47,7 +48,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
       id: neurons.value.length,
       x,
       y,
-      color: `hsl(${(neurons.value.length * 360 / 10) % 360}, 70%, 60%)`
+      color: getNeuronColor(neurons.value.length)
     }
     neurons.value.push(neuron)
     selectedNeuronForLandscape.value = neuron

@@ -2,9 +2,164 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS Variables for Theme System */
+:root {
+  /* Light Theme Colors */
+  --color-primary: 59 130 246; /* blue-500 */
+  --color-primary-hover: 37 99 235; /* blue-600 */
+  --color-primary-dark: 29 78 216; /* blue-700 */
+  
+  --color-secondary: 99 102 241; /* indigo-500 */
+  --color-secondary-hover: 79 70 229; /* indigo-600 */
+  
+  --color-accent: 16 185 129; /* emerald-500 */
+  --color-accent-hover: 5 150 105; /* emerald-600 */
+  
+  --color-warning: 245 158 11; /* amber-500 */
+  --color-warning-hover: 217 119 6; /* amber-600 */
+  
+  --color-error: 239 68 68; /* red-500 */
+  --color-error-hover: 220 38 38; /* red-600 */
+  
+  --color-success: 34 197 94; /* green-500 */
+  --color-success-hover: 22 163 74; /* green-600 */
+  
+  /* Background Colors */
+  --bg-primary: 255 255 255;
+  --bg-secondary: 249 250 251; /* gray-50 */
+  --bg-tertiary: 243 244 246; /* gray-100 */
+  --bg-quaternary: 229 231 235; /* gray-200 */
+  
+  /* Background Gradients */
+  --bg-gradient-from: 239 246 255; /* blue-50 */
+  --bg-gradient-to: 238 242 255; /* indigo-100 */
+  
+  /* Glass Effect */
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-backdrop: blur(16px);
+  
+  /* Text Colors */
+  --text-primary: 17 24 39; /* gray-900 */
+  --text-secondary: 75 85 99; /* gray-600 */
+  --text-tertiary: 156 163 175; /* gray-400 */
+  --text-muted: 209 213 219; /* gray-300 */
+  
+  /* Border Colors */
+  --border-primary: 229 231 235; /* gray-200 */
+  --border-secondary: 209 213 219; /* gray-300 */
+  --border-tertiary: 156 163 175; /* gray-400 */
+  
+  /* Shadow Colors */
+  --shadow-light: rgba(0, 0, 0, 0.1);
+  --shadow-medium: rgba(0, 0, 0, 0.15);
+  --shadow-heavy: rgba(0, 0, 0, 0.25);
+  --shadow-glow: rgba(59, 130, 246, 0.25);
+  
+  /* Canvas Colors */
+  --canvas-bg: 255 255 255;
+  --canvas-border: 229 231 235;
+  --canvas-hover-border: 156 163 175;
+  --canvas-grid: 156 163 175;
+  --canvas-grid-hover: 107 114 128;
+  
+  /* Interactive Elements */
+  --interactive-bg: rgba(0, 0, 0, 0.03);
+  --interactive-bg-hover: rgba(0, 0, 0, 0.05);
+  --interactive-border: rgba(0, 0, 0, 0.1);
+  --interactive-border-hover: rgba(0, 0, 0, 0.2);
+  
+  /* Visualization Colors */
+  --viz-overlay: rgba(255, 255, 255, 0.95);
+  --viz-shadow: rgba(0, 0, 0, 0.25);
+  --viz-glow: rgba(59, 130, 246, 0.3);
+}
+
+/* Dark Theme Colors */
+[data-theme="dark"] {
+  /* Primary Colors - Adjusted for dark theme */
+  --color-primary: 96 165 250; /* blue-400 */
+  --color-primary-hover: 59 130 246; /* blue-500 */
+  --color-primary-dark: 37 99 235; /* blue-600 */
+  
+  --color-secondary: 129 140 248; /* indigo-400 */
+  --color-secondary-hover: 99 102 241; /* indigo-500 */
+  
+  --color-accent: 52 211 153; /* emerald-400 */
+  --color-accent-hover: 16 185 129; /* emerald-500 */
+  
+  --color-warning: 251 191 36; /* amber-400 */
+  --color-warning-hover: 245 158 11; /* amber-500 */
+  
+  --color-error: 248 113 113; /* red-400 */
+  --color-error-hover: 239 68 68; /* red-500 */
+  
+  --color-success: 74 222 128; /* green-400 */
+  --color-success-hover: 34 197 94; /* green-500 */
+  
+  /* Background Colors */
+  --bg-primary: 17 24 39; /* gray-900 */
+  --bg-secondary: 31 41 55; /* gray-800 */
+  --bg-tertiary: 55 65 81; /* gray-700 */
+  --bg-quaternary: 75 85 99; /* gray-600 */
+  
+  /* Background Gradients */
+  --bg-gradient-from: 15 23 42; /* slate-900 */
+  --bg-gradient-to: 30 41 59; /* slate-800 */
+  
+  /* Glass Effect - Dark */
+  --glass-bg: rgba(17, 24, 39, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-backdrop: blur(16px);
+  
+  /* Text Colors */
+  --text-primary: 249 250 251; /* gray-50 */
+  --text-secondary: 209 213 219; /* gray-300 */
+  --text-tertiary: 156 163 175; /* gray-400 */
+  --text-muted: 107 114 128; /* gray-500 */
+  
+  /* Border Colors */
+  --border-primary: 75 85 99; /* gray-600 */
+  --border-secondary: 107 114 128; /* gray-500 */
+  --border-tertiary: 156 163 175; /* gray-400 */
+  
+  /* Shadow Colors */
+  --shadow-light: rgba(0, 0, 0, 0.3);
+  --shadow-medium: rgba(0, 0, 0, 0.5);
+  --shadow-heavy: rgba(0, 0, 0, 0.7);
+  --shadow-glow: rgba(96, 165, 250, 0.4);
+  
+  /* Canvas Colors */
+  --canvas-bg: 10 10 10; /* Almost black for dark canvas */
+  --canvas-border: 75 85 99; /* gray-600 */
+  --canvas-hover-border: 156 163 175; /* gray-400 */
+  --canvas-grid: 75 85 99;
+  --canvas-grid-hover: 156 163 175;
+  
+  /* Interactive Elements */
+  --interactive-bg: rgba(255, 255, 255, 0.05);
+  --interactive-bg-hover: rgba(255, 255, 255, 0.1);
+  --interactive-border: rgba(255, 255, 255, 0.1);
+  --interactive-border-hover: rgba(255, 255, 255, 0.2);
+  
+  /* Visualization Colors */
+  --viz-overlay: rgba(17, 24, 39, 0.95);
+  --viz-shadow: rgba(0, 0, 0, 0.5);
+  --viz-glow: rgba(96, 165, 250, 0.4);
+}
+
+/* Theme Transition */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
 @layer base {
   body {
     font-family: 'Inter', sans-serif;
+    background: rgb(var(--bg-gradient-from));
+    background: linear-gradient(to bottom right, rgb(var(--bg-gradient-from)), rgb(var(--bg-gradient-to)));
+    color: rgb(var(--text-primary));
+    min-height: 100vh;
   }
   
   /* Global performance optimizations */
@@ -13,20 +168,116 @@
   }
 }
 
-/* Custom scrollbar styling */
+/* Custom scrollbar styling with theme support */
 ::-webkit-scrollbar {
-  @apply w-2;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100 rounded-lg;
+  background: rgb(var(--bg-tertiary));
+  border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gradient-to-b from-blue-500 to-indigo-600 rounded-lg;
+  background: linear-gradient(to bottom, rgb(var(--color-primary)), rgb(var(--color-secondary)));
+  border-radius: 8px;
   transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply from-blue-600 to-indigo-700;
+  background: linear-gradient(to bottom, rgb(var(--color-primary-hover)), rgb(var(--color-secondary-hover)));
+}
+
+/* Utility Classes for Theme Variables */
+@layer utilities {
+  .bg-theme-primary { background-color: rgb(var(--bg-primary)); }
+  .bg-theme-secondary { background-color: rgb(var(--bg-secondary)); }
+  .bg-theme-tertiary { background-color: rgb(var(--bg-tertiary)); }
+  
+  .text-theme-primary { color: rgb(var(--text-primary)); }
+  .text-theme-secondary { color: rgb(var(--text-secondary)); }
+  .text-theme-tertiary { color: rgb(var(--text-tertiary)); }
+  .text-theme-muted { color: rgb(var(--text-muted)); }
+  
+  .border-theme-primary { border-color: rgb(var(--border-primary)); }
+  .border-theme-secondary { border-color: rgb(var(--border-secondary)); }
+  .border-theme-tertiary { border-color: rgb(var(--border-tertiary)); }
+  
+  .btn-primary {
+    background-color: rgb(var(--color-primary));
+    color: white;
+    border: 1px solid rgb(var(--color-primary));
+  }
+  .btn-primary:hover {
+    background-color: rgb(var(--color-primary-hover));
+    border-color: rgb(var(--color-primary-hover));
+  }
+  
+  .btn-secondary {
+    background-color: rgb(var(--color-secondary));
+    color: white;
+    border: 1px solid rgb(var(--color-secondary));
+  }
+  .btn-secondary:hover {
+    background-color: rgb(var(--color-secondary-hover));
+    border-color: rgb(var(--color-secondary-hover));
+  }
+  
+  .btn-success {
+    background-color: rgb(var(--color-success));
+    color: white;
+    border: 1px solid rgb(var(--color-success));
+  }
+  .btn-success:hover {
+    background-color: rgb(var(--color-success-hover));
+    border-color: rgb(var(--color-success-hover));
+  }
+  
+  .btn-warning {
+    background-color: rgb(var(--color-warning));
+    color: white;
+    border: 1px solid rgb(var(--color-warning));
+  }
+  .btn-warning:hover {
+    background-color: rgb(var(--color-warning-hover));
+    border-color: rgb(var(--color-warning-hover));
+  }
+  
+  .btn-error {
+    background-color: rgb(var(--color-error));
+    color: white;
+    border: 1px solid rgb(var(--color-error));
+  }
+  .btn-error:hover {
+    background-color: rgb(var(--color-error-hover));
+    border-color: rgb(var(--color-error-hover));
+  }
+  
+  .glass-effect {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    border: 1px solid var(--glass-border);
+  }
+  
+  .shadow-theme-light { box-shadow: 0 1px 3px 0 var(--shadow-light); }
+  .shadow-theme-medium { box-shadow: 0 4px 6px -1px var(--shadow-medium); }
+  .shadow-theme-heavy { box-shadow: 0 25px 50px -12px var(--shadow-heavy); }
+  .shadow-theme-glow { box-shadow: 0 0 20px 2px var(--shadow-glow); }
+  
+  .interactive-bg {
+    background: var(--interactive-bg);
+    border: 1px solid var(--interactive-border);
+  }
+  .interactive-bg:hover {
+    background: var(--interactive-bg-hover);
+    border-color: var(--interactive-border-hover);
+  }
+}
+
+/* Animation Performance */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }

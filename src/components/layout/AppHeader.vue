@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-white/90 backdrop-blur-lg border-b border-gray-200/50 sticky top-0 z-40">
+  <header class="glass-effect sticky top-0 z-40 border-b border-theme-primary">
     <div class="container mx-auto px-6 py-4">
       <div class="flex items-center justify-between">
         
@@ -11,10 +11,10 @@
             </svg>
           </div>
           <div>
-            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
               Vortex Neural Network
             </h1>
-            <p class="text-sm text-gray-600">Interactive Neural Network Visualization</p>
+            <p class="text-sm text-theme-secondary">Interactive Neural Network Visualization</p>
           </div>
         </div>
         
@@ -22,22 +22,22 @@
         <nav class="hidden md:flex items-center space-x-6">
           <router-link 
             to="/" 
-            class="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-            active-class="text-blue-600"
+            class="text-theme-secondary hover:text-blue-500 font-medium transition-colors"
+            active-class="text-blue-500"
           >
             Home
           </router-link>
           <router-link 
             to="/playground" 
-            class="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-            active-class="text-blue-600"
+            class="text-theme-secondary hover:text-blue-500 font-medium transition-colors"
+            active-class="text-blue-500"
           >
             Playground
           </router-link>
           <router-link 
             to="/docs" 
-            class="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-            active-class="text-blue-600"
+            class="text-theme-secondary hover:text-blue-500 font-medium transition-colors"
+            active-class="text-blue-500"
           >
             Documentation
           </router-link>
@@ -47,7 +47,7 @@
         <div class="flex items-center space-x-3">
           <button 
             @click="toggleTheme"
-            class="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+            class="p-2 text-theme-secondary hover:text-theme-primary transition-colors rounded-lg interactive-bg"
             title="Toggle theme"
           >
             <SunIcon v-if="isDark" class="w-5 h-5" />
@@ -57,7 +57,7 @@
           <a 
             href="https://github.com/yourusername/vortex" 
             target="_blank"
-            class="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+            class="p-2 text-theme-secondary hover:text-theme-primary transition-colors rounded-lg interactive-bg"
             title="View on GitHub"
           >
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -72,14 +72,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { SunIcon, MoonIcon } from '@/components/ui/icons'
+import { useTheme } from '@/composables/useTheme'
 
-const isDark = ref(false)
-
-function toggleTheme() {
-  isDark.value = !isDark.value
-  // Theme switching logic would go here
-  document.documentElement.classList.toggle('dark', isDark.value)
-}
+const { isDark, toggleTheme } = useTheme()
 </script>

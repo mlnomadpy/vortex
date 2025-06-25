@@ -1,13 +1,13 @@
 <template>
   <div class="control-card p-4 relative">
     <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-      <div class="flex items-center bg-white/90 px-3 py-1 rounded-full text-sm font-semibold text-gray-700">
-        <ChartBarSquareIcon class="w-4 h-4 mr-2 text-indigo-600" />
+          <div class="flex items-center glass-effect px-3 py-1 rounded-full text-sm font-semibold text-theme-primary">
+      <ChartBarSquareIcon class="w-4 h-4 mr-2 text-indigo-500" />
         Loss Landscape
       </div>
     </div>
     
-    <div v-if="!store.selectedNeuronForLandscape" class="text-center text-gray-500 py-16">
+    <div v-if="!store.selectedNeuronForLandscape" class="text-center text-theme-secondary py-16">
       <MapIcon class="w-12 h-12 mx-auto mb-2 opacity-50" />
       <p>Select a neuron to view loss landscape</p>
     </div>
@@ -55,7 +55,7 @@
       v-if="isCalculating"
       class="absolute inset-0 bg-white/75 backdrop-blur-sm flex items-center justify-center"
     >
-      <div class="flex items-center space-x-2 text-gray-600">
+      <div class="flex items-center space-x-2 text-theme-secondary">
         <div class="loading-spinner w-5 h-5 border-2 border-current border-t-transparent rounded-full"></div>
         <span>Calculating...</span>
       </div>
