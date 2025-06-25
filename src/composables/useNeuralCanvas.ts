@@ -46,20 +46,26 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
 
   // Computed cell size using store's gridSize setting
   const cellSize = computed(() => {
-    // Use the store's gridSize as the cell size in pixels
-    // Apply some bounds to ensure performance and usability
-    const userGridSize = store.gridSize
+    // gridSize represents the number of cells per dimension (25 = 25x25 grid)
+    // Calculate cell size by dividing canvas dimensions by number of cells
+    const gridCellCount = store.gridSize
     const { width, height } = canvasConfig.value
     
-    // Calculate maximum sensible cell size based on canvas dimensions
-    const maxCellSize = Math.min(width, height) / 10 // At least 10 cells per dimension
-    const minCellSize = 8 // Minimum readable cell size
+    // Use the smaller dimension to ensure square cells
+    const canvasSize = Math.min(width, height)
+    const calculatedCellSize = canvasSize / gridCellCount
     
-    // Clamp the user's grid size to sensible bounds
-    const clampedSize = Math.max(minCellSize, Math.min(maxCellSize, userGridSize))
+    // Apply bounds to ensure usability and performance
+    const maxCellSize = canvasSize / 10 // At least 10 cells minimum
+    const minCellSize = 3 // Minimum visible cell size
     
-    // Grid will have approximately (width/cellSize) x (height/cellSize) cells
-    // At 50px cell size on 600x600 canvas = 12x12 = 144 cells
+    // Clamp to sensible bounds
+    const clampedSize = Math.max(minCellSize, Math.min(maxCellSize, calculatedCellSize))
+    
+    // Grid will be gridSize x gridSize cells
+    // At gridSize=25 on 600x600 canvas: 25x25 grid with 24px cells
+    // At gridSize=50 on 600x600 canvas: 50x50 grid with 12px cells  
+    // At gridSize=100 on 600x600 canvas: 100x100 grid with 6px cells
     return clampedSize
   })
 

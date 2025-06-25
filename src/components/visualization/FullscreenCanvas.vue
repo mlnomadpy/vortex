@@ -45,13 +45,13 @@
         <input
           v-model.number="store.gridSize"
           type="range"
-          min="25"
-          max="200"
+          min="10"
+          max="150"
           step="5"
           class="toolbar-slider"
-          title="Grid Size"
+          title="Grid Density"
         />
-        <span class="toolbar-value">{{ store.gridSize }}</span>
+        <span class="toolbar-value">{{ store.gridSize }}×{{ store.gridSize }}</span>
       </div>
 
       <!-- Coordinate Ranges -->

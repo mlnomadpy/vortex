@@ -13,7 +13,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   const showPredictedColors = ref(true)
   const showBoundaries = ref(false)
   const showDataPoints = ref(true)
-  const gridSize = ref(50)
+  const gridSize = ref(30)
   const coordinateRanges = ref({
     xMin: -1,
     xMax: 1,
@@ -178,7 +178,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
     showPredictedColors.value = true
     showBoundaries.value = false
     showDataPoints.value = true
-    gridSize.value = 50
+    gridSize.value = 30
     coordinateRanges.value = {
       xMin: -1,
       xMax: 1,

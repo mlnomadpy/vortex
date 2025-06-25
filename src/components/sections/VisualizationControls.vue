@@ -45,17 +45,17 @@
     <!-- Grid Size Control -->
     <div class="flex flex-wrap items-center justify-center gap-6 mb-4">
       <div class="flex items-center gap-2">
-        <label for="gridSize" class="text-sm font-medium text-gray-700">Grid Size:</label>
+        <label for="gridSize" class="text-sm font-medium text-gray-700">Grid Density:</label>
         <input
           id="gridSize"
           v-model.number="store.gridSize"
           type="range"
-          min="25"
-          max="200"
+          min="10"
+          max="150"
           step="5"
           class="w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
         />
-        <span class="text-sm font-medium text-gray-600 min-w-[2rem]">{{ store.gridSize }}</span>
+        <span class="text-sm font-medium text-gray-600 min-w-[4rem]">{{ store.gridSize }}×{{ store.gridSize }}</span>
       </div>
     </div>
 
