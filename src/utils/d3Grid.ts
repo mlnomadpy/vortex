@@ -209,6 +209,102 @@ export class D3Grid {
   }
 
   /**
+   * Partial cache clear for specific regions or conditions
+   */
+  clearCacheForRegion(xMin: number, xMax: number, yMin: number, yMax: number): void {
+    const keysToDelete: string[] = []
+    
+    for (const key of this.colorCache.keys()) {
+      const [x, y] = key.split('-').map(parseFloat)
+      if (x >= xMin && x <= xMax && y >= yMin && y <= yMax) {
+        keysToDelete.push(key)
+      }
+    }
+    
+    keysToDelete.forEach(key => this.colorCache.delete(key))
+  }
+
+  /**
+   * Clear cache for specific neuron changes
+   */
+  clearCacheForNeuron(neuronId: number): void {
+    const keysToDelete: string[] = []
+    
+    for (const key of this.colorCache.keys()) {
+      if (key.includes(`-${neuronId}-`)) {
+        keysToDelete.push(key)
+      }
+    }
+    
+    keysToDelete.forEach(key => this.colorCache.delete(key))
+  }
+
+  /**
+   * Get cache statistics for debugging
+   */
+  getCacheStats(): { size: number; maxSize: number; hitRate?: number } {
+    return {
+      size: this.colorCache.size,
+      maxSize: this.maxCacheSize
+    }
+  }
+
+  /**
+   * Precompute grid for better performance
+   */
+  precomputeGrid(boundaryConfig: DecisionBoundaryConfig, priority: 'fast' | 'quality' = 'fast'): void {
+    if (boundaryConfig.neurons.length === 0) return
+
+    const cells = this.generateGrid()
+    const batchSize = priority === 'fast' ? 50 : 20
+    
+    // Process in batches to avoid blocking the main thread
+    const processBatch = (startIndex: number) => {
+      const endIndex = Math.min(startIndex + batchSize, cells.length)
+      
+      for (let i = startIndex; i < endIndex; i++) {
+        const cell = cells[i]
+        const cacheKey = this.getCacheKey(cell.worldX, cell.worldY, boundaryConfig.neurons)
+        
+        if (!this.colorCache.has(cacheKey)) {
+          // Compute and cache the result
+          const rawScores = boundaryConfig.neurons.map(neuron => 
+            boundaryConfig.calculateScore(neuron, cell.worldX, cell.worldY)
+          )
+          const activatedScores = boundaryConfig.applyActivation(rawScores)
+          const maxIndex = d3.maxIndex(activatedScores)
+          const maxScore = activatedScores[maxIndex]
+          const winningNeuron = maxIndex !== undefined ? boundaryConfig.neurons[maxIndex] : null
+
+          let color = '#f8fafc'
+          let opacity = 0.05
+
+          if (winningNeuron && maxScore > 0) {
+            opacity = Math.max(0.3, Math.min(0.8, Math.abs(maxScore) * 0.4 + 0.3))
+            color = this.applyOpacityToColor(winningNeuron.color, opacity)
+          }
+
+          const cellData = {
+            color,
+            value: maxScore,
+            neuronId: winningNeuron?.id
+          }
+
+          this.colorCache.set(cacheKey, JSON.stringify(cellData))
+        }
+      }
+
+      // Continue with next batch if there are more cells
+      if (endIndex < cells.length) {
+        requestAnimationFrame(() => processBatch(endIndex))
+      }
+    }
+
+    // Start processing
+    requestAnimationFrame(() => processBatch(0))
+  }
+
+  /**
    * Generate cache key for memoization
    */
   private getCacheKey(x: number, y: number, neurons: Neuron[]): string {

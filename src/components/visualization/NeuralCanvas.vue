@@ -54,6 +54,9 @@
       :y="tooltip.y"
       :content="tooltip.content"
     />
+    
+    <!-- Debug Panel (only in development) -->
+    <GridUpdateDebug v-if="isDevelopment" />
   </div>
 </template>
 
@@ -65,6 +68,7 @@ import { useNeuralCanvas } from '@/composables/useNeuralCanvas'
 import StatsCard from './StatsCard.vue'
 import NeuronManagement from './NeuronManagement.vue'
 import CanvasTooltip from './CanvasTooltip.vue'
+import GridUpdateDebug from './GridUpdateDebug.vue'
 import type { Neuron } from '@/types'
 
 interface Props {
@@ -101,6 +105,9 @@ const avgLoss = computed(() => {
   }
   return store.computeLoss(store.filteredDataPoints)
 })
+
+// Development mode check
+const isDevelopment = computed(() => process.env.NODE_ENV === 'development')
 
 // Neuron selection
 function selectNeuron(neuron: Neuron) {

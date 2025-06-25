@@ -3,6 +3,7 @@ import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
 import { D3Grid, createD3Grid, gridUtils, type GridConfig, type DecisionBoundaryConfig } from '@/utils/d3Grid'
 import { D3SvgRenderer, createD3SvgRenderer, renderUtils, type RenderConfig } from '@/utils/d3SvgRenderer'
+import { gridUpdateService, gridUpdates } from '@/services/gridUpdateService'
 import type { DataPoint, Neuron } from '@/types'
 
 export interface NeuralCanvasConfig {
@@ -33,6 +34,9 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
   let d3Grid: D3Grid | null = null
   let d3Renderer: D3SvgRenderer | null = null
   let throttledRender: (...args: any[]) => void = () => {}
+  
+  // Grid update service integration
+  const gridId = `neural-canvas-${Date.now()}`
 
   // Computed canvas dimensions
   const canvasConfig = computed(() => ({
@@ -40,10 +44,23 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
     height: config.fullscreen ? Math.min(window.innerHeight - 200, 800) : config.height
   }))
 
-  // Computed cell size with performance optimization
+  // Computed cell size using store's gridSize setting
   const cellSize = computed(() => {
+    // Use the store's gridSize as the cell size in pixels
+    // Apply some bounds to ensure performance and usability
+    const userGridSize = store.gridSize
     const { width, height } = canvasConfig.value
-    return gridUtils.calculateOptimalCellSize(width, height, 2500)
+    
+    // Calculate maximum sensible cell size based on canvas dimensions
+    const maxCellSize = Math.min(width, height) / 10 // At least 10 cells per dimension
+    const minCellSize = 8 // Minimum readable cell size
+    
+    // Clamp the user's grid size to sensible bounds
+    const clampedSize = Math.max(minCellSize, Math.min(maxCellSize, userGridSize))
+    
+    // Grid will have approximately (width/cellSize) x (height/cellSize) cells
+    // At 50px cell size on 600x600 canvas = 12x12 = 144 cells
+    return clampedSize
   })
 
   // Grid configuration
@@ -81,6 +98,9 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
 
     // Create throttled render function
     throttledRender = renderUtils.createDebouncedRender(render, 50)
+
+    // Register with grid update service
+    gridUpdateService.registerGrid(gridId, d3Grid, throttledRender)
 
     // Initial render
     render()
@@ -194,11 +214,8 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
     // Add neuron
     const newNeuron = store.addNeuron(clampedX, clampedY)
 
-    // Clear grid cache and re-render
-    d3Grid.clearCache()
-    nextTick(() => {
-      throttledRender()
-    })
+    // Use grid update service for neuron addition
+    gridUpdates.neuronAdded(newNeuron.id)
 
     notificationStore.addNotification({
       message: `Neuron ${newNeuron.id} added at (${clampedX.toFixed(2)}, ${clampedY.toFixed(2)})`,
@@ -284,6 +301,8 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
   function updateNeuronPosition(): void {
     if (!selectedNeuron.value || !d3Grid) return
 
+    const oldPos = { x: selectedNeuron.value.x, y: selectedNeuron.value.y }
+
     // Clamp values to valid range
     selectedNeuron.value.x = Math.max(
       store.coordinateRanges.xMin,
@@ -294,9 +313,10 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
       Math.min(store.coordinateRanges.yMax, selectedNeuron.value.y)
     )
 
-    // Clear cache and re-render
-    d3Grid.clearCache()
-    throttledRender()
+    const newPos = { x: selectedNeuron.value.x, y: selectedNeuron.value.y }
+
+    // Use grid update service for position changes
+    gridUpdates.neuronMoved(selectedNeuron.value.id, oldPos, newPos)
 
     notificationStore.addNotification({
       message: `Neuron ${selectedNeuron.value.id} position updated`,
@@ -308,9 +328,15 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
   function updateNeuronColor(): void {
     if (!selectedNeuron.value || !d3Grid) return
 
-    // Clear cache and re-render
-    d3Grid.clearCache()
-    throttledRender()
+    const oldColor = selectedNeuron.value.color
+
+    // Color will be updated by the component, so we need to get the new color
+    // Use nextTick to ensure the color has been updated
+    nextTick(() => {
+      if (selectedNeuron.value) {
+        gridUpdates.neuronColorChanged(selectedNeuron.value.id, oldColor, selectedNeuron.value.color)
+      }
+    })
 
     notificationStore.addNotification({
       message: `Neuron ${selectedNeuron.value.id} color updated`,
@@ -325,11 +351,8 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
       store.neurons.splice(index, 1)
       selectedNeuron.value = null
 
-      // Clear cache and re-render
-      if (d3Grid) {
-        d3Grid.clearCache()
-        throttledRender()
-      }
+      // Use grid update service for neuron removal
+      gridUpdates.neuronRemoved(neuronId)
 
       notificationStore.addNotification({
         message: `Neuron ${neuronId} removed`,
@@ -379,45 +402,93 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
 
     d3Grid.updateConfig(gridConfig.value)
     d3Renderer.updateConfig(renderConfig.value)
+    
+    // Clear cache when fundamental configuration changes
+    d3Grid.clearCache()
     throttledRender()
   }
 
-  // Watchers for reactive updates
+  // Watchers for reactive updates using grid update service
   watch(
-    () => [
-      store.neurons.length,
-      store.showBoundaries,
-      store.similarityMetric,
-      store.activationFunction,
-      store.gridSize,
-      store.coordinateRanges,
-      canvasConfig.value.width,
-      canvasConfig.value.height
-    ],
+    () => store.showBoundaries,
+    (newValue, oldValue) => {
+      if (newValue !== oldValue) {
+        gridUpdates.boundariesToggled(newValue)
+      }
+    }
+  )
+
+  watch(
+    () => store.similarityMetric,
+    (newValue, oldValue) => {
+      if (newValue !== oldValue) {
+        gridUpdates.metricChanged(oldValue, newValue)
+      }
+    }
+  )
+
+  watch(
+    () => store.activationFunction,
+    (newValue, oldValue) => {
+      if (newValue !== oldValue) {
+        gridUpdates.metricChanged(oldValue, newValue)
+      }
+    }
+  )
+
+  watch(
+    () => store.gridSize,
+    (newSize, oldSize) => {
+      if (oldSize !== undefined && newSize !== oldSize) {
+        // Grid size changes require immediate update as they affect visual density
+        gridUpdates.gridSizeChanged(oldSize, newSize)
+      }
+    }
+  )
+
+  watch(
+    () => store.coordinateRanges,
     () => {
       updateConfigurations()
     },
     { deep: true }
   )
 
-  // Watch neurons array for deep changes
   watch(
-    () => store.neurons,
-    () => {
-      if (d3Grid) {
-        d3Grid.clearCache()
-        throttledRender()
+    () => [canvasConfig.value.width, canvasConfig.value.height],
+    (newSize, oldSize) => {
+      if (oldSize && (newSize[0] !== oldSize[0] || newSize[1] !== oldSize[1])) {
+        gridUpdates.canvasResized(
+          { width: oldSize[0], height: oldSize[1] },
+          { width: newSize[0], height: newSize[1] }
+        )
       }
-    },
-    { deep: true }
+    }
   )
 
   // Watch filtered data points
   watch(
     () => store.filteredDataPoints.length,
     () => {
-      if (d3Grid) {
-        d3Grid.clearCache()
+      gridUpdates.dataChanged('filter')
+    }
+  )
+
+  // Watch for class filtering changes
+  watch(
+    () => store.activeClasses,
+    () => {
+      gridUpdates.dataChanged('filter', { activeClasses: store.activeClasses })
+    },
+    { deep: true }
+  )
+
+  // Watch for predicted colors toggle
+  watch(
+    () => store.showPredictedColors,
+    () => {
+      // Only re-render data points, not grid
+      if (d3Renderer) {
         throttledRender()
       }
     }
@@ -445,6 +516,9 @@ export function useNeuralCanvas(config: NeuralCanvasConfig) {
   })
 
   onUnmounted(() => {
+    // Unregister from grid update service
+    gridUpdateService.unregisterGrid(gridId)
+    
     // Cleanup
     if (d3Renderer) {
       d3Renderer.clear()
