@@ -169,10 +169,9 @@
           />
         </FloatingPanel>
         
-        <!-- Panel Control Toolbar -->
-        <div class="panel-controls-toolbar">
-          <div class="toolbar-section">
-            <h3 class="toolbar-title">Panels</h3>
+        <!-- Panel Control Sidebar -->
+        <div class="panel-controls-sidebar">
+          <div class="sidebar-section">
             <div class="panel-toggles">
               <button 
                 v-for="(panel, key) in panels"
@@ -187,20 +186,16 @@
             </div>
           </div>
           
-          <div class="toolbar-section">
-            <h3 class="toolbar-title">Layout</h3>
+          <div class="sidebar-section">
             <div class="layout-controls">
-              <button @click="resetPanelPositions" class="layout-btn">
+              <button @click="resetPanelPositions" class="layout-btn" title="Reset Layout">
                 <ArrowPathIcon class="btn-icon" />
-                Reset Layout
               </button>
-              <button @click="minimizeAllPanels" class="layout-btn">
+              <button @click="minimizeAllPanels" class="layout-btn" title="Minimize All">
                 <MinusIcon class="btn-icon" />
-                Minimize All
               </button>
-              <button @click="showAllPanels" class="layout-btn">
+              <button @click="showAllPanels" class="layout-btn" title="Show All">
                 <Square3Stack3DIcon class="btn-icon" />
-                Show All
               </button>
             </div>
           </div>
@@ -625,7 +620,7 @@ function addPerturbation() {
 }
 
 .workspace-container {
-  padding: 16px;
+  padding: 16px 16px 16px 80px; /* Add left padding for sidebar */
   height: calc(100vh - 60px);
   position: relative;
 }
@@ -646,8 +641,8 @@ function addPerturbation() {
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  width: 600px;
-  height: 600px;
+  width: 700px;
+  height: 700px;
   position: relative;
 }
 
@@ -660,62 +655,55 @@ function addPerturbation() {
   z-index: 10;
 }
 
-/* Panel Controls Toolbar */
-.panel-controls-toolbar {
+/* Panel Controls Sidebar */
+.panel-controls-sidebar {
   position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  top: 60px; /* Below header */
+  bottom: 0;
+  width: 64px;
   background: #2d2d30;
-  border: 1px solid #464647;
-  border-radius: 8px;
-  padding: 12px 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
+  border-right: 1px solid #464647;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
   z-index: 200;
   display: flex;
-  gap: 24px;
-  align-items: center;
+  flex-direction: column;
+  padding: 16px 8px;
+  gap: 16px;
 }
 
-.toolbar-section {
+.sidebar-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.toolbar-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: #cccccc;
-  margin: 0;
-  text-align: center;
-}
-
 .panel-toggles {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .panel-toggle {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 8px 10px;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 4px;
   background: #383838;
   border: 1px solid #555555;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
   color: #cccccc;
-  min-width: 60px;
+  width: 48px;
+  height: 48px;
 }
 
 .panel-toggle:hover {
   background: #404040;
   border-color: #666666;
-  transform: translateY(-1px);
 }
 
 .panel-toggle.active {
@@ -725,34 +713,43 @@ function addPerturbation() {
 }
 
 .toggle-icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .toggle-label {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 500;
   text-align: center;
-  line-height: 1.1;
+  line-height: 1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .layout-controls {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #464647;
 }
 
 .layout-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
+  justify-content: center;
+  padding: 8px 4px;
   background: #383838;
   border: 1px solid #555555;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
   color: #cccccc;
-  font-size: 10px;
+  width: 48px;
+  height: 32px;
 }
 
 .layout-btn:hover {
@@ -761,8 +758,8 @@ function addPerturbation() {
 }
 
 .btn-icon {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
 }
 
 /* Floating Panel Content Styles */
@@ -914,34 +911,50 @@ function addPerturbation() {
 /* Responsive Design */
 @media (max-width: 1400px) {
   .canvas-container {
-    width: 500px;
-    height: 500px;
-  }
-  
-  .panel-controls-toolbar {
-    flex-direction: column;
-    gap: 12px;
+    width: 600px;
+    height: 600px;
   }
 }
 
 @media (max-width: 1024px) {
   .canvas-container {
-    width: 400px;
-    height: 400px;
-  }
-  
-  .panel-toggles {
-    flex-wrap: wrap;
-  }
-  
-  .layout-controls {
-    flex-wrap: wrap;
+    width: 500px;
+    height: 500px;
   }
 }
 
 @media (max-width: 768px) {
   .workspace-container {
-    padding: 8px;
+    padding: 8px 8px 8px 72px;
+  }
+  
+  .canvas-container {
+    width: 400px;
+    height: 400px;
+  }
+  
+  .panel-controls-sidebar {
+    width: 56px;
+    padding: 12px 6px;
+  }
+  
+  .panel-toggle,
+  .layout-btn {
+    width: 44px;
+  }
+  
+  .panel-toggle {
+    height: 44px;
+  }
+  
+  .layout-btn {
+    height: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .workspace-container {
+    padding: 8px 8px 8px 64px;
   }
   
   .canvas-container {
@@ -949,12 +962,26 @@ function addPerturbation() {
     height: 300px;
   }
   
-  .panel-controls-toolbar {
-    position: relative;
-    margin-top: 16px;
-    transform: none;
-    left: auto;
-    bottom: auto;
+  .panel-controls-sidebar {
+    width: 48px;
+    padding: 8px 4px;
+  }
+  
+  .panel-toggle,
+  .layout-btn {
+    width: 40px;
+  }
+  
+  .panel-toggle {
+    height: 40px;
+  }
+  
+  .layout-btn {
+    height: 24px;
+  }
+  
+  .toggle-label {
+    font-size: 7px;
   }
 }
 </style>
