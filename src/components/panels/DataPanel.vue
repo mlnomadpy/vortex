@@ -203,12 +203,13 @@ interface Props {
   zIndex?: number
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  initialPosition: () => ({ x: 20, y: 80 })
+withDefaults(defineProps<Props>(), {
+  initialPosition: () => ({ x: 20, y: 80 }),
+  zIndex: 1000
 })
 
 // Emits
-const emit = defineEmits<{
+defineEmits<{
   close: []
 }>()
 

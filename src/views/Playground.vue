@@ -251,7 +251,6 @@ import {
   Square3Stack3DIcon,
   BoltIcon,
   ArrowPathIcon,
-  ExclamationTriangleIcon,
   MinusIcon,
   CogIcon
 } from '@/components/ui/icons'

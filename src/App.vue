@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
-import { ParticlesBackground, NotificationContainer, LoadingSpinner, OnboardingTour, TutorialProgress } from '@/components/ui'
+import { ParticlesBackground, NotificationContainer, LoadingSpinner, OnboardingTour } from '@/components/ui'
 import { useNotificationStore } from '@/stores/notification'
 import { useTheme } from '@/composables/useTheme'
 import { useLoadingState } from '@/composables/useLoadingState'

@@ -65,7 +65,7 @@
           </Button>
           
           <a 
-            href="https://github.com/yourusername/vortex" 
+            href="https://github.com/mlnomadpy/vortex" 
             target="_blank"
             class="p-2 text-theme-secondary hover:text-theme-primary transition-colors rounded-lg interactive-bg"
             title="View on GitHub"

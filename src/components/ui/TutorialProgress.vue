@@ -62,10 +62,7 @@ const props = withDefaults(defineProps<Props>(), {
   showNext: true
 })
 
-const emit = defineEmits<{
-  skip: []
-  next: []
-}>()
+
 
 const progressPercentage = computed(() => {
   return Math.round(((props.currentStep + 1) / props.totalSteps) * 100)

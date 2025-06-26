@@ -162,7 +162,7 @@
                 <div class="class-metrics">
                   <h6 class="class-metrics-title">Per-Class Performance</h6>
                   <div 
-                    v-for="(classId, index) in confusionMatrixData.classes" 
+                    v-for="classId in confusionMatrixData.classes" 
                     :key="classId"
                     class="class-metric-row"
                   >
@@ -384,7 +384,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { 
   ChartBarIcon, 
   CalculatorIcon, 

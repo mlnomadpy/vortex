@@ -151,10 +151,7 @@
                 <span class="metric-dot"></span>
                 <span>Accuracy: {{ tooltip.data?.accuracy?.toFixed(1) }}%</span>
               </div>
-              <div v-if="tooltip.data?.learningRate" class="tooltip-metric rate">
-                <span class="metric-dot"></span>
-                <span>LR: {{ tooltip.data.learningRate.toFixed(4) }}</span>
-              </div>
+
             </div>
           </div>
         </div>
@@ -238,10 +235,7 @@ const latestLoss = computed(() => {
   return steps.length > 0 ? steps[steps.length - 1].loss : 0
 })
 
-const latestAccuracy = computed(() => {
-  const steps = store.optimizationHistory.steps
-  return steps.length > 0 ? steps[steps.length - 1].accuracy : 0
-})
+
 
 const bestAccuracy = computed(() => {
   const steps = store.optimizationHistory.steps

@@ -113,7 +113,7 @@
           <!-- Progress Dots -->
           <div class="progress-dots">
             <div 
-              v-for="(step, index) in steps"
+              v-for="(_, index) in steps"
               :key="index"
               :class="[
                 'progress-dot',
@@ -320,7 +320,7 @@ const completeTour = () => {
   emit('complete')
 }
 
-const handleInteractiveAction = (action: string) => {
+const handleInteractiveAction = (_action: string) => {
   interactionCompleted.value = true
   
   if (currentStep.value.waitForInteraction) {

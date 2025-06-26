@@ -1,7 +1,7 @@
 <template>
   <div class="control-panel">
     <div 
-      v-for="(group, index) in controlGroups" 
+      v-for="group in controlGroups" 
       :key="group.id" 
       class="control-group"
       :class="{ 'is-open': openGroups.includes(group.id) }"

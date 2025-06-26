@@ -142,7 +142,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { CogIcon, RocketLaunchIcon, StopIcon, ArrowPathIcon } from '@/components/ui/icons'
+import { RocketLaunchIcon, StopIcon, ArrowPathIcon } from '@/components/ui/icons'
 import { Button } from '@/components/ui'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'

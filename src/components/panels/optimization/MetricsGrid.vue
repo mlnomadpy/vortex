@@ -58,18 +58,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import {
   ChartLineIcon,
   CalculatorIcon,
   BoltIcon,
   CogIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
-  MinusIcon
 } from '@/components/ui/icons'
-import TrendIcon from './TrendIcon.vue'
-import StatusDot from './StatusDot.vue'
+import TrendIcon from '@/components/ui/TrendIcon.vue'
+import StatusDot from '@/components/ui/StatusDot.vue'
 
 interface Props {
   showDetailed: boolean
@@ -78,9 +74,9 @@ interface Props {
   bestLoss: number
   bestAccuracy: number
   stepsPerSecond: number
-  convergenceStatus: string
-  lossTrend: string
-  accuracyTrend: string
+  convergenceStatus: 'converged' | 'converging' | 'stable' | 'exploring' | 'starting'
+  lossTrend: 'up' | 'down' | 'neutral'
+  accuracyTrend: 'up' | 'down' | 'neutral'
 }
 
 const props = defineProps<Props>()

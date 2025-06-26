@@ -537,13 +537,6 @@ const canOptimize = computed(() => {
   return store.neurons.length > 0 && store.dataPoints.length > 0
 })
 
-const currentStatus = computed(() => {
-  if (isCompleted.value) return 'completed'
-  if (isRunning.value) return 'training'
-  if (hasHistory.value) return 'stopped'
-  return 'ready'
-})
-
 // Epoch suggestions based on data size
 const epochSuggestions = computed(() => {
   const dataSize = store.dataPoints.length
@@ -578,15 +571,7 @@ const stepsPerSecond = computed(() => {
   return (recent.length - 1) / (timeSpan / 1000)
 })
 
-const bestLoss = computed(() => {
-  if (!hasHistory.value) return 0
-  return Math.min(...store.optimizationHistory.steps.map(s => s.loss))
-})
 
-const bestAccuracy = computed(() => {
-  if (!hasHistory.value) return 0
-  return Math.max(...store.optimizationHistory.steps.map(s => s.accuracy))
-})
 
 const estimatedTimeRemaining = computed(() => {
   if (!isRunning.value || stepsPerSecond.value === 0) return '—'
@@ -599,34 +584,7 @@ const estimatedTimeRemaining = computed(() => {
   return `${Math.round(remainingSeconds / 3600)}h`
 })
 
-// Trend calculations - using 5-step averages for smoother trends
-const lossTrend = computed(() => {
-  const history = store.optimizationHistory.steps
-  if (history.length < 5) return 'neutral'
-  
-  const recent = history.slice(-5)
-  const avgRecent = recent.reduce((sum, step) => sum + step.loss, 0) / recent.length
-  const avgPrevious = history.slice(-10, -5).reduce((sum, step) => sum + step.loss, 0) / 5
-  
-  const diff = avgRecent - avgPrevious
-  if (diff < -0.001) return 'up' // Loss decreasing is good
-  if (diff > 0.001) return 'down' // Loss increasing is bad
-  return 'neutral'
-})
 
-const accuracyTrend = computed(() => {
-  const history = store.optimizationHistory.steps
-  if (history.length < 5) return 'neutral'
-  
-  const recent = history.slice(-5)
-  const avgRecent = recent.reduce((sum, step) => sum + step.accuracy, 0) / recent.length
-  const avgPrevious = history.slice(-10, -5).reduce((sum, step) => sum + step.accuracy, 0) / 5
-  
-  const diff = avgRecent - avgPrevious
-  if (diff > 0.5) return 'up'
-  if (diff < -0.5) return 'down'
-  return 'neutral'
-})
 
 const convergenceStatus = computed(() => {
   const recentLoss = store.optimizationHistory.steps.map(s => s.loss).slice(-10)
@@ -655,15 +613,7 @@ function formatMetricValue(value: number, decimals: number = 2) {
   return value.toFixed(decimals)
 }
 
-function getImprovementValue() {
-  if (!hasHistory.value) return 0
-  const steps = store.optimizationHistory.steps
-  if (steps.length < 2) return 0
-  
-  const firstAccuracy = steps[0].accuracy
-  const currentAccuracy = steps[steps.length - 1].accuracy
-  return currentAccuracy - firstAccuracy
-}
+
 
 // Actions
 function applyPreset(preset: any) {
