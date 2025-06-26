@@ -167,6 +167,8 @@
           </div>
         </div>
 
+
+
         <!-- Performance Metrics -->
         <div class="control-section">
           <h5 class="section-title">
@@ -532,6 +534,8 @@ function getImpactDescription(impact: string): string {
     default: return 'No influence'
   }
 }
+
+
 
 // Actions
 function setPresetPosition(preset: { x: number; y: number }) {
@@ -1141,7 +1145,8 @@ function clearAllNeurons() {
 
 .neuron-card-metrics {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
 
@@ -1234,6 +1239,71 @@ function clearAllNeurons() {
   color: rgb(var(--text-primary));
 }
 
+
+
+/* Neural Configuration Styles */
+.config-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.config-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.config-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgb(var(--text-primary));
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.select-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.config-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: rgb(var(--bg-tertiary));
+  border: 1px solid rgb(var(--border-secondary));
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: rgb(var(--text-primary));
+  cursor: pointer;
+  transition: all 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+}
+
+.config-select:hover {
+  border-color: rgb(var(--border-primary));
+  background-color: rgb(var(--bg-hover));
+}
+
+.config-select:focus {
+  outline: none;
+  border-color: rgb(var(--color-primary));
+  box-shadow: 0 0 0 3px rgba(var(--color-primary), 0.1);
+}
+
+.config-description {
+  font-size: 0.75rem;
+  color: rgb(var(--text-tertiary));
+  line-height: 1.4;
+  padding: 0.25rem 0;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .panel-header {
@@ -1261,6 +1331,15 @@ function clearAllNeurons() {
   
   .list-statistics {
     grid-template-columns: 1fr;
+  }
+  
+  .neuron-card-metrics {
+    gap: 0.5rem;
+  }
+  
+  .mini-metric {
+    min-width: 0;
+    flex: 1;
   }
 }
 

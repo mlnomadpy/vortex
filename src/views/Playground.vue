@@ -166,6 +166,25 @@
             @update-position="(...args) => neuralCanvas?.canvasComponent?.updateNeuronPosition(...args)"
             @update-color="(...args) => neuralCanvas?.canvasComponent?.updateNeuronColor(...args)"
             @remove="(...args) => neuralCanvas?.canvasComponent?.removeNeuron(...args)"
+            @add-neuron="(x, y) => store.addNeuron(x, y)"
+          />
+        </FloatingPanel>
+        
+        <FloatingPanel
+          v-if="panels.networkConfig"
+          title="Network Configuration"
+          :icon="CogIcon"
+          :initial-position="{ x: 1000, y: 10 }"
+          :width="400"
+          :height="500"
+          :z-index="150"
+          @close="panels.networkConfig = false"
+        >
+          <NetworkConfigPanel
+            :activation-function="store.activationFunction"
+            :similarity-metric="store.similarityMetric"
+            @update-activation="handleActivationUpdate"
+            @update-similarity="handleSimilarityUpdate"
           />
         </FloatingPanel>
         
@@ -213,6 +232,7 @@ import NeuralCanvas from '@/components/visualization/NeuralCanvas.vue'
 import MetricsPanel from '@/components/visualization/MetricsPanel.vue'
 import LossLandscape from '@/components/visualization/LossLandscape.vue'
 import NeuronManagement from '@/components/visualization/NeuronManagement.vue'
+import NetworkConfigPanel from '@/components/panels/NetworkConfigPanel.vue'
 import LossHistoryChart from '@/components/visualization/LossHistoryChart.vue'
 import ClassToggles from '@/components/sections/ClassToggles.vue'
 import DataPanel from '@/components/panels/DataPanel.vue'
@@ -232,7 +252,8 @@ import {
   BoltIcon,
   ArrowPathIcon,
   ExclamationTriangleIcon,
-  MinusIcon
+  MinusIcon,
+  CogIcon
 } from '@/components/ui/icons'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
@@ -245,12 +266,13 @@ const neuralCanvas = ref<InstanceType<typeof NeuralCanvas> | null>(null)
 
 // Panel visibility state
 const panels = reactive({
-  data: true,
-  visualization: true,
-  optimization: true,
-  metrics: true,
-  presets: true,
-  neurons: false
+  data: false,
+  visualization: false,
+  optimization: false,
+  metrics: false,
+  presets: false,
+  neurons: false,
+  networkConfig: false
 })
 
 // Dataset presets
@@ -348,7 +370,8 @@ function getPanelName(key: string): string {
     optimization: 'Optimization',
     metrics: 'Metrics',
     presets: 'Presets',
-    neurons: 'Neurons'
+    neurons: 'Neurons',
+    networkConfig: 'Network'
   }
   return names[key] || key
 }
@@ -360,7 +383,8 @@ function getPanelIcon(key: string) {
     optimization: RocketLaunchIcon,
     metrics: ChartBarIcon,
     presets: DocumentTextIcon,
-    neurons: CpuChipIcon
+    neurons: CpuChipIcon,
+    networkConfig: CogIcon
   }
   return icons[key] || DocumentTextIcon
 }
@@ -599,6 +623,22 @@ function addPerturbation() {
   
   notificationStore.addNotification({
     message: 'Small perturbations added to all neurons!',
+    type: 'info'
+  })
+}
+
+function handleActivationUpdate(value: string) {
+  store.activationFunction = value as any
+  notificationStore.addNotification({
+    message: `Activation function changed to ${value}!`,
+    type: 'info'
+  })
+}
+
+function handleSimilarityUpdate(value: string) {
+  store.similarityMetric = value as any
+  notificationStore.addNotification({
+    message: `Similarity metric changed to ${value}!`,
     type: 'info'
   })
 }
