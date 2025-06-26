@@ -35,6 +35,13 @@
             Playground
           </router-link>
           <router-link 
+            to="/mnist" 
+            class="text-theme-secondary hover:text-blue-500 font-medium transition-colors"
+            active-class="text-blue-500"
+          >
+            MNIST Classifier
+          </router-link>
+          <router-link 
             to="/docs" 
             class="text-theme-secondary hover:text-blue-500 font-medium transition-colors"
             active-class="text-blue-500"

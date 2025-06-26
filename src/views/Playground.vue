@@ -12,7 +12,7 @@
         
         <!-- Central Canvas Area -->
         <div class="canvas-area">
-          <div class="canvas-container">
+          <div class="canvas-container" data-tour="neural-canvas">
             <NeuralCanvas ref="neuralCanvas" />
             
             <!-- Class Toggles Toolbar -->
@@ -46,6 +46,7 @@
           :z-index="150"
           @close="panels.optimization = false"
           v-if="panels.optimization"
+          data-tour="optimization-panel"
         >
           <div class="optimization-content">
             <OptimizationPanel />
@@ -61,6 +62,7 @@
           :z-index="150"
           @close="panels.metrics = false"
           v-if="panels.metrics"
+          data-tour="metrics-panel"
         >
           <div class="metrics-content">
             <div class="metrics-section">
@@ -87,6 +89,7 @@
           :z-index="150"
           @close="panels.presets = false"
           v-if="panels.presets"
+          data-tour="presets-panel"
         >
           <div class="presets-content">
             <!-- Dataset Presets -->
@@ -179,6 +182,7 @@
           :height="500"
           :z-index="150"
           @close="panels.networkConfig = false"
+          data-tour="network-config-panel"
         >
           <NetworkConfigPanel
             :activation-function="store.activationFunction"
@@ -189,7 +193,7 @@
         </FloatingPanel>
         
         <!-- Panel Control Sidebar -->
-        <div class="panel-controls-sidebar">
+        <div class="panel-controls-sidebar" data-tour="panel-controls">
           <div class="sidebar-section">
             <div class="panel-toggles">
               <button 
@@ -198,6 +202,7 @@
                 @click="togglePanel(key)"
                 :class="['panel-toggle', { active: panel }]"
                 :title="`Toggle ${getPanelName(key)} panel`"
+                :data-tour="`toggle-${key}`"
               >
                 <component :is="getPanelIcon(key)" class="toggle-icon" />
                 <span class="toggle-label">{{ getPanelName(key) }}</span>
@@ -389,6 +394,9 @@ function getPanelIcon(key: string) {
 }
 
 function resetPanelPositions() {
+  // Reset canvas and all associated state
+  store.reset()
+
   // Reset all panels to default positions by re-rendering them
   const currentPanels = { ...panels }
   Object.keys(panels).forEach(key => {
@@ -400,15 +408,18 @@ function resetPanelPositions() {
   }, 100)
   
   notificationStore.addNotification({
-    message: 'Panel positions reset to defaults',
+    message: 'Canvas and panel layout have been reset',
     type: 'info'
   })
 }
 
 function minimizeAllPanels() {
-  // This would minimize all panels - implementation depends on FloatingPanel component
+  Object.keys(panels).forEach(key => {
+    panels[key as keyof typeof panels] = false
+  })
+  
   notificationStore.addNotification({
-    message: 'All panels minimized',
+    message: 'All panels hidden',
     type: 'info'
   })
 }

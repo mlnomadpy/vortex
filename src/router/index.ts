@@ -18,6 +18,11 @@ const router = createRouter({
       path: '/docs',
       name: 'Documentation',
       component: () => import('@/views/Documentation.vue')
+    },
+    {
+      path: '/mnist',
+      name: 'MnistClassifier',
+      component: () => import('@/views/MnistClassifier.vue')
     }
   ]
 })

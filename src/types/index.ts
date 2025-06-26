@@ -5,6 +5,22 @@ export interface DataPoint {
   originalLabel?: number
 }
 
+// New: N-dimensional data point for MNIST
+export interface NDDataPoint {
+  features: number[]  // 784 features for MNIST (28x28 pixels)
+  label: number      // Class label (0-9 for MNIST)
+  originalLabel?: number
+}
+
+// New: N-dimensional neuron for high-dimensional classification
+export interface NDNeuron {
+  id: number
+  weights: number[]  // Weight vector matching input dimensions
+  bias: number
+  color: string
+  label?: string     // e.g., "Digit 0", "Digit 1", etc.
+}
+
 export interface Neuron {
   id: number
   x: number
@@ -12,9 +28,72 @@ export interface Neuron {
   color: string
 }
 
+// New: MNIST dataset structure
+export interface MNISTDataset {
+  trainImages: NDDataPoint[]
+  testImages: NDDataPoint[]
+  imageShape: { width: number; height: number }
+  numClasses: number
+}
+
+// New: Training batch for efficient processing
+export interface TrainingBatch {
+  features: number[][]
+  labels: number[]
+  batchSize: number
+}
+
+// New: MNIST-specific optimization step
+export interface NDOptimizationStep {
+  step: number
+  loss: number
+  accuracy: number
+  trainAccuracy: number
+  testAccuracy: number
+  timestamp: number
+  neurons: Array<{
+    id: number
+    weights: number[]
+    bias: number
+    weightNorm?: number
+    gradientNorm?: number
+  }>
+  learningMetrics?: {
+    convergence: number
+    weightDiversity: number
+    activationSparsity: number
+  }
+}
+
+// New: MNIST optimization history
+export interface NDOptimizationHistory {
+  steps: NDOptimizationStep[]
+  isRunning: boolean
+  currentStep: number
+  totalSteps: number
+  config: {
+    learningRate: number
+    epochs: number
+    batchSize: number
+    speed: number
+    regularization?: {
+      l1: number
+      l2: number
+    }
+  }
+}
+
 export interface Prediction {
   winningNeuron: Neuron | null
   scores: number[]
+}
+
+// New: N-dimensional prediction
+export interface NDPrediction {
+  winningNeuron: NDNeuron | null
+  scores: number[]
+  probabilities: number[]
+  confidence: number
 }
 
 export interface LossLandscapePoint {
@@ -65,6 +144,12 @@ export interface NeuronMovement {
 
 export type SimilarityMetric = 'dotProduct' | 'euclidean' | 'yatProduct'
 export type ActivationFunction = 'none' | 'softmax' | 'softermax' | 'sigmoid' | 'relu' | 'gelu'
+
+// New: Extended similarity metrics for n-dimensional space
+export type NDSimilarityMetric = SimilarityMetric | 'cosine' | 'manhattan' | 'rbf'
+
+// New: Visualization modes for MNIST
+export type MNISTVisualizationMode = 'weights' | 'activations' | 'gradients' | 'filters'
 
 export interface NotificationItem {
   id: string
