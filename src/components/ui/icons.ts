@@ -71,4 +71,6 @@ export const DocumentTextIcon = createIcon('DocumentTextIcon', 'M19.5 14.25v-2.6
 export const EnvelopeIcon = createIcon('EnvelopeIcon', 'M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75')
 
 // Media control icons
-export const StopIcon = createIcon('StopIcon', 'M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z')
+export const StopIcon = createIcon('StopIcon', 'M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25-2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z')
+
+export const ChevronDownIcon = createIcon('ChevronDownIcon', 'M19.5 8.25l-7.5 7.5-7.5-7.5')

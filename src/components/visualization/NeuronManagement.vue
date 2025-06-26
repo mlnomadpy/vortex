@@ -309,7 +309,7 @@
             :key="neuron.id"
             @click="$emit('select', neuron)"
             class="neuron-card"
-            :class="{ selected: selectedNeuron?.id === neuron.id }"
+            :class="{ selected: selectedNeuron ? (selectedNeuron as Neuron)?.id === neuron.id : false}"
           >
             <div class="neuron-card-header">
               <div class="neuron-icon" :style="{ backgroundColor: neuron.color }">

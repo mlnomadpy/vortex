@@ -1,199 +1,160 @@
 <template>
-  <div class="min-h-screen scroll-smooth momentum-scroll">
+  <div class="min-h-screen photoshop-workspace">
     <AppHeader />
     
-    <main class="container mx-auto px-6 py-8 max-w-7xl">
-      <div class="main-container p-8">
+    <main class="workspace-main">
+      <div class="workspace-container">
         
-        <div class="text-center mb-8">
-          <h1 class="text-4xl font-bold text-theme-primary mb-4">Neural Network Playground</h1>
-          <p class="text-lg text-theme-secondary">Experiment freely with neural network configurations</p>
+        <div class="text-center mb-4">
+          <h1 class="text-3xl font-bold text-theme-primary mb-2">Neural Network Playground</h1>
+          <p class="text-sm text-theme-secondary">Experiment freely with neural network configurations</p>
         </div>
         
-        <!-- Main Controls Bar -->
-        <div class="controls-section mb-6">
-          <ControlsGrid />
-        </div>
-        
-        <!-- Visualization Controls and Class Toggles - Integrated -->
-        <div class="visualization-header mb-6">
-          <VisualizationControls />
-          <ClassToggles />
-        </div>
-        
-        <!-- Main Content Layout -->
-        <div class="playground-layout">
-          <!-- Neural Canvas - Main Focus -->
-          <div class="canvas-section">
+        <!-- Flexible Panel Layout -->
+        <div class="panels-layout">
+          <!-- Left Panel Column -->
+          <div class="panel-column left-column">
+            <DataPanel />
+            <VisualizationPanel />
+          </div>
+          
+          <!-- Center Canvas Area -->
+          <div class="canvas-area">
             <div class="canvas-container">
-              <NeuralCanvas />
+              <NeuralCanvas ref="neuralCanvas" />
+              
+              <!-- Class Toggles Toolbar -->
+              <div v-if="store.allClasses.length > 0" class="class-toolbar-overlay">
+                <ClassToggles />
+              </div>
             </div>
           </div>
           
-          <!-- Tool Panels - Organized Sidebar -->
-          <div class="tools-sidebar">
-            <!-- Tabbed Tool Interface -->
-            <div class="tools-container">
-              <!-- Tab Navigation -->
-              <div class="tab-nav">
-                <button 
-                  v-for="tab in tabs" 
-                  :key="tab.id"
-                  @click="activeTab = tab.id"
-                  :class="['tab-button', { active: activeTab === tab.id }]"
-                >
-                  <component :is="tab.icon" class="w-4 h-4" />
-                  <span>{{ tab.label }}</span>
-                </button>
+          <!-- Right Panel Column -->
+          <div class="panel-column right-column">
+            <OptimizationPanel />
+            
+            <!-- Metrics Panel -->
+            <div class="panel-wrapper">
+              <div class="panel-header">
+                <div class="panel-title-section">
+                  <ChartBarIcon class="panel-icon" />
+                  <span class="panel-title">Metrics & Charts</span>
+                </div>
               </div>
-              
-              <!-- Tab Content -->
-              <div class="tab-content">
-                <!-- Metrics Tab -->
-                <div v-if="activeTab === 'metrics'" class="tab-panel">
-                  <div class="panel-section">
-                    <h3 class="panel-title">Real-time Metrics</h3>
+              <div class="panel-content">
+                <div class="metrics-content">
+                  <div class="metrics-section">
+                    <h3 class="metrics-title">Real-time Metrics</h3>
                     <MetricsPanel />
                   </div>
-                  
-                  <div class="panel-section">
-                    <h3 class="panel-title">Loss Landscape</h3>
+                  <div class="metrics-section">
+                    <h3 class="metrics-title">Loss History</h3>
+                    <LossHistoryChart />
+                  </div>
+                  <div class="metrics-section">
+                    <h3 class="metrics-title">Loss Landscape</h3>
                     <LossLandscape />
                   </div>
                 </div>
-                
-                <!-- Presets Tab -->
-                <div v-if="activeTab === 'presets'" class="tab-panel">
-                  <div class="panel-section">
-                    <h3 class="panel-title">Dataset Presets</h3>
-                    <div class="preset-grid">
-                      <button 
-                        v-for="preset in datasetPresets"
-                        :key="preset.id"
-                        @click="loadPreset(preset.id)"
-                        class="preset-card"
-                      >
-                        <div class="preset-icon">
-                          <component :is="preset.icon" class="w-6 h-6" />
-                        </div>
-                        <div class="preset-info">
-                          <h4 class="preset-name">{{ preset.name }}</h4>
-                          <p class="preset-description">{{ preset.description }}</p>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div class="panel-section">
-                    <h3 class="panel-title">Network Presets</h3>
-                    <div class="preset-grid">
-                      <button 
-                        v-for="preset in networkPresets"
-                        :key="preset.id"
-                        @click="loadNetworkPreset(preset.id)"
-                        class="preset-card"
-                      >
-                        <div class="preset-icon">
-                          <component :is="preset.icon" class="w-6 h-6" />
-                        </div>
-                        <div class="preset-info">
-                          <h4 class="preset-name">{{ preset.name }}</h4>
-                          <p class="preset-description">{{ preset.description }}</p>
-                        </div>
-                      </button>
-                    </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Bottom Panel Row -->
+        <div class="bottom-panels">
+          <!-- Presets Panel -->
+          <div class="panel-wrapper">
+            <div class="panel-header">
+              <div class="panel-title-section">
+                <DocumentTextIcon class="panel-icon" />
+                <span class="panel-title">Presets & Experiments</span>
+              </div>
+            </div>
+            <div class="panel-content">
+              <div class="presets-content">
+                <!-- Dataset Presets -->
+                <div class="preset-section">
+                  <h3 class="preset-title">Dataset Presets</h3>
+                  <div class="preset-grid">
+                    <button 
+                      v-for="preset in datasetPresets"
+                      :key="preset.id"
+                      @click="loadPreset(preset.id)"
+                      class="preset-card"
+                    >
+                      <component :is="preset.icon" class="preset-icon" />
+                      <div class="preset-info">
+                        <h4 class="preset-name">{{ preset.name }}</h4>
+                        <p class="preset-description">{{ preset.description }}</p>
+                      </div>
+                    </button>
                   </div>
                 </div>
                 
-                <!-- Experiments Tab -->
-                <div v-if="activeTab === 'experiments'" class="tab-panel">
-                  <div class="panel-section">
-                    <h3 class="panel-title">Data Experiments</h3>
-                    <div class="experiment-grid">
-                      <button 
-                        v-for="experiment in dataExperiments"
-                        :key="experiment.id"
-                        @click="runExperiment(experiment.id)"
-                        :class="['experiment-card', experiment.type]"
-                      >
-                        <component :is="experiment.icon" class="w-5 h-5" />
-                        <span class="experiment-name">{{ experiment.name }}</span>
-                        <p class="experiment-description">{{ experiment.description }}</p>
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div class="panel-section">
-                    <h3 class="panel-title">Training Experiments</h3>
-                    <div class="experiment-grid">
-                      <button 
-                        v-for="experiment in trainingExperiments"
-                        :key="experiment.id"
-                        @click="runExperiment(experiment.id)"
-                        :class="['experiment-card', experiment.type]"
-                      >
-                        <component :is="experiment.icon" class="w-5 h-5" />
-                        <span class="experiment-name">{{ experiment.name }}</span>
-                        <p class="experiment-description">{{ experiment.description }}</p>
-                      </button>
-                    </div>
+                <!-- Network Presets -->
+                <div class="preset-section">
+                  <h3 class="preset-title">Network Presets</h3>
+                  <div class="preset-grid">
+                    <button 
+                      v-for="preset in networkPresets"
+                      :key="preset.id"
+                      @click="loadNetworkPreset(preset.id)"
+                      class="preset-card"
+                    >
+                      <component :is="preset.icon" class="preset-icon" />
+                      <div class="preset-info">
+                        <h4 class="preset-name">{{ preset.name }}</h4>
+                        <p class="preset-description">{{ preset.description }}</p>
+                      </div>
+                    </button>
                   </div>
                 </div>
                 
-                <!-- Settings Tab -->
-                <div v-if="activeTab === 'settings'" class="tab-panel">
-                  <div class="panel-section">
-                    <h3 class="panel-title">Advanced Settings</h3>
-                    <div class="settings-grid">
-                      <div class="setting-item">
-                        <label class="setting-label">Animation Speed</label>
-                        <input 
-                          v-model.number="animationSpeed"
-                          type="range" 
-                          min="0.1" 
-                          max="2" 
-                          step="0.1"
-                          class="setting-slider"
-                        />
-                        <span class="setting-value">{{ animationSpeed }}x</span>
-                      </div>
-                      
-                      <div class="setting-item">
-                        <label class="setting-label">Grid Quality</label>
-                        <select v-model="gridQuality" class="setting-select">
-                          <option value="low">Low (Fast)</option>
-                          <option value="medium">Medium</option>
-                          <option value="high">High (Detailed)</option>
-                        </select>
-                      </div>
-                      
-                      <div class="setting-item">
-                        <label class="setting-label">Auto-save</label>
-                        <input 
-                          v-model="autoSave"
-                          type="checkbox"
-                          class="setting-checkbox"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="panel-section">
-                    <h3 class="panel-title">Export Options</h3>
-                    <div class="export-buttons">
-                      <Button @click="exportConfiguration" variant="outline" size="sm" class="w-full">
-                        Export Configuration
-                      </Button>
-                      <Button @click="exportVisualization" variant="outline" size="sm" class="w-full">
-                        Export as Image
-                      </Button>
-                      <Button @click="exportData" variant="outline" size="sm" class="w-full">
-                        Export Training Data
-                      </Button>
-                    </div>
+                <!-- Experiments -->
+                <div class="preset-section">
+                  <h3 class="preset-title">Quick Experiments</h3>
+                  <div class="experiment-grid">
+                    <button 
+                      v-for="experiment in quickExperiments"
+                      :key="experiment.id"
+                      @click="runExperiment(experiment.id)"
+                      :class="['experiment-btn', experiment.type]"
+                    >
+                      <component :is="experiment.icon" class="experiment-icon" />
+                      <span class="experiment-name">{{ experiment.name }}</span>
+                    </button>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+          
+          <!-- Neuron Management Panel (conditional) -->
+          <div 
+            v-if="neuralCanvas && neuralCanvas.canvasComponent"
+            class="panel-wrapper"
+          >
+            <div class="panel-header">
+              <div class="panel-title-section">
+                <CpuChipIcon class="panel-icon" />
+                <span class="panel-title">Neuron Management</span>
+              </div>
+            </div>
+            <div class="panel-content">
+              <NeuronManagement
+                :neurons="store.neurons"
+                :selected-neuron="neuralCanvas.canvasComponent.selectedNeuron"
+                :coordinate-ranges="store.coordinateRanges"
+                :get-controlled-area="neuralCanvas.canvasComponent.getControlledArea"
+                :get-average-score="neuralCanvas.canvasComponent.getAverageScore"
+                @select="neuralCanvas.selectNeuron"
+                @close="() => { if (neuralCanvas && neuralCanvas.canvasComponent) neuralCanvas.canvasComponent.selectedNeuron = null }"
+                @update-position="(...args) => neuralCanvas?.canvasComponent?.updateNeuronPosition(...args)"
+                @update-color="(...args) => neuralCanvas?.canvasComponent?.updateNeuronColor(...args)"
+                @remove="(...args) => neuralCanvas?.canvasComponent?.removeNeuron(...args)"
+              />
             </div>
           </div>
         </div>
@@ -206,31 +167,26 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
-import ControlsGrid from '@/components/sections/ControlsGrid.vue'
-import VisualizationControls from '@/components/sections/VisualizationControls.vue'
-import ClassToggles from '@/components/sections/ClassToggles.vue'
 import NeuralCanvas from '@/components/visualization/NeuralCanvas.vue'
 import MetricsPanel from '@/components/visualization/MetricsPanel.vue'
 import LossLandscape from '@/components/visualization/LossLandscape.vue'
-import { Button } from '@/components/ui'
+import NeuronManagement from '@/components/visualization/NeuronManagement.vue'
+import LossHistoryChart from '@/components/visualization/LossHistoryChart.vue'
+import ClassToggles from '@/components/sections/ClassToggles.vue'
+import DataPanel from '@/components/panels/DataPanel.vue'
+import VisualizationPanel from '@/components/panels/VisualizationPanel.vue'
+import OptimizationPanel from '@/components/panels/OptimizationPanel.vue'
 import { 
   ChartBarIcon, 
   DocumentTextIcon, 
-  CalculatorIcon, 
-  CogIcon,
+  CpuChipIcon,
   HeartIcon,
   XCircleIcon,
   Square3Stack3DIcon,
   BoltIcon,
-  BoltIcon as SparklesIcon,
   ArrowPathIcon,
-  ArrowPathIcon as ShuffleIcon,
-  ExclamationTriangleIcon as NoiseIcon,
-  ChartBarIcon as ChartScatterIcon,
-  RocketLaunchIcon,
-  CpuChipIcon as AcademicCapIcon,
-  CpuChipIcon,
-  Square3Stack3DIcon as LayersIcon
+  ExclamationTriangleIcon,
+  RocketLaunchIcon
 } from '@/components/ui/icons'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
@@ -239,19 +195,7 @@ import type { DataPoint } from '@/types'
 const store = useNeuralNetworkStore()
 const notificationStore = useNotificationStore()
 
-// Tab management
-const activeTab = ref('metrics')
-const tabs = [
-  { id: 'metrics', label: 'Metrics', icon: ChartBarIcon },
-  { id: 'presets', label: 'Presets', icon: DocumentTextIcon },
-  { id: 'experiments', label: 'Experiments', icon: CalculatorIcon },
-  { id: 'settings', label: 'Settings', icon: CogIcon }
-]
-
-// Settings
-const animationSpeed = ref(1)
-const gridQuality = ref('medium')
-const autoSave = ref(false)
+const neuralCanvas = ref<InstanceType<typeof NeuralCanvas> | null>(null)
 
 // Dataset presets
 const datasetPresets = [
@@ -259,7 +203,7 @@ const datasetPresets = [
     id: 'spiral',
     name: 'Spiral',
     description: 'Two interleaved spirals',
-    icon: SparklesIcon
+    icon: BoltIcon
   },
   {
     id: 'clusters',
@@ -293,61 +237,39 @@ const networkPresets = [
     id: 'medium',
     name: 'Medium',
     description: '5-8 neurons',
-    icon: LayersIcon
+    icon: Square3Stack3DIcon
   },
   {
     id: 'complex',
     name: 'Complex',
     description: '10+ neurons',
-    icon: AcademicCapIcon
+    icon: CpuChipIcon
   }
 ]
 
-// Data experiments
-const dataExperiments = [
+// Quick experiments
+const quickExperiments = [
   {
     id: 'noise',
     name: 'Add Noise',
-    description: 'Add random noise to data points',
-    icon: SparklesIcon,
+    icon: BoltIcon,
     type: 'warning'
   },
   {
     id: 'shuffle',
     name: 'Shuffle Labels',
-    description: 'Randomly shuffle data labels',
-    icon: ShuffleIcon,
-    type: 'warning'
-  },
-  {
-    id: 'outliers',
-    name: 'Add Outliers',
-    description: 'Add outlier data points',
-    icon: ChartScatterIcon,
-    type: 'destructive'
-  }
-]
-
-// Training experiments
-const trainingExperiments = [
-  {
-    id: 'boost',
-    name: 'Learning Boost',
-    description: 'Increase learning rate temporarily',
-    icon: RocketLaunchIcon,
-    type: 'success'
-  },
-  {
-    id: 'reset',
-    name: 'Random Reset',
-    description: 'Reset random neurons',
     icon: ArrowPathIcon,
     type: 'warning'
   },
   {
+    id: 'boost',
+    name: 'Learning Boost',
+    icon: RocketLaunchIcon,
+    type: 'success'
+  },
+  {
     id: 'perturbation',
     name: 'Perturbation',
-    description: 'Add small random changes',
     icon: BoltIcon,
     type: 'default'
   }
@@ -380,18 +302,15 @@ function loadPreset(type: string) {
 }
 
 function loadNetworkPreset(type: string) {
-  // Clear existing neurons
   store.neurons.splice(0)
   
   switch (type) {
     case 'simple':
-      // Add 2-3 neurons in simple formation
       store.addNeuron(-0.3, 0)
       store.addNeuron(0.3, 0)
       if (Math.random() > 0.5) store.addNeuron(0, 0.4)
       break
     case 'medium':
-      // Add 5-8 neurons in grid-like formation
       for (let i = 0; i < 2; i++) {
         for (let j = 0; j < 3; j++) {
           store.addNeuron((i - 0.5) * 0.6, (j - 1) * 0.4)
@@ -399,7 +318,6 @@ function loadNetworkPreset(type: string) {
       }
       break
     case 'complex':
-      // Add 10+ neurons in random formation
       for (let i = 0; i < 12; i++) {
         store.addNeuron(
           (Math.random() - 0.5) * 1.5,
@@ -415,6 +333,23 @@ function loadNetworkPreset(type: string) {
   })
 }
 
+function runExperiment(type: string) {
+  switch (type) {
+    case 'noise':
+      addNoise()
+      break
+    case 'shuffle':
+      shuffleLabels()
+      break
+    case 'boost':
+      learningBoost()
+      break
+    case 'perturbation':
+      addPerturbation()
+      break
+  }
+}
+
 function generateSpiralData(): DataPoint[] {
   const data: DataPoint[] = []
   const n = 100
@@ -423,14 +358,12 @@ function generateSpiralData(): DataPoint[] {
     const r = i / n * 0.8
     const t = 1.75 * i / n * 2 * Math.PI
     
-    // Spiral 1
     data.push({
       x: r * Math.cos(t) + Math.random() * 0.1 - 0.05,
       y: r * Math.sin(t) + Math.random() * 0.1 - 0.05,
       label: 0
     })
     
-    // Spiral 2
     data.push({
       x: r * Math.cos(t + Math.PI) + Math.random() * 0.1 - 0.05,
       y: r * Math.sin(t + Math.PI) + Math.random() * 0.1 - 0.05,
@@ -492,29 +425,6 @@ function generateDonutData(): DataPoint[] {
   return data
 }
 
-function runExperiment(type: string) {
-  switch (type) {
-    case 'noise':
-      addNoise()
-      break
-    case 'shuffle':
-      shuffleLabels()
-      break
-    case 'outliers':
-      addOutliers()
-      break
-    case 'boost':
-      learningBoost()
-      break
-    case 'reset':
-      randomReset()
-      break
-    case 'perturbation':
-      addPerturbation()
-      break
-  }
-}
-
 function addNoise() {
   const noisyData = store.dataPoints.map(point => ({
     ...point,
@@ -533,7 +443,6 @@ function addNoise() {
 function shuffleLabels() {
   const shuffledData = [...store.dataPoints]
   
-  // Fisher-Yates shuffle for labels
   for (let i = shuffledData.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     const tempLabel = shuffledData[i].label
@@ -549,41 +458,10 @@ function shuffleLabels() {
   })
 }
 
-function addOutliers() {
-  const outliers: DataPoint[] = []
-  for (let i = 0; i < 10; i++) {
-    outliers.push({
-      x: (Math.random() - 0.5) * 4,
-      y: (Math.random() - 0.5) * 4,
-      label: Math.floor(Math.random() * Math.max(2, store.allClasses.length))
-    })
-  }
-  
-  store.setDataPoints([...store.dataPoints, ...outliers])
-  
-  notificationStore.addNotification({
-    message: 'Outliers added to dataset!',
-    type: 'warning'
-  })
-}
-
 function learningBoost() {
   notificationStore.addNotification({
     message: 'Learning boost applied! Training will be faster for next 10 steps.',
     type: 'success'
-  })
-}
-
-function randomReset() {
-  if (store.neurons.length === 0) return
-  
-  const neuronToReset = store.neurons[Math.floor(Math.random() * store.neurons.length)]
-  neuronToReset.x = (Math.random() - 0.5) * 2
-  neuronToReset.y = (Math.random() - 0.5) * 2
-  
-  notificationStore.addNotification({
-    message: `Neuron ${neuronToReset.id} position reset!`,
-    type: 'warning'
   })
 }
 
@@ -598,198 +476,205 @@ function addPerturbation() {
     type: 'info'
   })
 }
-
-function exportConfiguration() {
-  notificationStore.addNotification({
-    message: 'Configuration export not yet implemented!',
-    type: 'info'
-  })
-}
-
-function exportVisualization() {
-  notificationStore.addNotification({
-    message: 'Visualization export not yet implemented!',
-    type: 'info'
-  })
-}
-
-function exportData() {
-  notificationStore.addNotification({
-    message: 'Data export not yet implemented!',
-    type: 'info'
-  })
-}
 </script>
 
 <style scoped>
-/* Main container styles with theme support */
-.main-container {
-  background: var(--viz-overlay);
-  backdrop-filter: blur(24px);
-  border-radius: 1.5rem;
-  box-shadow: var(--shadow-heavy);
-  transform: translateZ(0);
-  will-change: transform;
+/* Photoshop-style workspace with flexbox layout */
+.photoshop-workspace {
+  background: #333333;
+  color: #cccccc;
+  min-height: 100vh;
 }
 
-.controls-section {
-  margin-bottom: 1.5rem;
+.workspace-main {
+  padding: 0;
+  margin: 0;
+  overflow-x: hidden;
 }
 
-.visualization-header {
+.workspace-container {
+  padding: 16px;
+  max-width: 100vw;
+}
+
+/* Flexible Panel Layout */
+.panels-layout {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-/* Playground Layout */
-.playground-layout {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 2rem;
+  gap: 16px;
+  margin-bottom: 16px;
   min-height: 600px;
 }
 
-@media (max-width: 1280px) {
-  .playground-layout {
-    grid-template-columns: 1fr 350px;
-  }
-}
-
-@media (max-width: 1024px) {
-  .playground-layout {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-}
-
-/* Canvas Section */
-.canvas-section {
+.panel-column {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+  flex: 0 0 280px;
+}
+
+.left-column {
+  order: 1;
+}
+
+.canvas-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  order: 2;
+  padding: 0 16px;
+}
+
+.right-column {
+  order: 3;
 }
 
 .canvas-container {
   background: rgb(var(--bg-secondary));
-  border: 1px solid rgb(var(--border-primary));
-  border-radius: 12px;
+  border: 1px solid #464647;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: var(--shadow-medium);
-  min-height: 500px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 1;
+  position: relative;
 }
 
-/* Tools Sidebar */
-.tools-sidebar {
+/* Class Toolbar Overlay */
+.class-toolbar-overlay {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+
+/* Bottom Panels */
+.bottom-panels {
   display: flex;
-  flex-direction: column;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.tools-container {
-  background: rgb(var(--bg-secondary));
-  border: 1px solid rgb(var(--border-primary));
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: var(--shadow-medium);
-  height: fit-content;
-}
-
-/* Tab Navigation */
-.tab-nav {
-  display: flex;
-  background: rgb(var(--bg-tertiary));
-  border-bottom: 1px solid rgb(var(--border-primary));
-}
-
-.tab-button {
+.bottom-panels .panel-wrapper {
   flex: 1;
+  min-width: 300px;
+}
+
+/* Panel Wrapper Styles */
+.panel-wrapper {
+  background: #2d2d30;
+  border: 1px solid #464647;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #404040 0%, #383838 100%);
+  border-bottom: 1px solid #464647;
+}
+
+.panel-title-section {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: rgb(var(--text-secondary));
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-bottom: 2px solid transparent;
+  gap: 8px;
 }
 
-.tab-button:hover {
-  background: rgb(var(--bg-hover));
-  color: rgb(var(--text-primary));
-}
-
-.tab-button.active {
-  background: rgb(var(--bg-secondary));
-  color: rgb(var(--color-primary));
-  border-bottom-color: rgb(var(--color-primary));
-}
-
-/* Tab Content */
-.tab-content {
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.tab-panel {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.panel-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.panel-icon {
+  width: 16px;
+  height: 16px;
+  color: #007acc;
 }
 
 .panel-title {
-  font-size: 1rem;
+  font-size: 13px;
   font-weight: 600;
-  color: rgb(var(--text-primary));
-  margin-bottom: 0.5rem;
+  color: #cccccc;
+  letter-spacing: 0.3px;
 }
 
-/* Preset Cards */
-.preset-grid {
+.panel-content {
+  padding: 12px;
+  background: #2d2d30;
+  color: #cccccc;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Panel Content Styles */
+.metrics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metrics-section {
+  padding: 8px 0;
+}
+
+.metrics-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #cccccc;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #464647;
+}
+
+.presets-content {
   display: grid;
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.preset-section {
+  padding: 8px 0;
+}
+
+.preset-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #cccccc;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #464647;
+}
+
+.preset-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .preset-card {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: rgb(var(--bg-tertiary));
-  border: 1px solid rgb(var(--border-secondary));
-  border-radius: 8px;
+  gap: 8px;
+  padding: 8px;
+  background: #383838;
+  border: 1px solid #555555;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
 }
 
 .preset-card:hover {
-  background: rgb(var(--bg-hover));
-  border-color: rgb(var(--border-tertiary));
+  background: #404040;
+  border-color: #666666;
   transform: translateY(-1px);
-  box-shadow: var(--shadow-small);
 }
 
 .preset-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  background: rgb(var(--color-primary));
-  color: white;
-  border-radius: 6px;
+  width: 16px;
+  height: 16px;
+  color: #007acc;
   flex-shrink: 0;
 }
 
@@ -798,182 +683,143 @@ function exportData() {
 }
 
 .preset-name {
-  font-size: 0.875rem;
+  font-size: 11px;
   font-weight: 600;
-  color: rgb(var(--text-primary));
-  margin-bottom: 0.25rem;
+  color: #cccccc;
+  margin-bottom: 2px;
 }
 
 .preset-description {
-  font-size: 0.75rem;
-  color: rgb(var(--text-secondary));
+  font-size: 9px;
+  color: #999999;
   margin: 0;
 }
 
-/* Experiment Cards */
+/* Experiments */
 .experiment-grid {
   display: grid;
-  gap: 0.5rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
 }
 
-.experiment-card {
+.experiment-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  background: rgb(var(--bg-tertiary));
-  border: 1px solid rgb(var(--border-secondary));
-  border-radius: 8px;
+  gap: 4px;
+  padding: 8px 6px;
+  background: #383838;
+  border: 1px solid #555555;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
-  text-align: center;
+  font-size: 9px;
+  color: #cccccc;
 }
 
-.experiment-card:hover {
+.experiment-btn:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-small);
 }
 
-.experiment-card.success {
-  border-color: rgb(var(--color-success));
+.experiment-btn.success {
+  border-color: #28a745;
 }
 
-.experiment-card.success:hover {
-  background: rgba(var(--color-success), 0.1);
+.experiment-btn.success:hover {
+  background: rgba(40, 167, 69, 0.1);
 }
 
-.experiment-card.warning {
-  border-color: rgb(var(--color-warning));
+.experiment-btn.warning {
+  border-color: #ffc107;
 }
 
-.experiment-card.warning:hover {
-  background: rgba(var(--color-warning), 0.1);
+.experiment-btn.warning:hover {
+  background: rgba(255, 193, 7, 0.1);
 }
 
-.experiment-card.destructive {
-  border-color: rgb(var(--color-destructive));
-}
-
-.experiment-card.destructive:hover {
-  background: rgba(var(--color-destructive), 0.1);
+.experiment-icon {
+  width: 14px;
+  height: 14px;
 }
 
 .experiment-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: rgb(var(--text-primary));
-}
-
-.experiment-description {
-  font-size: 0.75rem;
-  color: rgb(var(--text-secondary));
-  margin: 0;
-}
-
-/* Settings */
-.settings-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.setting-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.setting-label {
-  font-size: 0.875rem;
   font-weight: 500;
-  color: rgb(var(--text-primary));
+  text-align: center;
 }
 
-.setting-slider {
-  width: 100%;
-  height: 4px;
-  background: rgb(var(--bg-tertiary));
-  border-radius: 2px;
-  outline: none;
-  -webkit-appearance: none;
-}
-
-.setting-slider::-webkit-slider-thumb {
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  background: rgb(var(--color-primary));
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.setting-select {
-  padding: 0.5rem;
-  background: rgb(var(--bg-tertiary));
-  border: 1px solid rgb(var(--border-secondary));
-  border-radius: 6px;
-  color: rgb(var(--text-primary));
-  font-size: 0.875rem;
-}
-
-.setting-checkbox {
-  width: 1.25rem;
-  height: 1.25rem;
-  accent-color: rgb(var(--color-primary));
-}
-
-.setting-value {
-  font-size: 0.75rem;
-  color: rgb(var(--text-secondary));
-  margin-top: 0.25rem;
-}
-
-.export-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .tab-nav {
-    flex-wrap: wrap;
-  }
-  
-  .tab-button {
-    min-width: 50%;
-  }
-  
-  .tab-panel {
-    padding: 1rem;
-  }
-  
-  .preset-card {
-    padding: 0.75rem;
-  }
-  
-  .preset-icon {
-    width: 2rem;
-    height: 2rem;
-  }
-}
-
-/* Custom scrollbar for tab content */
-.tab-content::-webkit-scrollbar {
+/* Custom scrollbar */
+.panel-content::-webkit-scrollbar {
   width: 6px;
 }
 
-.tab-content::-webkit-scrollbar-track {
-  background: rgb(var(--bg-tertiary));
+.panel-content::-webkit-scrollbar-track {
+  background: #383838;
 }
 
-.tab-content::-webkit-scrollbar-thumb {
-  background: rgb(var(--border-tertiary));
+.panel-content::-webkit-scrollbar-thumb {
+  background: #555555;
   border-radius: 3px;
 }
 
-.tab-content::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--color-primary));
+.panel-content::-webkit-scrollbar-thumb:hover {
+  background: #666666;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .panels-layout {
+    flex-direction: column;
+  }
+  
+  .panel-column {
+    flex-direction: row;
+    flex: none;
+  }
+  
+  .left-column, .right-column {
+    order: 3;
+  }
+  
+  .canvas-area {
+    order: 1;
+  }
+  
+  .canvas-container {
+    max-width: 500px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .panel-column {
+    flex-direction: column;
+  }
+  
+  .canvas-container {
+    max-width: 400px;
+  }
+  
+  .presets-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .workspace-container {
+    padding: 8px;
+  }
+  
+  .panels-layout, .bottom-panels {
+    gap: 8px;
+  }
+  
+  .panel-column {
+    flex: none;
+  }
+  
+  .canvas-container {
+    max-width: 300px;
+  }
 }
 </style>
+
+    max-width: 300px;

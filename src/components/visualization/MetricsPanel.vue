@@ -121,19 +121,86 @@
             
             <!-- Confusion Matrix Mini -->
             <div class="confusion-matrix-mini">
-              <h5 class="matrix-title">Confusion Matrix</h5>
-              <div class="matrix-grid">
+              <h5 class="matrix-title">
+                Confusion Matrix
+                <span class="matrix-subtitle">({{ confusionMatrixData.classes.length }} classes)</span>
+              </h5>
+              
+              <!-- Binary/Simple Case -->
+              <div v-if="confusionMatrixData.classes.length <= 2" class="matrix-grid binary">
                 <div class="matrix-cell header">Predicted</div>
-                <div class="matrix-cell header">Class A</div>
-                <div class="matrix-cell header">Class B</div>
+                <div class="matrix-cell header">{{ confusionMatrixData.classes[1] || 'Positive' }}</div>
+                <div class="matrix-cell header">{{ confusionMatrixData.classes[0] || 'Negative' }}</div>
                 
-                <div class="matrix-cell label">Class A</div>
+                <div class="matrix-cell label">{{ confusionMatrixData.classes[1] || 'Positive' }}</div>
                 <div class="matrix-cell value true-positive">{{ confusionMatrix.tp }}</div>
                 <div class="matrix-cell value false-negative">{{ confusionMatrix.fn }}</div>
                 
-                <div class="matrix-cell label">Class B</div>
+                <div class="matrix-cell label">{{ confusionMatrixData.classes[0] || 'Negative' }}</div>
                 <div class="matrix-cell value false-positive">{{ confusionMatrix.fp }}</div>
                 <div class="matrix-cell value true-negative">{{ confusionMatrix.tn }}</div>
+              </div>
+              
+              <!-- Multi-class Case -->
+              <div v-else-if="confusionMatrixData.classes.length > 2" class="matrix-multiclass">
+                <div class="matrix-summary">
+                  <div class="summary-item">
+                    <span class="summary-label">Correct</span>
+                    <span class="summary-value correct">{{ confusionMatrix.tp }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Incorrect</span>
+                    <span class="summary-value incorrect">{{ confusionMatrix.fp }}</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Total</span>
+                    <span class="summary-value">{{ confusionMatrix.tp + confusionMatrix.fp }}</span>
+                  </div>
+                </div>
+                
+                <!-- Detailed per-class metrics -->
+                <div class="class-metrics">
+                  <h6 class="class-metrics-title">Per-Class Performance</h6>
+                  <div 
+                    v-for="(classId, index) in confusionMatrixData.classes" 
+                    :key="classId"
+                    class="class-metric-row"
+                  >
+                    <div class="class-label">Class {{ classId }}</div>
+                    <div class="class-stats">
+                      <div class="class-stat">
+                        <span class="stat-name">P:</span>
+                        <span class="stat-value">{{ 
+                          classificationMetrics.perClass[classId]?.precision 
+                            ? (classificationMetrics.perClass[classId].precision * 100).toFixed(1) 
+                            : '0.0' 
+                        }}%</span>
+                      </div>
+                      <div class="class-stat">
+                        <span class="stat-name">R:</span>
+                        <span class="stat-value">{{ 
+                          classificationMetrics.perClass[classId]?.recall 
+                            ? (classificationMetrics.perClass[classId].recall * 100).toFixed(1) 
+                            : '0.0' 
+                        }}%</span>
+                      </div>
+                      <div class="class-stat">
+                        <span class="stat-name">F1:</span>
+                        <span class="stat-value">{{ 
+                          classificationMetrics.perClass[classId]?.f1Score 
+                            ? (classificationMetrics.perClass[classId].f1Score * 100).toFixed(1) 
+                            : '0.0' 
+                        }}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- No data case -->
+              <div v-else class="matrix-empty">
+                <p>No classification data available</p>
+                <p class="empty-hint">Add data points and neurons to see metrics</p>
               </div>
             </div>
           </div>
@@ -334,6 +401,11 @@ import {
 import { Button } from '@/components/ui'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
+import { 
+  calculateClassificationMetrics, 
+  calculateConfusionMatrix, 
+  getBinaryConfusionMatrixMetrics 
+} from '@/utils/mathCore'
 import type { OptimizationStep } from '@/types'
 
 const store = useNeuralNetworkStore()
@@ -405,11 +477,65 @@ const epochProgress = computed(() => {
   return Math.round((currentStep.value / total) * 100)
 })
 
-// Classification metrics - Stubbed for now
-const precision = computed(() => 85.2)
-const recall = computed(() => 92.5)
-const f1Score = computed(() => 88.7)
-const confusionMatrix = computed(() => ({ tp: 85, tn: 90, fp: 10, fn: 5 }))
+// Real classification metrics
+const classificationMetrics = computed(() => {
+  if (store.filteredDataPoints.length === 0 || store.neurons.length === 0) {
+    return { precision: 0, recall: 0, f1Score: 0, perClass: {} }
+  }
+  
+  return calculateClassificationMetrics(
+    store.filteredDataPoints,
+    store.neurons,
+    store.similarityMetric,
+    store.activationFunction
+  )
+})
+
+const precision = computed(() => classificationMetrics.value.precision * 100)
+const recall = computed(() => classificationMetrics.value.recall * 100)
+const f1Score = computed(() => classificationMetrics.value.f1Score * 100)
+
+const confusionMatrixData = computed(() => {
+  if (store.filteredDataPoints.length === 0 || store.neurons.length === 0) {
+    return { matrix: [], classes: [] }
+  }
+  
+  return calculateConfusionMatrix(
+    store.filteredDataPoints,
+    store.neurons,
+    store.similarityMetric,
+    store.activationFunction
+  )
+})
+
+const binaryConfusionMatrix = computed(() => {
+  if (store.filteredDataPoints.length === 0 || store.neurons.length === 0) {
+    return { tp: 0, tn: 0, fp: 0, fn: 0 }
+  }
+  
+  return getBinaryConfusionMatrixMetrics(
+    store.filteredDataPoints,
+    store.neurons,
+    store.similarityMetric,
+    store.activationFunction
+  )
+})
+
+// For display purposes - use binary metrics when available, otherwise use simplified
+const confusionMatrix = computed(() => {
+  const binary = binaryConfusionMatrix.value
+  if (confusionMatrixData.value.classes.length <= 2) {
+    return binary
+  } else {
+    // For multi-class, show overall correct/incorrect
+    return {
+      tp: binary.tp,
+      tn: 0,
+      fp: binary.fp,
+      fn: 0
+    }
+  }
+})
 
 // Training progress metrics
 const overallProgress = computed(() => {
@@ -419,11 +545,43 @@ const overallProgress = computed(() => {
 
 const totalSteps = computed(() => store.optimizationHistory.totalSteps || 0)
 
-// Stubbed as we don't have this logic yet
-const estimatedTimeRemaining = computed(() => '5m')
-const stepsPerSecond = computed(() => 12.5)
-const bestLoss = computed(() => Math.min(...historySteps.value.map(s => s.loss), Infinity))
-const bestAccuracy = computed(() => Math.max(...historySteps.value.map(s => s.accuracy), 0))
+// Performance metrics
+const estimatedTimeRemaining = computed(() => {
+  if (!isTrainingActive.value || historySteps.value.length < 2) return '—'
+  
+  const recentSteps = historySteps.value.slice(-10)
+  if (recentSteps.length < 2) return '—'
+  
+  const timePerStep = (Date.now() - (recentSteps[0]?.timestamp || 0)) / recentSteps.length
+  const remainingSteps = totalSteps.value - currentStep.value
+  const remainingMs = remainingSteps * timePerStep
+  
+  if (remainingMs < 60000) return `${Math.round(remainingMs / 1000)}s`
+  if (remainingMs < 3600000) return `${Math.round(remainingMs / 60000)}m`
+  return `${Math.round(remainingMs / 3600000)}h`
+})
+
+const stepsPerSecond = computed(() => {
+  if (historySteps.value.length < 2) return 0
+  
+  const recentSteps = historySteps.value.slice(-10)
+  if (recentSteps.length < 2) return 0
+  
+  const timeSpan = (recentSteps[recentSteps.length - 1]?.timestamp || 0) - (recentSteps[0]?.timestamp || 0)
+  if (timeSpan <= 0) return 0
+  
+  return (recentSteps.length - 1) / (timeSpan / 1000)
+})
+
+const bestLoss = computed(() => {
+  if (historySteps.value.length === 0) return 0
+  return Math.min(...historySteps.value.map(s => s.loss))
+})
+
+const bestAccuracy = computed(() => {
+  if (historySteps.value.length === 0) return 0
+  return Math.max(...historySteps.value.map(s => s.accuracy))
+})
 
 const convergenceStatus = computed(() => {
   const recentLoss = historySteps.value.map(s => s.loss).slice(-10)
@@ -442,16 +600,49 @@ const networkSize = computed(() => ({
   connections: store.neurons.length * (store.neurons.length - 1)
 }))
 
-// Stubbed data
-const memoryUsage = computed(() => 30)
-const computeLoad = computed(() => 55)
+// Performance estimates
+const memoryUsage = computed(() => {
+  const baseUsage = 20
+  const dataUsage = store.dataPoints.length * 0.01
+  const neuronUsage = store.neurons.length * 2
+  return Math.min(Math.round(baseUsage + dataUsage + neuronUsage), 100)
+})
+
+const computeLoad = computed(() => {
+  const baseLoad = 10
+  const dataLoad = store.dataPoints.length * 0.02
+  const neuronLoad = store.neurons.length * 3
+  const trainingMultiplier = isTrainingActive.value ? 2 : 1
+  return Math.min(Math.round((baseLoad + dataLoad + neuronLoad) * trainingMultiplier), 100)
+})
+
 const healthyNeurons = computed(() => {
-  return store.neurons.map(neuron => ({
-    id: neuron.id,
-    color: neuron.color,
-    status: 'healthy',
-    description: 'Normal activity'
-  }))
+  return store.neurons.map(neuron => {
+    // Analyze neuron performance
+    let status = 'healthy'
+    let description = 'Normal activity'
+    
+    // Check if neuron has any data points assigned to it
+    const assignedPoints = store.filteredDataPoints.filter(point => {
+      const prediction = store.getPrediction(point.x, point.y)
+      return prediction.winningNeuron?.id === neuron.id
+    })
+    
+    if (assignedPoints.length === 0) {
+      status = 'inactive'
+      description = 'No assigned data points'
+    } else if (assignedPoints.length > store.filteredDataPoints.length * 0.8) {
+      status = 'overactive'
+      description = 'Dominates most predictions'
+    }
+    
+    return {
+      id: neuron.id,
+      color: neuron.color,
+      status,
+      description
+    }
+  })
 })
 
 const hasMetricsData = computed(() => historySteps.value.length > 0)
@@ -479,6 +670,8 @@ function exportMetrics() {
   const data = {
     accuracy: historySteps.value.map(s => s.accuracy),
     loss: historySteps.value.map(s => s.loss),
+    classificationMetrics: classificationMetrics.value,
+    confusionMatrix: confusionMatrixData.value,
     timestamp: new Date().toISOString()
   }
   
@@ -486,7 +679,7 @@ function exportMetrics() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `metrics-${Date.now()}.json`
+  a.download = `neural-network-metrics-${Date.now()}.json`
   a.click()
   URL.revokeObjectURL(url)
   
@@ -831,6 +1024,15 @@ function toggleAutoUpdate() {
   font-weight: 600;
   color: rgb(var(--text-primary));
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.matrix-subtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: rgb(var(--text-secondary));
 }
 
 .matrix-grid {
@@ -838,6 +1040,10 @@ function toggleAutoUpdate() {
   grid-template-columns: auto 1fr 1fr;
   gap: 0.5rem;
   align-items: center;
+}
+
+.matrix-grid.binary {
+  grid-template-columns: auto 1fr 1fr;
 }
 
 .matrix-cell {
@@ -879,6 +1085,126 @@ function toggleAutoUpdate() {
 
 .matrix-cell.false-negative {
   background: rgb(var(--color-error));
+}
+
+/* Multi-class Matrix */
+.matrix-multiclass {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.matrix-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  background: rgb(var(--bg-tertiary));
+  border-radius: 4px;
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgb(var(--text-secondary));
+  margin-bottom: 0.25rem;
+}
+
+.summary-value {
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: monospace;
+  color: rgb(var(--text-primary));
+}
+
+.summary-value.correct {
+  color: rgb(var(--color-success));
+}
+
+.summary-value.incorrect {
+  color: rgb(var(--color-error));
+}
+
+/* Per-class metrics */
+.class-metrics {
+  background: rgb(var(--bg-tertiary));
+  border-radius: 4px;
+  padding: 0.75rem;
+}
+
+.class-metrics-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgb(var(--text-secondary));
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.class-metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgb(var(--border-secondary));
+}
+
+.class-metric-row:last-child {
+  border-bottom: none;
+}
+
+.class-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgb(var(--text-primary));
+}
+
+.class-stats {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.class-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stat-name {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: rgb(var(--text-secondary));
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: monospace;
+  color: rgb(var(--text-primary));
+}
+
+/* Empty state */
+.matrix-empty {
+  text-align: center;
+  padding: 1.5rem;
+  color: rgb(var(--text-secondary));
+}
+
+.matrix-empty p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+.empty-hint {
+  font-size: 0.75rem;
+  color: rgb(var(--text-tertiary));
 }
 
 /* Training Progress */

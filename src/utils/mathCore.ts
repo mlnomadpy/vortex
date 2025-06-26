@@ -419,6 +419,150 @@ export function calculateAccuracy(
 }
 
 /**
+ * Calculate confusion matrix for binary or multi-class classification
+ */
+export function calculateConfusionMatrix(
+  data: DataPoint[], 
+  neurons: Neuron[], 
+  similarityMetric: SimilarityMetric, 
+  activationFunction: ActivationFunction
+): { matrix: number[][], classes: number[] } {
+  if (data.length === 0 || neurons.length === 0) {
+    return { matrix: [], classes: [] }
+  }
+  
+  // Get unique classes from both data and neurons
+  const dataClasses = [...new Set(data.map(p => p.label))].sort()
+  const neuronClasses = neurons.map(n => n.id).sort()
+  const allClasses = [...new Set([...dataClasses, ...neuronClasses])].sort()
+  
+  // Initialize confusion matrix
+  const matrix = Array(allClasses.length).fill(0).map(() => Array(allClasses.length).fill(0))
+  
+  // Calculate predictions and populate matrix
+  data.forEach(point => {
+    const prediction = getPrediction(point.x, point.y, neurons, similarityMetric, activationFunction)
+    const actualClassIndex = allClasses.indexOf(point.label)
+    
+    if (prediction.winningNeuron) {
+      const predictedClassIndex = allClasses.indexOf(prediction.winningNeuron.id)
+      if (actualClassIndex !== -1 && predictedClassIndex !== -1) {
+        matrix[actualClassIndex][predictedClassIndex]++
+      }
+    }
+  })
+  
+  return { matrix, classes: allClasses }
+}
+
+/**
+ * Calculate precision, recall, and F1 score for multi-class classification
+ */
+export function calculateClassificationMetrics(
+  data: DataPoint[], 
+  neurons: Neuron[], 
+  similarityMetric: SimilarityMetric, 
+  activationFunction: ActivationFunction
+): { 
+  precision: number, 
+  recall: number, 
+  f1Score: number,
+  perClass: { 
+    [key: number]: { precision: number, recall: number, f1Score: number } 
+  }
+} {
+  const { matrix, classes } = calculateConfusionMatrix(data, neurons, similarityMetric, activationFunction)
+  
+  if (matrix.length === 0 || classes.length === 0) {
+    return { precision: 0, recall: 0, f1Score: 0, perClass: {} }
+  }
+  
+  const perClass: { [key: number]: { precision: number, recall: number, f1Score: number } } = {}
+  let totalPrecision = 0
+  let totalRecall = 0
+  let totalF1 = 0
+  let validClasses = 0
+  
+  classes.forEach((classId, i) => {
+    // True positives for this class
+    const tp = matrix[i][i]
+    
+    // False positives: sum of column i, excluding diagonal
+    const fp = matrix.reduce((sum, row, rowIndex) => 
+      rowIndex !== i ? sum + row[i] : sum, 0)
+    
+    // False negatives: sum of row i, excluding diagonal
+    const fn = matrix[i].reduce((sum, val, colIndex) => 
+      colIndex !== i ? sum + val : sum, 0)
+    
+    // Calculate metrics for this class
+    const precision = tp + fp > 0 ? tp / (tp + fp) : 0
+    const recall = tp + fn > 0 ? tp / (tp + fn) : 0
+    const f1Score = precision + recall > 0 ? 2 * (precision * recall) / (precision + recall) : 0
+    
+    perClass[classId] = { precision, recall, f1Score }
+    
+    // Add to averages if this class has any samples
+    if (tp + fn > 0) {
+      totalPrecision += precision
+      totalRecall += recall
+      totalF1 += f1Score
+      validClasses++
+    }
+  })
+  
+  // Calculate macro-averaged metrics
+  const avgPrecision = validClasses > 0 ? totalPrecision / validClasses : 0
+  const avgRecall = validClasses > 0 ? totalRecall / validClasses : 0
+  const avgF1 = validClasses > 0 ? totalF1 / validClasses : 0
+  
+  return {
+    precision: avgPrecision,
+    recall: avgRecall,
+    f1Score: avgF1,
+    perClass
+  }
+}
+
+/**
+ * Get binary confusion matrix metrics (for 2-class problems)
+ */
+export function getBinaryConfusionMatrixMetrics(
+  data: DataPoint[], 
+  neurons: Neuron[], 
+  similarityMetric: SimilarityMetric, 
+  activationFunction: ActivationFunction
+): { tp: number, tn: number, fp: number, fn: number } {
+  const { matrix, classes } = calculateConfusionMatrix(data, neurons, similarityMetric, activationFunction)
+  
+  if (matrix.length === 0 || classes.length !== 2) {
+    // For non-binary cases, return simplified metrics
+    if (matrix.length > 2) {
+      // Multi-class: sum diagonal vs off-diagonal
+      const correctPredictions = matrix.reduce((sum, row, i) => sum + row[i], 0)
+      const totalPredictions = matrix.reduce((sum, row) => sum + row.reduce((rowSum, val) => rowSum + val, 0), 0)
+      const incorrectPredictions = totalPredictions - correctPredictions
+      
+      return {
+        tp: correctPredictions,
+        tn: 0,
+        fp: incorrectPredictions,
+        fn: 0
+      }
+    }
+    return { tp: 0, tn: 0, fp: 0, fn: 0 }
+  }
+  
+  // Binary classification case
+  const tp = matrix[1][1] // True positives (class 1 predicted as class 1)
+  const tn = matrix[0][0] // True negatives (class 0 predicted as class 0)
+  const fp = matrix[0][1] // False positives (class 0 predicted as class 1)
+  const fn = matrix[1][0] // False negatives (class 1 predicted as class 0)
+  
+  return { tp, tn, fp, fn }
+}
+
+/**
  * Get configuration info for display purposes
  */
 export function getMetricInfo(metric: SimilarityMetric): SimilarityMetricConfig {
