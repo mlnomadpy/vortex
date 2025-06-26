@@ -43,10 +43,32 @@
             Just as planets move through space influenced by invisible forces, data points navigate through Vectoverse guided by similarity.
           </p>
           
-          <p class="text-lg text-theme-secondary leading-relaxed animate-fade-in" style="animation-delay: 0.25s;">
-            In our universe, neurons are like celestial bodies, and the <strong>YAT similarity metric</strong> acts as the gravitational force—
+          <p class="text-lg text-theme-secondary leading-relaxed mb-6 animate-fade-in" style="animation-delay: 0.25s;">
+            In our universe, neurons are like celestial bodies, and the <strong>ⵟ-product (Yat Product)</strong> acts as the gravitational force—
             stronger when aligned (high dot product) and weaker with distance. Every click adds a new world to this neural cosmos.
           </p>
+
+          <!-- Paper Reference -->
+          <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-indigo-200 dark:border-indigo-700 animate-fade-in" style="animation-delay: 0.3s;">
+            <div class="flex items-center mb-3">
+              <svg class="w-6 h-6 text-indigo-500 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
+              <h3 class="text-lg font-semibold text-indigo-700 dark:text-indigo-300">Research Paper</h3>
+            </div>
+            <h4 class="text-xl font-bold text-indigo-800 dark:text-indigo-200 mb-2">
+              <a href="https://www.preprints.org/manuscript/202506.2010/" target="_blank" class="hover:underline">
+                Deep Learning 2.0.1: Mind and Cosmos - Towards Cosmos-Inspired Interpretable Neural Networks
+              </a>
+            </h4>
+            <p class="text-sm text-indigo-600 dark:text-indigo-400 mb-2">
+              <strong>Author:</strong> Taha Bouhsine
+            </p>
+            <p class="text-sm text-indigo-600 dark:text-indigo-400 leading-relaxed">
+              This work introduces the ⵟ-product, a novel neural operator inspired by physical inverse-square laws, 
+              leading to Neural-Matter Networks (NMNs) with enhanced interpretability and geometric fidelity.
+            </p>
+          </div>
         </div>
 
         <!-- Call to Action Buttons -->
@@ -135,11 +157,11 @@
           <div class="space-y-4 mb-8">
             <div class="flex items-center text-theme-secondary">
               <div class="w-2 h-2 bg-orange-500 rounded-full mr-3"></div>
-              <span><strong>YAT Similarity Metric:</strong> (x·y)² / ||x-y||² - gravitational force model</span>
+              <span><strong>ⵟ-product (Yat Kernel):</strong> (x·n)² / (||x-n||² + ε) - physics-inspired similarity</span>
             </div>
             <div class="flex items-center text-theme-secondary">
               <div class="w-2 h-2 bg-orange-500 rounded-full mr-3"></div>
-              <span><strong>Activation Functions:</strong> Softermax, ReLU, Sigmoid, GELU</span>
+              <span><strong>Activation Functions:</strong> Softermax (temperature-controlled), ReLU, Sigmoid, GELU</span>
             </div>
             <div class="flex items-center text-theme-secondary">
               <div class="w-2 h-2 bg-orange-500 rounded-full mr-3"></div>
