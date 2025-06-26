@@ -3,7 +3,10 @@
     title="Data & Neurons" 
     :icon="DatabaseIcon"
     :width="280"
-    :initial-position="{ x: 20, y: 80 }"
+    :initial-position="initialPosition"
+    :z-index="zIndex"
+    :closable="true"
+    @close="$emit('close')"
   >
     <!-- Data Section -->
     <div class="panel-section">
@@ -193,6 +196,21 @@ import {
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
 import { parseCSV, exportToCSV } from '@/utils/csvUtils'
+
+// Props
+interface Props {
+  initialPosition?: { x: number; y: number }
+  zIndex?: number
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  initialPosition: () => ({ x: 20, y: 80 })
+})
+
+// Emits
+const emit = defineEmits<{
+  close: []
+}>()
 
 // Create PlusIcon since it might not exist
 const PlusIcon = {

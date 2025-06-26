@@ -3,7 +3,10 @@
     title="Visualization" 
     :icon="EyeIcon"
     :width="260"
-    :initial-position="{ x: 320, y: 80 }"
+    :initial-position="initialPosition"
+    :z-index="zIndex"
+    :closable="true"
+    @close="$emit('close')"
   >
     <!-- View Controls -->
     <div class="panel-section">
@@ -204,7 +207,7 @@
           class="auto-fit-btn"
         >
           <component :is="MagicWandIcon" class="btn-icon" />
-          Auto Fit to Data
+          Auto-fit to Data
         </Button>
       </div>
     </div>
@@ -225,6 +228,21 @@ import {
 } from '@/components/ui/icons'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
+
+// Props
+interface Props {
+  initialPosition?: { x: number; y: number }
+  zIndex?: number
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  initialPosition: () => ({ x: 320, y: 80 })
+})
+
+// Emits
+const emit = defineEmits<{
+  close: []
+}>()
 
 // Create missing icons
 const PaletteIcon = {

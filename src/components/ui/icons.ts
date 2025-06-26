@@ -72,5 +72,11 @@ export const EnvelopeIcon = createIcon('EnvelopeIcon', 'M21.75 6.75v10.5a2.25 2.
 
 // Media control icons
 export const StopIcon = createIcon('StopIcon', 'M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25-2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z')
+export const PauseIcon = createIcon('PauseIcon', 'M15.75 5.25v13.5m-7.5-13.5v13.5')
+export const TrendingUpIcon = createIcon('TrendingUpIcon', 'M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.511l-5.511-3.182')
+export const TrendingDownIcon = createIcon('TrendingDownIcon', 'M2.25 6L9 12.75l4.286-4.286a11.948 11.948 0 014.306 6.43l.776 2.898m0 0l3.182-5.511m-3.182 5.511l-5.511-3.182')
+export const MinusIcon = createIcon('MinusIcon', 'M19.5 12h-15')
 
 export const ChevronDownIcon = createIcon('ChevronDownIcon', 'M19.5 8.25l-7.5 7.5-7.5-7.5')
+export const ChevronUpIcon = createIcon('ChevronUpIcon', 'M4.5 15.75l7.5-7.5 7.5 7.5')
+export const ArrowsPointingOutIcon = createIcon('ArrowsPointingOutIcon', 'M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15')

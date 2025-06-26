@@ -2,7 +2,6 @@
   <div class="optimization-controls">
     <div class="controls-header">
       <div class="controls-title">
-        <CogIcon class="w-4 h-4" />
         <span>Optimization</span>
       </div>
       <div class="status-indicator" :class="{ active: isRunning }">
@@ -73,8 +72,9 @@
           size="sm"
           title="Start Gradient Descent"
           data-tour="train-button"
+          class="action-button primary-action"
         >
-          <RocketLaunchIcon class="w-4 h-4 mr-1" />
+          <RocketLaunchIcon class="button-icon" />
           Start
         </Button>
         
@@ -84,8 +84,9 @@
           variant="destructive"
           size="sm"
           title="Stop Optimization"
+          class="action-button stop-action"
         >
-          <StopIcon class="w-4 h-4 mr-1" />
+          <StopIcon class="button-icon" />
           Stop
         </Button>
         
@@ -95,8 +96,9 @@
           variant="outline"
           size="sm"
           title="Reset History"
+          class="action-button reset-action"
         >
-          <ArrowPathIcon class="w-4 h-4 mr-1" />
+          <ArrowPathIcon class="button-icon" />
           Reset
         </Button>
       </div>
@@ -123,15 +125,15 @@
       <div v-if="hasHistory" class="metrics-section">
         <div class="metric-item">
           <span class="metric-label">Current Loss</span>
-          <span class="metric-value loss">{{ currentLoss.toFixed(4) }}</span>
+          <span class="metric-value metric-loss">{{ currentLoss.toFixed(4) }}</span>
         </div>
         <div class="metric-item">
           <span class="metric-label">Accuracy</span>
-          <span class="metric-value accuracy">{{ currentAccuracy.toFixed(1) }}%</span>
+          <span class="metric-value metric-accuracy">{{ currentAccuracy.toFixed(1) }}%</span>
         </div>
         <div class="metric-item">
           <span class="metric-label">Steps/sec</span>
-          <span class="metric-value rate">{{ stepsPerSecond.toFixed(1) }}</span>
+          <span class="metric-value metric-rate">{{ stepsPerSecond.toFixed(1) }}</span>
         </div>
       </div>
     </div>
@@ -267,13 +269,19 @@ watch(() => store.optimizationHistory.config, (newConfig) => {
   border-radius: 6px;
   border: 1px solid rgb(var(--border-primary));
   overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.optimization-controls:hover {
+  border-color: rgb(var(--border-secondary));
+  box-shadow: 0 2px 8px rgba(var(--shadow-light));
 }
 
 .controls-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: 10px 12px;
   background: rgb(var(--bg-tertiary));
   border-bottom: 1px solid rgb(var(--border-primary));
 }
@@ -287,12 +295,25 @@ watch(() => store.optimizationHistory.config, (newConfig) => {
   color: rgb(var(--text-primary));
 }
 
+.title-icon {
+  width: 16px;
+  height: 16px;
+  color: rgb(var(--color-primary));
+  transition: color 0.2s ease;
+}
+
 .status-indicator {
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 10px;
+  font-weight: 500;
   color: rgb(var(--text-secondary));
+  padding: 4px 8px;
+  background: rgb(var(--bg-primary));
+  border-radius: 12px;
+  border: 1px solid rgb(var(--border-secondary));
+  transition: all 0.2s ease;
 }
 
 .status-dot {
@@ -300,36 +321,50 @@ watch(() => store.optimizationHistory.config, (newConfig) => {
   height: 6px;
   border-radius: 50%;
   background: rgb(var(--color-error));
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.status-indicator.active {
+  background: rgba(var(--color-success), 0.1);
+  border-color: rgb(var(--color-success));
+  color: rgb(var(--color-success));
 }
 
 .status-indicator.active .status-dot {
   background: rgb(var(--color-success));
-  animation: pulse 2s infinite;
+  animation: pulse-glow 2s infinite;
+  box-shadow: 0 0 4px rgba(var(--color-success), 0.6);
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+@keyframes pulse-glow {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.7; 
+    transform: scale(1.1);
+  }
 }
 
 .controls-content {
-  padding: 12px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .config-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .control-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .control-label {
@@ -337,6 +372,7 @@ watch(() => store.optimizationHistory.config, (newConfig) => {
   font-weight: 600;
   color: rgb(var(--text-secondary));
   text-transform: uppercase;
+  letter-spacing: 0.5px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -346,54 +382,74 @@ watch(() => store.optimizationHistory.config, (newConfig) => {
   font-size: 9px;
   color: rgb(var(--color-primary));
   font-weight: 500;
+  background: rgba(var(--color-primary), 0.1);
+  padding: 2px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--color-primary), 0.2);
 }
 
 .control-input {
-  padding: 4px 6px;
+  padding: 6px 8px;
   font-size: 11px;
   border: 1px solid rgb(var(--border-secondary));
-  border-radius: 3px;
+  border-radius: 4px;
   background: rgb(var(--bg-primary));
   color: rgb(var(--text-primary));
+  transition: all 0.2s ease;
 }
 
 .control-input:focus {
   outline: none;
   border-color: rgb(var(--color-primary));
-  box-shadow: 0 0 0 1px rgb(var(--color-primary) / 0.2);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
+  background: rgba(var(--color-primary), 0.02);
 }
 
 .control-input:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
+  background: rgb(var(--bg-tertiary));
 }
 
 .speed-slider {
   width: 100%;
-  height: 4px;
+  height: 6px;
   background: rgb(var(--bg-tertiary));
-  border-radius: 2px;
+  border-radius: 3px;
   outline: none;
   cursor: pointer;
   appearance: none;
+  transition: all 0.2s ease;
+}
+
+.speed-slider:hover {
+  background: rgb(var(--bg-quaternary));
 }
 
 .speed-slider::-webkit-slider-thumb {
   appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   background: rgb(var(--color-primary));
   border-radius: 50%;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(var(--shadow-medium));
+}
+
+.speed-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(var(--color-primary), 0.3);
 }
 
 .speed-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   background: rgb(var(--color-primary));
   border-radius: 50%;
   cursor: pointer;
   border: none;
+  transition: all 0.2s ease;
 }
 
 .speed-labels {
@@ -401,65 +457,38 @@ watch(() => store.optimizationHistory.config, (newConfig) => {
   justify-content: space-between;
   font-size: 8px;
   color: rgb(var(--text-tertiary));
-  margin-top: 2px;
+  margin-top: 4px;
+  font-weight: 500;
 }
 
 .action-section {
   display: flex;
-  gap: 6px;
+  gap: 8px;
 }
 
-.action-btn {
+.action-button {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 6px 8px;
-  font-size: 10px;
-  font-weight: 600;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
 }
 
-.start-btn {
-  background: rgb(var(--color-success));
-  color: white;
+.action-button:hover:not(:disabled) {
+  transform: translateY(-1px);
 }
 
-.start-btn:hover:not(:disabled) {
-  background: rgb(var(--color-success-hover));
+.action-button:active {
+  transform: translateY(0);
 }
 
-.stop-btn {
-  background: rgb(var(--color-error));
-  color: white;
-}
-
-.stop-btn:hover {
-  background: rgb(var(--color-error-hover));
-}
-
-.reset-btn {
-  background: rgb(var(--color-warning));
-  color: white;
-}
-
-.reset-btn:hover:not(:disabled) {
-  background: rgb(var(--color-warning-hover));
-}
-
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.button-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
 }
 
 .progress-section {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .progress-info {
@@ -467,27 +496,55 @@ watch(() => store.optimizationHistory.config, (newConfig) => {
   justify-content: space-between;
   font-size: 9px;
   color: rgb(var(--text-secondary));
+  font-weight: 500;
+}
+
+.progress-text {
+  color: rgb(var(--text-primary));
+}
+
+.progress-percent {
+  color: rgb(var(--color-primary));
+  font-weight: 600;
 }
 
 .progress-bar {
-  height: 4px;
+  height: 6px;
   background: rgb(var(--bg-tertiary));
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
+  position: relative;
 }
 
 .progress-fill {
   height: 100%;
-  background: rgb(var(--color-primary));
+  background: linear-gradient(90deg, rgb(var(--color-primary)), rgb(var(--color-secondary)));
   transition: width 0.3s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: progress-shine 2s infinite;
+}
+
+@keyframes progress-shine {
+  0% { left: -50%; }
+  100% { left: 100%; }
 }
 
 .metrics-section {
   display: flex;
   gap: 8px;
-  padding: 8px;
+  padding: 10px;
   background: rgb(var(--bg-primary));
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px solid rgb(var(--border-secondary));
 }
 
@@ -496,6 +553,7 @@ watch(() => store.optimizationHistory.config, (newConfig) => {
   flex-direction: column;
   gap: 2px;
   flex: 1;
+  text-align: center;
 }
 
 .metric-label {
@@ -503,23 +561,84 @@ watch(() => store.optimizationHistory.config, (newConfig) => {
   color: rgb(var(--text-tertiary));
   text-transform: uppercase;
   font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .metric-value {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: rgb(var(--text-primary));
+  transition: color 0.2s ease;
 }
 
-.metric-value.loss {
-  color: #ef4444;
+.metric-loss {
+  color: rgb(var(--color-error));
 }
 
-.metric-value.accuracy {
-  color: #22c55e;
+.metric-accuracy {
+  color: rgb(var(--color-success));
 }
 
-.metric-value.rate {
+.metric-rate {
   color: rgb(var(--color-primary));
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .controls-content {
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .action-section {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .action-button {
+    flex: none;
+  }
+  
+  .metrics-section {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .metric-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+  }
+}
+
+/* Enhanced focus states for accessibility */
+@media (prefers-reduced-motion: no-preference) {
+  .optimization-controls {
+    will-change: transform;
+  }
+  
+  .action-button,
+  .control-input,
+  .speed-slider {
+    will-change: transform;
+  }
+}
+
+/* High contrast mode adjustments */
+@media (prefers-contrast: high) {
+  .optimization-controls {
+    border-width: 2px;
+  }
+  
+  .status-dot {
+    border: 1px solid currentColor;
+  }
+  
+  .metric-loss,
+  .metric-accuracy,
+  .metric-rate {
+    text-decoration: underline;
+  }
 }
 </style> 
