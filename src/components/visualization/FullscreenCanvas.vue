@@ -125,7 +125,7 @@
         <select v-model="store.similarityMetric" class="toolbar-select" title="Similarity Metric">
           <option value="dotProduct">Dot Product</option>
           <option value="euclidean">Euclidean</option>
-          <option value="myProduct">My Product</option>
+          <option value="yatProduct">Yat Product</option>
         </select>
         <select v-model="store.activationFunction" class="toolbar-select" title="Activation Function">
           <option value="none">None</option>

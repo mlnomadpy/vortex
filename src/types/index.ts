@@ -63,7 +63,7 @@ export interface NeuronMovement {
   gradient: { x: number; y: number }
 }
 
-export type SimilarityMetric = 'dotProduct' | 'euclidean' | 'myProduct'
+export type SimilarityMetric = 'dotProduct' | 'euclidean' | 'yatProduct'
 export type ActivationFunction = 'none' | 'softmax' | 'softermax' | 'sigmoid' | 'relu' | 'gelu'
 
 export interface NotificationItem {

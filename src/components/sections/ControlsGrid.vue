@@ -152,7 +152,7 @@
           >
             <option value="dotProduct">Dot Product</option>
             <option value="euclidean">Euclidean</option>
-            <option value="myProduct">My Product</option>
+            <option value="yatProduct">Yat Product</option>
           </select>
         </div>
         

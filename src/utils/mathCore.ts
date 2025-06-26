@@ -25,8 +25,8 @@ export const SIMILARITY_METRICS: Record<SimilarityMetric, SimilarityMetricConfig
     description: 'Euclidean Distance: measures spatial proximity',
     formula: '-√((x - neuron.x)² + (y - neuron.y)²)'
   },
-  myProduct: {
-    name: 'myProduct',
+  yatProduct: {
+    name: 'yatProduct',
     description: 'Custom Product: combines correlation and distance',
     formula: '(x * neuron.x + y * neuron.y)² / ((x - neuron.x)² + (y - neuron.y)²)'
   }
@@ -52,7 +52,7 @@ export function calculateSimilarityScore(
     case 'euclidean':
       return -Math.sqrt(distSq)
       
-    case 'myProduct':
+    case 'yatProduct':
       const dotProd = x * neuron.x + y * neuron.y
       const rawScore = (dotProd * dotProd) / (distSq + 1e-6)
       // Clamp to prevent softmax overflow
@@ -304,7 +304,7 @@ export function calculateSimilarityGradient(
         y: dy / dist
       }
       
-    case 'myProduct':
+    case 'yatProduct':
       const dotProd = pointX * neuron.x + pointY * neuron.y
       
       // Using quotient rule: ∂f/∂neuron.x = (distSq * ∂(dotProd²)/∂neuron.x - dotProd² * ∂(distSq)/∂neuron.x) / distSq²

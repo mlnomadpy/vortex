@@ -167,7 +167,7 @@ class NeuralWorkerManager {
         return x * neuron.x + y * neuron.y
       case 'euclidean':
         return -Math.sqrt(distSq)
-      case 'myProduct':
+      case 'yatProduct':
         const dotProd = x * neuron.x + y * neuron.y
         const rawScore = (dotProd * dotProd) / (distSq + 1e-6)
         // Clamp to prevent softmax overflow

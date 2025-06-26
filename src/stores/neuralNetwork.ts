@@ -19,7 +19,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   const dataPoints = ref<DataPoint[]>([])
   const activeClasses = ref<number[]>([])
   const allClasses = ref<number[]>([])
-  const similarityMetric = ref<'dotProduct' | 'euclidean' | 'myProduct'>('dotProduct')
+  const similarityMetric = ref<'dotProduct' | 'euclidean' | 'yatProduct'>('dotProduct')
   const activationFunction = ref<'none' | 'softmax' | 'softermax' | 'sigmoid' | 'relu' | 'gelu'>('none')
   const showPredictedColors = ref(true)
   const showBoundaries = ref(false)
