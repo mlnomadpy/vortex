@@ -1,6 +1,6 @@
 <template>
   <!-- Compact Toolbar - Photoshop Style -->
-  <div class="compact-toolbar mb-4">
+  <div class="compact-toolbar mb-4" data-tour="controls">
     <!-- Data Section -->
     <div class="toolbar-section">
       <div class="section-label">
@@ -126,6 +126,7 @@
           variant="default"
           size="xs"
           title="Run Gradient Descent"
+          data-tour="gradient-descent"
         >
           <RocketLaunchIcon class="w-3 h-3 mr-1" />
           Optimize

@@ -22,28 +22,37 @@
     
     <!-- Quick Stats -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 max-w-2xl mx-auto animate-fade-in" style="animation-delay: 0.3s;">
-      <div class="stats-card glass-effect rounded-xl p-4">
-        <div class="text-2xl font-bold text-blue-500">{{ dataPointCount }}</div>
-        <div class="text-sm text-theme-secondary">Data Points</div>
-      </div>
-      <div class="stats-card glass-effect rounded-xl p-4">
-        <div class="text-2xl font-bold text-indigo-500">{{ neuronCount }}</div>
-        <div class="text-sm text-theme-secondary">Neurons</div>
-      </div>
-      <div class="stats-card glass-effect rounded-xl p-4">
-        <div class="text-2xl font-bold text-purple-500">{{ classCount }}</div>
-        <div class="text-sm text-theme-secondary">Classes</div>
-      </div>
-      <div class="stats-card glass-effect rounded-xl p-4">
-        <div class="text-2xl font-bold text-green-500">{{ accuracy }}%</div>
-        <div class="text-sm text-theme-secondary">Accuracy</div>
-      </div>
+      <Tooltip content="Number of data points currently loaded">
+        <div class="stats-card glass-effect rounded-xl p-4" role="status" aria-label="Data points count">
+          <div class="text-2xl font-bold text-blue-500">{{ dataPointCount }}</div>
+          <div class="text-sm text-theme-secondary">Data Points</div>
+        </div>
+      </Tooltip>
+      <Tooltip content="Number of neurons (classifiers) in your network">
+        <div class="stats-card glass-effect rounded-xl p-4" role="status" aria-label="Neurons count">
+          <div class="text-2xl font-bold text-indigo-500">{{ neuronCount }}</div>
+          <div class="text-sm text-theme-secondary">Neurons</div>
+        </div>
+      </Tooltip>
+      <Tooltip content="Number of different classes in your dataset">
+        <div class="stats-card glass-effect rounded-xl p-4" role="status" aria-label="Classes count">
+          <div class="text-2xl font-bold text-purple-500">{{ classCount }}</div>
+          <div class="text-sm text-theme-secondary">Classes</div>
+        </div>
+      </Tooltip>
+      <Tooltip content="Current classification accuracy of your network">
+        <div class="stats-card glass-effect rounded-xl p-4" role="status" aria-label="Accuracy percentage">
+          <div class="text-2xl font-bold text-green-500">{{ accuracy }}%</div>
+          <div class="text-sm text-theme-secondary">Accuracy</div>
+        </div>
+      </Tooltip>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Tooltip } from '@/components/ui'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 
 const store = useNeuralNetworkStore()

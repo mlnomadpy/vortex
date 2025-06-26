@@ -1,7 +1,7 @@
 <template>
   <div class="neural-canvas-layout">
     <!-- Full-width canvas at the top -->
-    <div class="canvas-container">
+    <div class="canvas-container" data-tour="neural-canvas">
       <InteractiveCanvas
         ref="canvasComponent"
         :width="600"

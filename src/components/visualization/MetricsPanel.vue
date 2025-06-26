@@ -1,5 +1,5 @@
 <template>
-  <div class="compact-metrics-panel">
+  <div class="compact-metrics-panel" data-tour="visualization-panel">
     <div class="panel-header">
       <ChartBarIcon class="w-4 h-4" />
       <span class="panel-title">Metrics</span>

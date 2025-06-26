@@ -446,14 +446,508 @@
   }
 }
 
-/* Enhance scrolling performance on mobile */
+/* Enhanced accessibility and UX improvements */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border-primary: 0 0 0;
+    --border-secondary: 0 0 0;
+    --shadow-light: rgba(0, 0, 0, 0.8);
+    --shadow-medium: rgba(0, 0, 0, 0.9);
+  }
+  
+  .dark {
+    --border-primary: 255 255 255;
+    --border-secondary: 255 255 255;
+  }
+  
+  .glass-effect {
+    backdrop-filter: none !important;
+    background: rgb(var(--bg-primary)) !important;
+    border: 2px solid rgb(var(--border-primary)) !important;
+  }
+}
+
+/* Font size preferences */
+.font-size-small { font-size: 0.875rem; }
+.font-size-medium { font-size: 1rem; }
+.font-size-large { font-size: 1.125rem; }
+
+/* Compact mode styles */
+.compact-mode .control-card,
+.compact-mode .stats-card { padding: 0.75rem !important; }
+.compact-mode .button-group { gap: 0.25rem !important; }
+.compact-mode h1 { font-size: 2rem !important; }
+.compact-mode h2 { font-size: 1.5rem !important; }
+
+/* Enhanced focus indicators for keyboard navigation */
+.keyboard-navigation *:focus {
+  outline: 2px solid rgb(59 130 246) !important;
+  outline-offset: 2px !important;
+}
+
+/* Reduced motion support */
+.reduced-motion * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Enhanced mobile experience */
 @media (max-width: 768px) {
   body {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
+    font-size: 14px;
   }
   
   * {
     -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
+  }
+  
+  /* Mobile-optimized layouts */
+  .compact-toolbar {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  
+  .toolbar-section {
+    width: 100% !important;
+  }
+  
+  .controls-row {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  
+  /* Touch-friendly interactive elements */
+  .compact-btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    padding: 0.75rem !important;
+  }
+  
+  /* Improved canvas experience */
+  .canvas-container {
+    padding: 0.5rem !important;
+  }
+  
+  /* Stack elements vertically */
+  .stats-card {
+    margin-bottom: 0.5rem !important;
+  }
+  
+  /* Larger tap targets for mobile */
+  button, .interactive-element {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Tablet optimizations */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .neural-canvas-layout .bottom-section {
+    flex-direction: column;
+  }
+  
+  .left-column,
+  .right-column {
+    flex: none !important;
+    width: 100% !important;
+  }
+}
+
+/* Tutorial Enhancement Styles */
+.tour-highlight-canvas {
+  position: relative;
+  overflow: visible;
+}
+
+.tour-highlight-canvas::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 2px dashed rgb(59 130 246);
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.05);
+  animation: tour-canvas-highlight 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.tour-pulse {
+  animation: tour-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.tour-highlight {
+  position: relative;
+  overflow: visible;
+}
+
+.tour-highlight::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px solid rgb(34 197 94);
+  border-radius: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  animation: tour-glow 1.5s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Tutorial hint animations */
+.tour-click-hint {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: rgb(59 130 246);
+  border-radius: 50%;
+  animation: tour-click-ripple 2s ease-out infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.tour-click-hint::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px solid rgb(59 130 246);
+  border-radius: 50%;
+  animation: tour-click-outer 2s ease-out infinite;
+}
+
+.tour-parameter-highlight {
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  animation: tour-parameter-pulse 1s ease-in-out infinite;
+}
+
+/* Floating help indicator */
+.tour-help-indicator {
+  position: fixed;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, rgb(59 130 246), rgb(99 102 241));
+  color: white;
+  padding: 0.75rem;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  animation: tour-float 3s ease-in-out infinite;
+  cursor: pointer;
+  z-index: 60;
+}
+
+.tour-help-indicator:hover {
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* Interactive demo styles */
+.demo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(1px);
+  animation: demo-fade-in 0.3s ease-out;
+}
+
+.demo-instruction {
+  background: white;
+  color: rgb(59 130 246);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: demo-bounce 2s ease-in-out infinite;
+}
+
+.dark .demo-instruction {
+  background: rgb(17 24 39);
+  color: rgb(147 197 253);
+}
+
+/* Progress indicator for interactive steps */
+.tour-progress-overlay {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(59, 130, 246, 0.95);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  animation: tour-slide-down 0.4s ease-out;
+  z-index: 55;
+}
+
+/* Enhanced spotlight effect */
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Tour step completion checkmark */
+.tour-step-complete {
+  position: relative;
+  overflow: visible;
+}
+
+.tour-step-complete::after {
+  content: '✓';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background: rgb(34 197 94);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  animation: tour-checkmark-pop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  z-index: 10;
+}
+
+/* Sample file suggestions for upload demo */
+.sample-files-suggestion {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid rgb(229 231 235);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: tour-slide-up 0.3s ease-out;
+  z-index: 20;
+}
+
+.dark .sample-files-suggestion {
+  background: rgb(31 41 55);
+  border-color: rgb(75 85 99);
+}
+
+.sample-file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sample-file-item:hover {
+  background: rgb(243 244 246);
+}
+
+.dark .sample-file-item:hover {
+  background: rgb(55 65 81);
+}
+
+.sample-file-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, rgb(59 130 246), rgb(99 102 241));
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+/* Keyframe animations */
+@keyframes tour-canvas-highlight {
+  0%, 100% {
+    border-color: rgb(59 130 246);
+    background: rgba(59, 130, 246, 0.05);
+  }
+  50% {
+    border-color: rgb(99 102 241);
+    background: rgba(99, 102, 241, 0.1);
+  }
+}
+
+@keyframes tour-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.3);
+  }
+}
+
+@keyframes tour-glow {
+  from {
+    border-color: rgb(34 197 94);
+    background: rgba(34, 197, 94, 0.1);
+  }
+  to {
+    border-color: rgb(22 163 74);
+    background: rgba(22, 163, 74, 0.15);
+  }
+}
+
+@keyframes tour-click-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes tour-click-outer {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+@keyframes tour-parameter-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.2);
+  }
+}
+
+@keyframes tour-float {
+  0%, 100% {
+    transform: translateY(-50%) translateX(0);
+  }
+  50% {
+    transform: translateY(-50%) translateX(-4px);
+  }
+}
+
+@keyframes demo-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes demo-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes tour-slide-down {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes tour-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tour-checkmark-pop {
+  0% {
+    transform: scale(0) rotate(180deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Tour-specific responsive adjustments */
+@media (max-width: 768px) {
+  .tour-help-indicator {
+    right: 0.5rem;
+    padding: 0.5rem;
+  }
+  
+  .tour-progress-overlay {
+    top: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .sample-files-suggestion {
+    padding: 0.75rem;
+    margin-top: 0.25rem;
+  }
+  
+  .tour-canvas-highlight::before {
+    inset: -4px;
+  }
+}
+
+/* Respect reduced motion preferences for tours */
+@media (prefers-reduced-motion: reduce) {
+  .tour-highlight-canvas::before,
+  .tour-pulse,
+  .tour-highlight::after,
+  .tour-click-hint,
+  .tour-click-hint::before,
+  .tour-parameter-highlight,
+  .tour-help-indicator,
+  .demo-instruction,
+  .tour-step-complete::after {
+    animation: none !important;
+  }
+  
+  .tour-help-indicator:hover {
+    transform: translateY(-50%) scale(1.05);
   }
 }

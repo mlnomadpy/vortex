@@ -55,6 +55,15 @@
             <MoonIcon v-else class="w-4 h-4" />
           </Button>
           
+          <Button 
+            @click="showSettings = true"
+            variant="ghost"
+            size="icon"
+            title="Settings"
+          >
+            <CogIcon class="w-4 h-4" />
+          </Button>
+          
           <a 
             href="https://github.com/yourusername/vortex" 
             target="_blank"
@@ -67,15 +76,32 @@
           </a>
         </div>
         
+        <!-- Settings Panel -->
+        <SettingsPanel 
+          :is-visible="showSettings"
+          @close="showSettings = false"
+          @restart-tour="handleRestartTour"
+        />
+        
       </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { SunIcon, MoonIcon } from '@/components/ui/icons'
-import { Button } from '@/components/ui'
+import { ref } from 'vue'
+import { SunIcon, MoonIcon, CogIcon } from '@/components/ui/icons'
+import { Button, SettingsPanel } from '@/components/ui'
 import { useTheme } from '@/composables/useTheme'
 
 const { isDark, toggleTheme } = useTheme()
+
+const showSettings = ref(false)
+
+const handleRestartTour = () => {
+  // This will trigger a page reload to restart the tour
+  setTimeout(() => {
+    window.location.reload()
+  }, 100)
+}
 </script>

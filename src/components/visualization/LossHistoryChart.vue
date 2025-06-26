@@ -1,5 +1,5 @@
 <template>
-  <div class="loss-history-chart">
+  <div class="loss-history-chart" data-tour="loss-chart">
     <div class="chart-header">
       <div class="chart-title">
         <ChartBarIcon class="w-4 h-4" />

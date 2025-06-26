@@ -72,6 +72,7 @@
           variant="default"
           size="sm"
           title="Start Gradient Descent"
+          data-tour="train-button"
         >
           <RocketLaunchIcon class="w-4 h-4 mr-1" />
           Start
