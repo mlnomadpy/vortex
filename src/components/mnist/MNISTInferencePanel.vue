@@ -16,15 +16,15 @@
 .mnist-inference-panel {
   padding: 16px;
   text-align: center;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 .inference-placeholder {
   margin-top: 20px;
   padding: 40px;
-  background: #383838;
-  border: 2px dashed #555555;
+  background: rgb(var(--bg-secondary));
+  border: 2px dashed rgb(var(--border-primary));
   border-radius: 8px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
 }
 </style> 

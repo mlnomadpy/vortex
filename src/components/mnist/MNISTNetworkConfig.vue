@@ -89,23 +89,23 @@ function getActivationDescription(activation: ActivationFunction): string {
   margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #007acc;
+  color: rgb(var(--color-primary));
 }
 
 .config-select {
   width: 100%;
   padding: 8px 12px;
-  background: #383838;
-  border: 1px solid #555555;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 4px;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
   font-size: 12px;
 }
 
 .config-description {
   margin: 8px 0 0 0;
   font-size: 11px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   font-style: italic;
 }
 </style> 

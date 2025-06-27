@@ -230,8 +230,8 @@
                     <polyline 
                       :points="lossSparklinePoints" 
                       fill="none" 
-                      stroke="#dc3545" 
-                      stroke-width="1"
+                      stroke="rgb(var(--color-error))" 
+                      stroke-width="1.5"
                     />
                   </svg>
                 </div>
@@ -250,8 +250,8 @@
                     <polyline 
                       :points="accuracySparklinePoints" 
                       fill="none" 
-                      stroke="#28a745" 
-                      stroke-width="1"
+                      stroke="rgb(var(--color-success))" 
+                      stroke-width="1.5"
                     />
                   </svg>
                 </div>
@@ -825,7 +825,7 @@ onUnmounted(() => {
   margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #007acc;
+  color: rgb(var(--color-primary));
 }
 
 .control-grid {
@@ -843,16 +843,16 @@ onUnmounted(() => {
 
 .control-label {
   font-size: 11px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   font-weight: 500;
 }
 
 .control-input {
   padding: 6px 8px;
-  background: #383838;
-  border: 1px solid #555555;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 3px;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
   font-size: 11px;
 }
 
@@ -873,7 +873,7 @@ onUnmounted(() => {
   justify-content: center;
   gap: 6px;
   padding: 10px 16px;
-  border: 1px solid #555555;
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -882,40 +882,60 @@ onUnmounted(() => {
 }
 
 .action-btn.primary {
-  background: #007acc;
-  border-color: #007acc;
-  color: white;
+  background: rgb(var(--color-primary));
+  border-color: rgb(var(--color-primary));
+  color: rgb(var(--text-primary));
 }
 
 .action-btn.primary:hover:not(:disabled) {
-  background: #0066aa;
-  border-color: #0066aa;
+  background: rgb(var(--color-primary-hover));
+  border-color: rgb(var(--color-primary-hover));
 }
 
 .action-btn.danger {
-  background: #dc3545;
-  border-color: #dc3545;
-  color: white;
+  background: rgb(var(--color-error));
+  border-color: rgb(var(--color-error));
+  color: rgb(var(--text-primary));
 }
 
 .action-btn.danger:hover:not(:disabled) {
-  background: #c82333;
-  border-color: #c82333;
+  background: rgb(var(--color-error-hover));
+  border-color: rgb(var(--color-error-hover));
 }
 
-.action-btn:not(.primary):not(.danger) {
-  background: #383838;
-  color: #cccccc;
+.action-btn.secondary {
+  background: rgb(var(--color-warning));
+  border-color: rgb(var(--color-warning));
+  color: rgb(var(--text-primary));
 }
 
-.action-btn:not(.primary):not(.danger):hover:not(:disabled) {
-  background: #404040;
-  border-color: #666666;
+.action-btn.secondary:hover:not(:disabled) {
+  background: rgb(var(--color-warning-hover));
+  border-color: rgb(var(--color-warning-hover));
 }
 
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.action-btn.outline {
+  background: transparent;
+  border-color: rgb(var(--border-primary));
+  color: rgb(var(--text-primary));
+  font-size: 10px;
+  padding: 6px 10px;
+  flex: 1;
+}
+
+.action-btn.outline:hover:not(:disabled) {
+  background: rgb(var(--bg-secondary));
+  border-color: rgb(var(--border-secondary));
+}
+
+.action-btn.quick-train {
+  border-color: rgb(var(--color-success));
+  color: rgb(var(--color-success));
+}
+
+.action-btn.quick-train:hover:not(:disabled) {
+  background: rgb(var(--color-success));
+  color: rgb(var(--text-primary));
 }
 
 .btn-icon {
@@ -936,21 +956,21 @@ onUnmounted(() => {
   align-items: center;
   gap: 4px;
   padding: 8px;
-  background: #383838;
-  border: 1px solid #555555;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 4px;
 }
 
 .stat-label {
   font-size: 9px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   text-transform: uppercase;
 }
 
 .stat-value {
   font-size: 12px;
   font-weight: 600;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 .progress-bar-container {
@@ -962,20 +982,20 @@ onUnmounted(() => {
 .progress-bar {
   flex: 1;
   height: 8px;
-  background: #383838;
+  background: rgb(var(--bg-secondary));
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #007acc, #0099ff);
+  background: linear-gradient(90deg, rgb(var(--color-primary)), rgb(var(--color-secondary)));
   transition: width 0.3s ease;
 }
 
 .progress-text {
   font-size: 10px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   min-width: 35px;
 }
 
@@ -983,7 +1003,7 @@ onUnmounted(() => {
 .gpu-control,
 .worker-control {
   grid-column: 1 / -1;
-  border-top: 1px solid #464647;
+  border-top: 1px solid rgb(var(--border-secondary));
   padding-top: 12px;
   margin-top: 8px;
 }
@@ -999,13 +1019,13 @@ onUnmounted(() => {
 .gpu-icon {
   width: 14px;
   height: 14px;
-  color: #007acc;
+  color: rgb(var(--color-primary));
 }
 
 .worker-icon {
   width: 14px;
   height: 14px;
-  color: #ff6b6b;
+  color: rgb(var(--color-error));
 }
 
 .gpu-toggle,
@@ -1019,27 +1039,27 @@ onUnmounted(() => {
 .worker-checkbox {
   width: 16px;
   height: 16px;
-  accent-color: #007acc;
+  accent-color: rgb(var(--color-primary));
 }
 
 .worker-checkbox {
-  accent-color: #ff6b6b;
+  accent-color: rgb(var(--color-error));
 }
 
 .gpu-status,
 .worker-status {
   font-size: 10px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   transition: color 0.2s ease;
 }
 
 .gpu-status.active {
-  color: #007acc;
+  color: rgb(var(--color-primary));
   font-weight: 600;
 }
 
 .worker-status.active {
-  color: #ff6b6b;
+  color: rgb(var(--color-error));
   font-weight: 600;
 }
 
@@ -1049,8 +1069,8 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #1e1e1e, #2a2a2a);
-  border: 1px solid #555555;
+  background: linear-gradient(135deg, rgb(var(--bg-primary)), rgb(var(--bg-secondary)));
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 6px;
   margin-bottom: 16px;
 }
@@ -1069,22 +1089,22 @@ onUnmounted(() => {
 }
 
 .status-dot.status-idle {
-  background: #666666;
+  background: rgb(var(--text-tertiary));
   animation: none;
 }
 
 .status-dot.status-running {
-  background: #28a745;
+  background: rgb(var(--color-success));
 }
 
 .status-dot.status-paused {
-  background: #ffc107;
+  background: rgb(var(--color-warning));
 }
 
 .status-text {
   font-size: 11px;
   font-weight: 600;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 .training-timer {
@@ -1092,7 +1112,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
 }
 
 .timer-icon {
@@ -1102,7 +1122,7 @@ onUnmounted(() => {
 
 /* Enhanced Control Inputs */
 .control-tooltip {
-  color: #007acc;
+  color: rgb(var(--color-primary));
   cursor: help;
   margin-left: 4px;
 }
@@ -1122,18 +1142,18 @@ onUnmounted(() => {
   flex: 1;
   padding: 2px 4px;
   font-size: 9px;
-  background: #2a2a2a;
-  border: 1px solid #444444;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 2px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .preset-btn:hover:not(:disabled) {
-  background: #007acc;
-  color: white;
-  border-color: #007acc;
+  background: rgb(var(--color-primary));
+  color: rgb(var(--text-primary));
+  border-color: rgb(var(--color-primary));
 }
 
 .preset-btn:disabled {
@@ -1150,7 +1170,7 @@ onUnmounted(() => {
 .batch-slider {
   -webkit-appearance: none;
   height: 4px;
-  background: #383838;
+  background: rgb(var(--bg-secondary));
   border-radius: 2px;
   outline: none;
 }
@@ -1159,7 +1179,7 @@ onUnmounted(() => {
   -webkit-appearance: none;
   width: 12px;
   height: 12px;
-  background: #007acc;
+  background: rgb(var(--color-primary));
   border-radius: 50%;
   cursor: pointer;
 }
@@ -1173,7 +1193,7 @@ onUnmounted(() => {
 .speed-slider {
   -webkit-appearance: none;
   height: 6px;
-  background: linear-gradient(90deg, #383838, #007acc, #0099ff);
+  background: linear-gradient(90deg, rgb(var(--bg-secondary)), rgb(var(--color-primary)), rgb(var(--color-secondary)));
   border-radius: 3px;
   outline: none;
 }
@@ -1182,8 +1202,8 @@ onUnmounted(() => {
   -webkit-appearance: none;
   width: 14px;
   height: 14px;
-  background: #ffffff;
-  border: 2px solid #007acc;
+  background: rgb(var(--bg-primary));
+  border: 2px solid rgb(var(--color-primary));
   border-radius: 50%;
   cursor: pointer;
 }
@@ -1197,14 +1217,14 @@ onUnmounted(() => {
 .speed-value {
   font-size: 10px;
   font-weight: 600;
-  color: #007acc;
+  color: rgb(var(--color-primary));
 }
 
 .speed-labels {
   display: flex;
   justify-content: space-between;
   font-size: 8px;
-  color: #666666;
+  color: rgb(var(--text-tertiary));
   width: 100%;
 }
 
@@ -1226,45 +1246,34 @@ onUnmounted(() => {
   flex: 1;
 }
 
-.action-btn.secondary {
-  background: #ffc107;
-  border-color: #ffc107;
-  color: #000000;
-}
-
-.action-btn.secondary:hover:not(:disabled) {
-  background: #e0a800;
-  border-color: #e0a800;
-}
-
 .action-btn.outline {
   background: transparent;
-  border-color: #555555;
-  color: #cccccc;
+  border-color: rgb(var(--border-primary));
+  color: rgb(var(--text-primary));
   font-size: 10px;
   padding: 6px 10px;
   flex: 1;
 }
 
 .action-btn.outline:hover:not(:disabled) {
-  background: #383838;
-  border-color: #666666;
+  background: rgb(var(--bg-secondary));
+  border-color: rgb(var(--border-secondary));
 }
 
 .action-btn.quick-train {
-  border-color: #28a745;
-  color: #28a745;
+  border-color: rgb(var(--color-success));
+  color: rgb(var(--color-success));
 }
 
 .action-btn.quick-train:hover:not(:disabled) {
-  background: #28a745;
-  color: white;
+  background: rgb(var(--color-success));
+  color: rgb(var(--text-primary));
 }
 
 /* Enhanced Progress Visualization */
 .progress-overview {
-  background: #1a1a1a;
-  border: 1px solid #333333;
+  background: rgb(var(--bg-primary));
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 6px;
   padding: 16px;
 }
@@ -1281,19 +1290,19 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: #2a2a2a;
-  border: 1px solid #404040;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 6px;
   transition: all 0.2s ease;
 }
 
 .stat-card.primary {
-  border-color: #007acc;
-  background: linear-gradient(135deg, #2a2a2a, #1a3a5a);
+  border-color: rgb(var(--color-primary));
+  background: linear-gradient(135deg, rgb(var(--bg-secondary)), rgb(var(--bg-tertiary)));
 }
 
 .stat-card:hover {
-  border-color: #555555;
+  border-color: rgb(var(--border-primary));
   transform: translateY(-1px);
 }
 
@@ -1308,20 +1317,20 @@ onUnmounted(() => {
 }
 
 .stat-value.improving {
-  color: #28a745;
+  color: rgb(var(--color-success));
 }
 
 .stat-value.worsening {
-  color: #dc3545;
+  color: rgb(var(--color-error));
 }
 
 .stat-value.accuracy {
-  color: #007acc;
+  color: rgb(var(--color-primary));
 }
 
 .stat-change {
   font-size: 9px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
 }
 
 .stat-trend {
@@ -1340,13 +1349,13 @@ onUnmounted(() => {
 }
 
 .loss-sparkline polyline {
-  stroke: #dc3545;
+  stroke: rgb(var(--color-error));
   stroke-width: 1.5;
   fill: none;
 }
 
 .accuracy-sparkline polyline {
-  stroke: #28a745;
+  stroke: rgb(var(--color-success));
   stroke-width: 1.5;
   fill: none;
 }
@@ -1361,7 +1370,7 @@ onUnmounted(() => {
   position: relative;
   flex: 1;
   height: 12px;
-  background: #383838;
+  background: rgb(var(--bg-secondary));
   border-radius: 6px;
   overflow: hidden;
 }
@@ -1377,12 +1386,12 @@ onUnmounted(() => {
 
 .progress-segment {
   flex: 1;
-  border-right: 1px solid #555555;
+  border-right: 1px solid rgb(var(--border-primary));
   opacity: 0.3;
 }
 
 .progress-segment.completed {
-  background: rgba(0, 122, 204, 0.3);
+  background: rgba(var(--color-primary), 0.3);
   opacity: 1;
 }
 
@@ -1394,14 +1403,14 @@ onUnmounted(() => {
 
 .eta-text {
   font-size: 9px;
-  color: #007acc;
+  color: rgb(var(--color-primary));
 }
 
 /* Real-time Batch Metrics */
 .batch-metrics {
   margin-top: 16px;
-  background: #1a1a1a;
-  border: 1px solid #333333;
+  background: rgb(var(--bg-primary));
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 6px;
   padding: 16px;
 }
@@ -1413,15 +1422,15 @@ onUnmounted(() => {
 }
 
 .metric-card {
-  background: #2a2a2a;
-  border: 1px solid #404040;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 4px;
   padding: 10px;
   transition: all 0.2s ease;
 }
 
 .metric-card:hover {
-  border-color: #555555;
+  border-color: rgb(var(--border-primary));
   transform: translateY(-1px);
 }
 
@@ -1434,7 +1443,7 @@ onUnmounted(() => {
 
 .metric-title {
   font-size: 9px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   text-transform: uppercase;
   font-weight: 600;
 }
@@ -1442,19 +1451,19 @@ onUnmounted(() => {
 .metric-value {
   font-size: 14px;
   font-weight: 700;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 .metric-details {
   font-size: 8px;
-  color: #666666;
+  color: rgb(var(--text-tertiary));
 }
 
 /* Live Neuron Updates */
 .neuron-updates {
   margin-top: 20px;
-  background: #1a1a1a;
-  border: 1px solid #333333;
+  background: rgb(var(--bg-primary));
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 6px;
   padding: 16px;
 }
@@ -1463,7 +1472,7 @@ onUnmounted(() => {
   margin: 0 0 12px 0;
   font-size: 12px;
   font-weight: 600;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 .neuron-grid {
@@ -1475,24 +1484,24 @@ onUnmounted(() => {
 .neuron-update-card {
   position: relative;
   padding: 8px;
-  background: #2a2a2a;
-  border: 1px solid #404040;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-secondary));
   border-radius: 4px;
   transition: all 0.3s ease;
   overflow: hidden;
 }
 
 .neuron-update-card.active {
-  border-color: #007acc;
-  background: linear-gradient(135deg, #2a2a2a, #1a3a5a);
+  border-color: rgb(var(--color-primary));
+  background: linear-gradient(135deg, rgb(var(--bg-secondary)), rgb(var(--bg-tertiary)));
   transform: scale(1.02);
-  box-shadow: 0 2px 8px rgba(0, 122, 204, 0.3);
+  box-shadow: 0 2px 8px var(--shadow-glow);
 }
 
 .neuron-label {
   font-size: 10px;
   font-weight: 600;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
   margin-bottom: 4px;
 }
 
@@ -1509,11 +1518,11 @@ onUnmounted(() => {
 }
 
 .metric-label {
-  color: #999999;
+  color: rgb(var(--text-tertiary));
 }
 
 .metric-value {
-  color: #cccccc;
+  color: rgb(var(--text-primary));
   font-weight: 500;
 }
 

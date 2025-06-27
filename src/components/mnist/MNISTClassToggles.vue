@@ -70,9 +70,9 @@ function toggleOddEven() {
   flex-direction: column;
   gap: 8px;
   padding: 8px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--glass-bg);
   border-radius: 6px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: var(--glass-backdrop);
 }
 
 .toggles-container {
@@ -89,25 +89,25 @@ function toggleOddEven() {
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: #383838;
-  border: 1px solid #555555;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 4px;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 11px;
 }
 
 .digit-toggle:hover:not(:disabled) {
-  background: #404040;
-  border-color: #666666;
+  background: rgb(var(--bg-tertiary));
+  border-color: rgb(var(--border-secondary));
   transform: translateY(-1px);
 }
 
 .digit-toggle.active {
-  background: #007acc;
-  border-color: #007acc;
-  color: white;
+  background: rgb(var(--color-primary));
+  border-color: rgb(var(--color-primary));
+  color: rgb(var(--text-primary));
 }
 
 .digit-toggle:disabled {
@@ -138,18 +138,18 @@ function toggleOddEven() {
 
 .action-btn {
   padding: 4px 8px;
-  background: #383838;
-  border: 1px solid #555555;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 3px;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 10px;
 }
 
 .action-btn:hover:not(:disabled) {
-  background: #404040;
-  border-color: #666666;
+  background: rgb(var(--bg-tertiary));
+  border-color: rgb(var(--border-secondary));
 }
 
 .action-btn:disabled {

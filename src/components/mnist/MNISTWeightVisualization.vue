@@ -13,6 +13,6 @@
 .mnist-weight-visualization {
   padding: 16px;
   text-align: center;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 </style> 

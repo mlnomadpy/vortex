@@ -15,6 +15,11 @@
       </div>
       
       <div class="visualization-controls">
+        <div class="training-indicator" :class="{ active: store.isTraining }">
+          <div class="indicator-dot"></div>
+          <span class="indicator-text">{{ store.isTraining ? 'Training Active' : 'Training Idle' }}</span>
+        </div>
+        
         <div class="control-group">
           <label class="control-label">Selected Neuron:</label>
           <select v-model="selectedNeuronId" class="neuron-select">
@@ -25,16 +30,22 @@
           </select>
         </div>
         
-              <div class="control-group" v-if="currentMode === 'weights'">
-        <label class="control-label">Colormap:</label>
-        <select v-model="colormap" class="colormap-select">
-          <option value="viridis">Viridis</option>
-          <option value="plasma">Plasma</option>
-          <option value="grayscale">Grayscale</option>
-          <option value="cool">Cool</option>
-          <option value="hot">Hot</option>
-        </select>
-      </div>
+        <div class="control-group" v-if="currentMode === 'weights'">
+          <label class="control-label">Colormap:</label>
+          <select v-model="colormap" class="colormap-select">
+            <option value="diverging">Diverging (Blue-Red)</option>
+            <option value="viridis">Viridis</option>
+            <option value="plasma">Plasma</option>
+            <option value="grayscale">Grayscale</option>
+            <option value="cool">Cool</option>
+            <option value="hot">Hot</option>
+          </select>
+          <div class="colormap-legend" v-if="colormap === 'diverging'">
+            <span class="legend-label">Low</span>
+            <div class="legend-gradient diverging-gradient"></div>
+            <span class="legend-label">High</span>
+          </div>
+        </div>
       
       <div class="control-group">
         <button @click="forceUpdate" class="force-update-btn" title="Force visualization update">
@@ -57,9 +68,10 @@
           >
             <div class="neuron-header">
               <span class="neuron-label">{{ neuron.label || `Digit ${neuron.id}` }}</span>
-              <span class="neuron-stats">
-                Norm: {{ getNeuronWeightNorm(neuron).toFixed(3) }}
-              </span>
+              <div class="neuron-stats">
+                <div class="stat-line">‖w‖: {{ getNeuronWeightNorm(neuron).toFixed(3) }}</div>
+                <div class="stat-line">σ: {{ getWeightStandardDeviation(neuron).toFixed(3) }}</div>
+              </div>
             </div>
             <canvas
               :ref="el => { if (el) neuronCanvases[neuron.id] = el as HTMLCanvasElement }"
@@ -75,16 +87,28 @@
             <h3>{{ selectedNeuron.label || `Digit ${selectedNeuron.id}` }}</h3>
             <div class="neuron-detail-stats">
               <div class="stat-item">
-                <span class="stat-label">Weight Norm:</span>
+                <span class="stat-label">Weight Norm (‖w‖):</span>
                 <span class="stat-value">{{ getNeuronWeightNorm(selectedNeuron).toFixed(4) }}</span>
               </div>
               <div class="stat-item">
-                <span class="stat-label">Bias:</span>
+                <span class="stat-label">Bias (b):</span>
                 <span class="stat-value">{{ selectedNeuron.bias.toFixed(4) }}</span>
               </div>
               <div class="stat-item">
-                <span class="stat-label">Avg Weight:</span>
+                <span class="stat-label">Mean Weight (μ):</span>
                 <span class="stat-value">{{ getAverageWeight(selectedNeuron).toFixed(4) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Std Dev (σ):</span>
+                <span class="stat-value">{{ getWeightStandardDeviation(selectedNeuron).toFixed(4) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Min Weight:</span>
+                <span class="stat-value">{{ Math.min(...selectedNeuron.weights).toFixed(4) }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Max Weight:</span>
+                <span class="stat-value">{{ Math.max(...selectedNeuron.weights).toFixed(4) }}</span>
               </div>
             </div>
           </div>
@@ -213,12 +237,27 @@ import {
   CpuChipIcon
 } from '@/components/ui/icons'
 
+// Helper function to get CSS variable values for canvas operations
+function getCSSVar(varName: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim()
+}
+
+function getCSSVarAsColor(varName: string): string {
+  const value = getCSSVar(varName)
+  // Convert RGB values to hex format for canvas
+  if (value.includes(' ')) {
+    const [r, g, b] = value.split(' ').map(v => parseInt(v))
+    return `rgb(${r}, ${g}, ${b})`
+  }
+  return value
+}
+
 const store = useMNISTClassifierStore()
 
 // Reactive state
 const currentMode = ref<'weights' | 'activations' | 'similarity'>('weights')
 const selectedNeuronId = ref<string | number>('all')
-const colormap = ref('viridis')
+const colormap = ref('diverging')
 const imageSize = 28 // MNIST image size
 
 // Canvas references
@@ -264,6 +303,12 @@ function getNeuronWeightNorm(neuron: NDNeuron): number {
 
 function getAverageWeight(neuron: NDNeuron): number {
   return neuron.weights.reduce((sum, w) => sum + w, 0) / neuron.weights.length
+}
+
+function getWeightStandardDeviation(neuron: NDNeuron): number {
+  const mean = getAverageWeight(neuron)
+  const variance = neuron.weights.reduce((sum, w) => sum + Math.pow(w - mean, 2), 0) / neuron.weights.length
+  return Math.sqrt(variance)
 }
 
 function getActivationLevel(neuron: NDNeuron): number {
@@ -337,7 +382,7 @@ function renderWeightCanvas(canvas: HTMLCanvasElement, weights: number[]) {
     ctx.putImageData(imageData, 0, 0)
     
     // Add subtle border for visual separation
-    ctx.strokeStyle = '#666666'
+    ctx.strokeStyle = getCSSVarAsColor('--border-tertiary')
     ctx.lineWidth = 0.5
     ctx.strokeRect(0, 0, canvas.width, canvas.height)
     
@@ -390,14 +435,14 @@ function renderWeightHistogram(weights: number[]) {
   const barWidth = 300 / bins
   
   // Draw bars
-  ctx.fillStyle = '#007acc'
+  ctx.fillStyle = getCSSVarAsColor('--color-primary')
   histogram.forEach((count, i) => {
     const height = (count / maxCount) * 80
     ctx.fillRect(i * barWidth, 100 - height, barWidth - 1, height)
   })
   
   // Draw axes
-  ctx.strokeStyle = '#cccccc'
+  ctx.strokeStyle = getCSSVarAsColor('--border-secondary')
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.moveTo(0, 100)
@@ -414,6 +459,8 @@ function applyColormap(value: number, cmapName: string): { r: number, g: number,
       return viridisColormap(value)
     case 'plasma':
       return plasmaColormap(value)
+    case 'diverging':
+      return divergingColormap(value)
     case 'grayscale':
       const gray = Math.floor(value * 255)
       return { r: gray, g: gray, b: gray }
@@ -430,6 +477,27 @@ function applyColormap(value: number, cmapName: string): { r: number, g: number,
     default:
       const def = Math.floor(value * 255)
       return { r: def, g: def, b: def }
+  }
+}
+
+function divergingColormap(t: number): { r: number, g: number, b: number } {
+  // Blue-White-Red diverging colormap (perfect for weights)
+  if (t < 0.5) {
+    // Blue to white
+    const intensity = t * 2
+    return {
+      r: Math.floor(255 * intensity),
+      g: Math.floor(255 * intensity),
+      b: 255
+    }
+  } else {
+    // White to red
+    const intensity = (t - 0.5) * 2
+    return {
+      r: 255,
+      g: Math.floor(255 * (1 - intensity)),
+      b: Math.floor(255 * (1 - intensity))
+    }
   }
 }
 
@@ -460,18 +528,13 @@ function plasmaColormap(t: number): { r: number, g: number, b: number } {
 }
 
 function updateVisualization() {
-  console.log(`🔄 updateVisualization called at ${new Date().toLocaleTimeString()} - Mode: ${currentMode.value}, Neurons: ${store.neurons.length}`)
-  
   nextTick(() => {
     if (currentMode.value === 'weights') {
-      // Simple approach: iterate through neurons and update their canvases
+      // Update all neuron canvases
       for (const neuron of store.neurons) {
         const canvas = neuronCanvases.value[neuron.id]
         if (canvas) {
-          console.log(`🎯 Updating canvas for neuron ${neuron.id}`)
           renderWeightCanvas(canvas, neuron.weights)
-        } else {
-          console.warn(`❌ No canvas found for neuron ${neuron.id}`)
         }
       }
       
@@ -482,6 +545,8 @@ function updateVisualization() {
           renderWeightHistogram(selectedNeuron.value.weights)
         }
       }
+    } else if (currentMode.value === 'activations') {
+      renderSampleCanvas()
     }
   })
 }
@@ -504,23 +569,12 @@ watch(selectedNeuronId, () => {
 })
 
 // Watch the visualization update trigger for real-time updates during training
-watch(() => store.visualizationUpdateTrigger, (newValue, oldValue) => {
-  console.log(`🎨 Visualization trigger changed: ${oldValue} -> ${newValue} at ${new Date().toLocaleTimeString()}`)
+watch(() => store.visualizationUpdateTrigger, () => {
   updateVisualization()
 }, { immediate: true })
 
-// Also watch the neurons array more directly
-watch(() => store.neurons.map(n => n.weights.slice(0, 5)), (newWeights, oldWeights) => {
-  console.log('🧠 Neuron weights changed (first 5 of each neuron):', {
-    new: newWeights.map(w => w.map(v => v.toFixed(3))),
-    old: oldWeights?.map(w => w.map(v => v.toFixed(3))) || []
-  })
-  updateVisualization()
-}, { deep: true })
-
 // Expose methods for parent components
 function forceUpdate() {
-  console.log('🔄 Force update triggered from parent')
   updateVisualization()
 }
 
@@ -542,13 +596,13 @@ defineExpose({
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #2d2d30;
-  color: #cccccc;
+  background: rgb(var(--bg-secondary));
+  color: rgb(var(--text-primary));
 }
 
 .visualization-header {
   padding: 12px;
-  border-bottom: 1px solid #464647;
+  border-bottom: 1px solid rgb(var(--border-primary));
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -566,24 +620,24 @@ defineExpose({
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: #383838;
-  border: 1px solid #555555;
+  background: rgb(var(--bg-tertiary));
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 4px;
-  color: #cccccc;
+  color: rgb(var(--text-secondary));
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 12px;
 }
 
 .mode-btn:hover {
-  background: #404040;
-  border-color: #666666;
+  background: rgb(var(--bg-quaternary));
+  border-color: rgb(var(--border-secondary));
 }
 
 .mode-btn.active {
-  background: #007acc;
-  border-color: #007acc;
-  color: white;
+  background: rgb(var(--color-primary));
+  border-color: rgb(var(--color-primary));
+  color: rgb(var(--text-primary));
 }
 
 .mode-icon {
@@ -598,6 +652,46 @@ defineExpose({
   flex-wrap: wrap;
 }
 
+.training-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgb(var(--bg-tertiary));
+  border: 1px solid rgb(var(--border-primary));
+  border-radius: 3px;
+  color: rgb(var(--text-secondary));
+  font-size: 11px;
+}
+
+.training-indicator.active {
+  background: rgb(var(--color-primary));
+  border-color: rgb(var(--color-primary));
+}
+
+.training-indicator.active .indicator-dot {
+  background: rgb(var(--color-success));
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.2); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(var(--text-tertiary));
+}
+
+.indicator-text {
+  font-size: 10px;
+  color: rgb(var(--text-secondary));
+}
+
 .control-group {
   display: flex;
   align-items: center;
@@ -606,34 +700,61 @@ defineExpose({
 
 .control-label {
   font-size: 11px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   white-space: nowrap;
 }
 
 .neuron-select,
 .colormap-select {
   padding: 4px 8px;
-  background: #383838;
-  border: 1px solid #555555;
+  background: rgb(var(--bg-tertiary));
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 3px;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
   font-size: 11px;
   min-width: 100px;
 }
 
 .force-update-btn {
   padding: 4px 8px;
-  background: #007acc;
-  border: 1px solid #007acc;
+  background: rgb(var(--color-primary));
+  border: 1px solid rgb(var(--color-primary));
   border-radius: 3px;
-  color: white;
+  color: rgb(var(--text-primary));
   font-size: 11px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .force-update-btn:hover {
-  background: #005a9e;
+  background: rgb(var(--color-primary-hover));
+}
+
+.colormap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.legend-label {
+  font-size: 9px;
+  color: rgb(var(--text-tertiary));
+}
+
+.legend-gradient {
+  width: 60px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid rgb(var(--border-primary));
+}
+
+.diverging-gradient {
+  background: linear-gradient(to right, 
+    hsl(220, 100%, 50%), 
+    rgb(var(--bg-primary)), 
+    hsl(0, 100%, 50%)
+  );
 }
 
 .visualization-content {
@@ -650,8 +771,8 @@ defineExpose({
 }
 
 .neuron-weight-container {
-  background: #383838;
-  border: 1px solid #555555;
+  background: rgb(var(--bg-tertiary));
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 6px;
   padding: 8px;
   cursor: pointer;
@@ -659,7 +780,7 @@ defineExpose({
 }
 
 .neuron-weight-container:hover {
-  border-color: #007acc;
+  border-color: rgb(var(--color-primary));
   transform: translateY(-2px);
 }
 
@@ -673,12 +794,23 @@ defineExpose({
 .neuron-label {
   font-size: 11px;
   font-weight: 600;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 .neuron-stats {
-  font-size: 9px;
-  color: #999999;
+  font-size: 8px;
+  color: rgb(var(--text-tertiary));
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-end;
+}
+
+.stat-line {
+  font-family: 'Courier New', monospace;
+  background: var(--interactive-bg);
+  padding: 1px 3px;
+  border-radius: 2px;
 }
 
 .weight-canvas {
@@ -686,8 +818,17 @@ defineExpose({
   height: auto;
   max-width: 100px;
   image-rendering: pixelated;
-  border: 1px solid #464647;
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 3px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-light);
+  cursor: pointer;
+}
+
+.weight-canvas:hover {
+  transform: scale(1.05);
+  border-color: rgb(var(--color-primary));
+  box-shadow: var(--shadow-glow);
 }
 
 .single-neuron-view {
@@ -702,14 +843,15 @@ defineExpose({
 
 .neuron-detail-header h3 {
   margin: 0 0 12px 0;
-  color: #007acc;
+  color: rgb(var(--color-primary));
 }
 
 .neuron-detail-stats {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .stat-item {
@@ -721,13 +863,13 @@ defineExpose({
 
 .stat-label {
   font-size: 10px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
 }
 
 .stat-value {
   font-size: 12px;
   font-weight: 600;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 .weight-canvas-large {
@@ -737,7 +879,7 @@ defineExpose({
   margin: 0 auto;
   display: block;
   image-rendering: pixelated;
-  border: 2px solid #464647;
+  border: 2px solid rgb(var(--border-primary));
   border-radius: 6px;
 }
 
@@ -749,13 +891,13 @@ defineExpose({
 .weight-histogram h4 {
   margin: 0 0 12px 0;
   font-size: 14px;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 .histogram-canvas {
-  border: 1px solid #464647;
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 4px;
-  background: #1e1e1e;
+  background: rgb(var(--bg-primary));
 }
 
 /* Activations visualization */
@@ -780,7 +922,7 @@ defineExpose({
 .activation-label {
   width: 80px;
   font-size: 11px;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
   text-align: right;
 }
 
@@ -793,7 +935,7 @@ defineExpose({
 
 .activation-bar {
   height: 16px;
-  background: #007acc;
+  background: rgb(var(--color-primary));
   border-radius: 8px;
   min-width: 2px;
   transition: width 0.3s ease;
@@ -801,7 +943,7 @@ defineExpose({
 
 .activation-value {
   font-size: 10px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   min-width: 40px;
 }
 
@@ -812,13 +954,13 @@ defineExpose({
 .sample-input-area h4 {
   margin: 0 0 12px 0;
   font-size: 14px;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 .sample-canvas {
   width: 140px;
   height: 140px;
-  border: 2px solid #464647;
+  border: 2px solid rgb(var(--border-primary));
   border-radius: 6px;
   cursor: pointer;
   image-rendering: pixelated;
@@ -826,20 +968,20 @@ defineExpose({
 }
 
 .sample-canvas:hover {
-  border-color: #007acc;
+  border-color: rgb(var(--color-primary));
 }
 
 .sample-hint {
   margin: 8px 0 0 0;
   font-size: 10px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
 }
 
 /* Similarity visualization */
 .similarity-comparison h4 {
   margin: 0 0 16px 0;
   text-align: center;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 .metrics-grid {
@@ -851,7 +993,7 @@ defineExpose({
 .metric-comparison h5 {
   margin: 0 0 12px 0;
   font-size: 12px;
-  color: #007acc;
+  color: rgb(var(--color-primary));
   text-align: center;
 }
 
@@ -870,14 +1012,14 @@ defineExpose({
 .metric-neuron-label {
   width: 20px;
   font-size: 10px;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
   text-align: center;
 }
 
 .metric-bar {
   flex: 1;
   height: 12px;
-  background: #383838;
+  background: rgb(var(--bg-tertiary));
   border-radius: 6px;
   overflow: hidden;
 }
@@ -890,20 +1032,20 @@ defineExpose({
 
 .metric-value {
   font-size: 9px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   min-width: 35px;
 }
 
 /* Info panel */
 .info-panel {
   padding: 12px;
-  border-top: 1px solid #464647;
+  border-top: 1px solid rgb(var(--border-primary));
   display: flex;
   justify-content: space-around;
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--interactive-bg);
 }
 
 .info-item {
@@ -915,14 +1057,14 @@ defineExpose({
 
 .info-label {
   font-size: 9px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   text-transform: uppercase;
 }
 
 .info-value {
   font-size: 11px;
   font-weight: 600;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 /* Responsive */

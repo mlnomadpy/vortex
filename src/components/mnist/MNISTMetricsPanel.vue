@@ -27,7 +27,7 @@ const store = useMNISTClassifierStore()
 <style scoped>
 .mnist-metrics-panel {
   padding: 16px;
-  color: #cccccc;
+  color: rgb(var(--text-primary));
 }
 
 .metrics-grid {
@@ -38,8 +38,8 @@ const store = useMNISTClassifierStore()
 }
 
 .metric-card {
-  background: #383838;
-  border: 1px solid #555555;
+  background: rgb(var(--bg-secondary));
+  border: 1px solid rgb(var(--border-primary));
   border-radius: 4px;
   padding: 12px;
   text-align: center;
@@ -48,13 +48,13 @@ const store = useMNISTClassifierStore()
 .metric-value {
   font-size: 18px;
   font-weight: 600;
-  color: #007acc;
+  color: rgb(var(--color-primary));
   margin-bottom: 4px;
 }
 
 .metric-label {
   font-size: 11px;
-  color: #999999;
+  color: rgb(var(--text-tertiary));
   text-transform: uppercase;
 }
 </style> 
