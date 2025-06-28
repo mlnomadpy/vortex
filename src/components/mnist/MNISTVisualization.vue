@@ -88,35 +88,6 @@
         </div>
       </div>
 
-      <div class="training-indicator" :class="{ 
-        active: store.isTraining,
-        'high-activity': highTrainingActivity,
-        'live-updating': isLiveUpdating
-      }">
-        <div class="indicator-dot" :class="{ pulsing: store.isTraining }"></div>
-        <span class="indicator-text">
-          {{ store.isTraining ? `Training (Epoch ${currentEpoch})` : 'Training Idle' }}
-        </span>
-        <div v-if="store.isTraining" class="training-stats">
-          <span class="stat" :class="{ improving: lossImproving, degrading: lossDegrading }">
-            Loss: {{ currentLoss.toFixed(4) }}
-            <span class="trend-arrow">{{ lossTrendIcon }}</span>
-          </span>
-          <span class="stat" :class="{ improving: accuracyImproving }">
-            Acc: {{ store.trainAccuracy.toFixed(1) }}%
-            <span class="trend-arrow">{{ accuracyTrendIcon }}</span>
-          </span>
-                     <span class="stat">
-             Speed: {{ trainingSpeed.toFixed(1) }} batch/s
-           </span>
-        </div>
-        
-        <!-- Live weight update indicator -->
-        <div v-if="recentWeightUpdates > 0" class="weight-update-indicator">
-          <div class="update-pulse"></div>
-          <span class="update-count">{{ recentWeightUpdates }} updates</span>
-        </div>
-      </div>
     </div>
 
     <!-- Main visualization area with improved layout -->
@@ -884,7 +855,15 @@ function renderWeightCanvas(canvas: HTMLCanvasElement, weights: number[]) {
       }
     }
     
-    ctx.putImageData(imageData, 0, 0)
+    // Scale up the 28x28 image to canvas size for better visibility
+    const tempCanvas = document.createElement('canvas')
+    tempCanvas.width = 28
+    tempCanvas.height = 28
+    const tempCtx = tempCanvas.getContext('2d')!
+    tempCtx.putImageData(imageData, 0, 0)
+    
+    ctx.imageSmoothingEnabled = false
+    ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height)
     
   } catch (error) {
     console.error('Error rendering weight canvas:', error)

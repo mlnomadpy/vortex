@@ -451,7 +451,7 @@ async function handleRefreshTernaryStats() {
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  width: 800px;
+  width: 1600;
   height: 600px;
   position: relative;
 }
