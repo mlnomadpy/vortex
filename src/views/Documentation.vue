@@ -23,7 +23,7 @@
               📄 Research Paper
             </h3>
             <h4 class="text-xl font-bold text-blue-800 dark:text-blue-200 mb-3">
-              <a href="https://www.preprints.org/manuscript/202506.2010/" target="_blank" class="hover:underline">
+              <a href="https://www.preprints.org/manuscript/202506.2010/v1" target="_blank" class="hover:underline">
                 Deep Learning 2.0.1: Mind and Cosmos - Towards Cosmos-Inspired Interpretable Neural Networks
               </a>
             </h4>

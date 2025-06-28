@@ -57,7 +57,7 @@
               <h3 class="text-lg font-semibold text-indigo-700 dark:text-indigo-300">Research Paper</h3>
             </div>
             <h4 class="text-xl font-bold text-indigo-800 dark:text-indigo-200 mb-2">
-              <a href="https://www.preprints.org/manuscript/202506.2010/" target="_blank" class="hover:underline">
+              <a href="https://www.preprints.org/manuscript/202506.2010//v1" target="_blank" class="hover:underline">
                 Deep Learning 2.0.1: Mind and Cosmos - Towards Cosmos-Inspired Interpretable Neural Networks
               </a>
             </h4>

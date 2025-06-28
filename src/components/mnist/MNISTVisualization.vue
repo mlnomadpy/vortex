@@ -532,23 +532,6 @@ const trainingSpeed = ref(0)
 const previousLoss = ref(0)
 const previousAccuracy = ref(0)
 
-// Computed trend indicators
-const lossImproving = computed(() => currentLoss.value < previousLoss.value)
-const lossDegrading = computed(() => currentLoss.value > previousLoss.value)
-const accuracyImproving = computed(() => store.trainAccuracy > previousAccuracy.value)
-
-const lossTrendIcon = computed(() => {
-  if (lossImproving.value) return '↘️'
-  if (lossDegrading.value) return '↗️'
-  return '→'
-})
-
-const accuracyTrendIcon = computed(() => {
-  if (accuracyImproving.value) return '↗️'
-  if (store.trainAccuracy < previousAccuracy.value) return '↘️'
-  return '→'
-})
-
 // Canvas references
 const neuronCanvases = ref<Record<number, HTMLCanvasElement>>({})
 const comparisonCanvases = ref<Record<number, HTMLCanvasElement>>({})
