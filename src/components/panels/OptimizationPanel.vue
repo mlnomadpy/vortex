@@ -259,17 +259,35 @@
           <div class="param-control">
             <div class="param-header">
               <label class="param-label">Optimizer</label>
-              <select 
-                v-model="config.optimizer"
-                class="param-select"
-                :disabled="isRunning"
-                @change="updateConfig"
-              >
-                <option value="sgd">SGD</option>
-                <option value="momentum">SGD with Momentum</option>
-                <option value="adam">Adam</option>
-                <option value="rmsprop">RMSprop</option>
-              </select>
+              <div class="optimizer-selection">
+                <select 
+                  v-model="config.optimizer"
+                  class="param-select"
+                  :disabled="isRunning"
+                  @change="onOptimizerChange"
+                >
+                  <option value="sgd">SGD</option>
+                  <option value="sgd_momentum">SGD with Momentum</option>
+                  <option value="adam">Adam</option>
+                  <option value="adamw">AdamW</option>
+                </select>
+                <button 
+                  @click="initializeOptimizer"
+                  :disabled="isRunning || !canInitializeOptimizer"
+                  class="init-optimizer-btn"
+                  :class="{ 'initialized': optimizerStatus.initialized }"
+                >
+                  {{ optimizerStatus.initialized ? '✓ Ready' : 'Initialize' }}
+                </button>
+              </div>
+            </div>
+            <div class="param-help">
+              <span v-if="optimizerStatus.initialized" class="status-success">
+                Optimizer initialized and ready for training
+              </span>
+              <span v-else class="status-warning">
+                Click "Initialize" to prepare the optimizer
+              </span>
             </div>
           </div>
 
@@ -291,7 +309,7 @@
           </div>
 
           <!-- Momentum (conditional) -->
-          <div v-if="config.optimizer === 'momentum' || config.optimizer === 'adam'" class="param-control">
+          <div v-if="config.optimizer === 'sgd_momentum' || config.optimizer === 'adam' || config.optimizer === 'adamw'" class="param-control">
             <div class="param-header">
               <label class="param-label">Momentum</label>
               <span class="param-value">{{ config.momentum.toFixed(2) }}</span>
@@ -463,6 +481,15 @@ const selectedPreset = ref<string | null>(null)
 const showDetailedMetrics = ref(false)
 const useLearningRateSchedule = ref(false)
 
+// Optimizer State
+const optimizerStatus = ref({
+  initialized: false,
+  optimizer_type: null as string | null,
+  config: null as any,
+  has_state: false,
+  current_epoch: 0
+})
+
 // Configuration tabs
 const configTabs = [
   { id: 'essential', name: 'Essential', icon: SparklesIcon },
@@ -597,6 +624,10 @@ const convergenceStatus = computed(() => {
   if (variance < 0.001) return 'Converging'
   if (variance < 0.01) return 'Training'
   return 'Unstable'
+})
+
+const canInitializeOptimizer = computed(() => {
+  return !isRunning.value && canOptimize.value
 })
 
 // Helper functions
@@ -759,6 +790,58 @@ function updateConfig() {
     epochs: config.value.epochs,
     speed: config.value.speed
   })
+}
+
+// Optimizer-specific functions
+function onOptimizerChange() {
+  // Reset optimizer status when type changes
+  optimizerStatus.value.initialized = false
+  updateConfig()
+}
+
+async function initializeOptimizer() {
+  try {
+    // Import the MNIST API service
+    const { mnistApiService } = await import('@/services/mnistApiService')
+    
+    // Map our optimizer names to API names
+    const optimizerTypeMap: Record<string, 'sgd' | 'adam' | 'adamw'> = {
+      'sgd': 'sgd',
+      'sgd_momentum': 'sgd',
+      'adam': 'adam',
+      'adamw': 'adamw'
+    }
+    
+    const apiOptimizerType = optimizerTypeMap[config.value.optimizer] || 'sgd'
+    
+    await mnistApiService.initializeOptimizer(
+      apiOptimizerType,
+      config.value.learningRate,
+      config.value.momentum,
+      config.value.weightDecay
+    )
+    
+    // Update status
+    optimizerStatus.value = {
+      initialized: true,
+      optimizer_type: config.value.optimizer,
+      config: config.value,
+      has_state: true,
+      current_epoch: 0
+    }
+    
+    notificationStore.addNotification({
+      message: `${config.value.optimizer.toUpperCase()} optimizer initialized successfully`,
+      type: 'success'
+    })
+    
+  } catch (error) {
+    console.error('Failed to initialize optimizer:', error)
+    notificationStore.addNotification({
+      message: `Failed to initialize optimizer: ${error}`,
+      type: 'error'
+    })
+  }
 }
 
 // Watch for store config changes
@@ -1287,6 +1370,52 @@ section {
   border-radius: 4px;
 }
 
+/* Optimizer Selection */
+.optimizer-selection {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.init-optimizer-btn {
+  padding: 4px 12px;
+  border: 1px solid #464647;
+  background: #3c3c3f;
+  color: #cccccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.init-optimizer-btn:hover:not(:disabled) {
+  background: #464647;
+  border-color: #569cd6;
+}
+
+.init-optimizer-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.init-optimizer-btn.initialized {
+  background: #0e639c;
+  border-color: #1177bb;
+  color: white;
+}
+
+.status-success {
+  color: #4ec9b0;
+  font-size: 12px;
+}
+
+.status-warning {
+  color: #ce9178;
+  font-size: 12px;
+}
+
 /* Responsive Design */
 @media (max-width: 480px) {
   .preset-grid {
@@ -1303,6 +1432,11 @@ section {
   
   .history-actions {
     flex-direction: column;
+  }
+  
+  .optimizer-selection {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 </style> 

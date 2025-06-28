@@ -1,38 +1,72 @@
 <template>
   <div class="mnist-visualization">
-    <!-- Header with mode selector -->
+    <!-- Enhanced Header with better controls -->
     <div class="visualization-header">
-      <div class="mode-selector">
-        <button
-          v-for="mode in visualizationModes"
-          :key="mode.id"
-          @click="currentMode = mode.id as 'weights' | 'activations' | 'similarity'"
-          :class="['mode-btn', { active: currentMode === mode.id }]"
-        >
-          <component :is="mode.icon" class="mode-icon" />
-          <span>{{ mode.label }}</span>
-        </button>
+      <div class="header-section">
+        <div class="mode-selector">
+          <button
+            v-for="mode in visualizationModes"
+            :key="mode.id"
+            @click="currentMode = mode.id as 'weights' | 'activations' | 'similarity'"
+            :class="['mode-btn', { active: currentMode === mode.id }]"
+            :title="mode.description"
+          >
+            <component :is="mode.icon" class="mode-icon" />
+            <span>{{ mode.label }}</span>
+          </button>
+        </div>
+
+        <div class="sync-controls">
+          <div class="sync-status" :class="{ 
+            connected: store.apiConnected, 
+            syncing: isSyncing,
+            error: syncError 
+          }">
+            <div class="status-dot"></div>
+            <span class="status-text">
+              {{ store.apiConnected ? (isSyncing ? 'Syncing...' : 'API Connected') : 'Local Mode' }}
+            </span>
+            <span v-if="lastSyncTime" class="sync-time">
+              Last sync: {{ formatTime(lastSyncTime) }}
+            </span>
+          </div>
+          
+          <button 
+            @click="forceSync" 
+            :disabled="!store.apiConnected || isSyncing"
+            class="sync-btn"
+            title="Force sync weights from API"
+          >
+            <div class="sync-icon" :class="{ spinning: isSyncing }">🔄</div>
+            Sync
+          </button>
+          
+          <button 
+            @click="toggleAutoSync" 
+            :class="['auto-sync-btn', { active: store.autoSyncWeights }]"
+            title="Toggle automatic weight synchronization"
+          >
+            <div class="auto-icon">{{ store.autoSyncWeights ? '🔄' : '⏸️' }}</div>
+            Auto
+          </button>
+        </div>
       </div>
       
-      <div class="visualization-controls">
-        <div class="training-indicator" :class="{ active: store.isTraining }">
-          <div class="indicator-dot"></div>
-          <span class="indicator-text">{{ store.isTraining ? 'Training Active' : 'Training Idle' }}</span>
-        </div>
-        
+      <div class="header-section">
         <div class="control-group">
-          <label class="control-label">Selected Neuron:</label>
+          <label class="control-label">View:</label>
           <select v-model="selectedNeuronId" class="neuron-select">
-            <option value="all">All Neurons</option>
+            <option value="all">All Classes (Grid)</option>
+            <option value="comparison">Side Comparison</option>
             <option v-for="neuron in store.neurons" :key="neuron.id" :value="neuron.id">
-              {{ neuron.label || `Neuron ${neuron.id}` }}
+              Class {{ neuron.id }} - {{ getClassLabel(neuron.id) }}
             </option>
           </select>
         </div>
         
         <div class="control-group" v-if="currentMode === 'weights'">
           <label class="control-label">Colormap:</label>
-          <select v-model="colormap" class="colormap-select">
+          <select v-model="colormap" class="colormap-select" @change="updateVisualization">
             <option value="diverging">Diverging (Blue-Red)</option>
             <option value="viridis">Viridis</option>
             <option value="plasma">Plasma</option>
@@ -40,157 +74,354 @@
             <option value="cool">Cool</option>
             <option value="hot">Hot</option>
           </select>
-          <div class="colormap-legend" v-if="colormap === 'diverging'">
-            <span class="legend-label">Low</span>
-            <div class="legend-gradient diverging-gradient"></div>
-            <span class="legend-label">High</span>
-          </div>
         </div>
-      
-      <div class="control-group">
-        <button @click="forceUpdate" class="force-update-btn" title="Force visualization update">
-          🔄 Force Update
-        </button>
+
+        <div class="control-group">
+          <label class="control-label">Update Rate:</label>
+          <select v-model="updateRate" @change="adjustUpdateRate" class="update-rate-select">
+            <option value="realtime">Real-time</option>
+            <option value="fast">Fast (1s)</option>
+            <option value="normal">Normal (3s)</option>
+            <option value="slow">Slow (10s)</option>
+            <option value="manual">Manual</option>
+          </select>
+        </div>
       </div>
+
+      <div class="training-indicator" :class="{ 
+        active: store.isTraining,
+        'high-activity': highTrainingActivity,
+        'live-updating': isLiveUpdating
+      }">
+        <div class="indicator-dot" :class="{ pulsing: store.isTraining }"></div>
+        <span class="indicator-text">
+          {{ store.isTraining ? `Training (Epoch ${currentEpoch})` : 'Training Idle' }}
+        </span>
+        <div v-if="store.isTraining" class="training-stats">
+          <span class="stat" :class="{ improving: lossImproving, degrading: lossDegrading }">
+            Loss: {{ currentLoss.toFixed(4) }}
+            <span class="trend-arrow">{{ lossTrendIcon }}</span>
+          </span>
+          <span class="stat" :class="{ improving: accuracyImproving }">
+            Acc: {{ store.trainAccuracy.toFixed(1) }}%
+            <span class="trend-arrow">{{ accuracyTrendIcon }}</span>
+          </span>
+                     <span class="stat">
+             Speed: {{ trainingSpeed.toFixed(1) }} batch/s
+           </span>
+        </div>
+        
+        <!-- Live weight update indicator -->
+        <div v-if="recentWeightUpdates > 0" class="weight-update-indicator">
+          <div class="update-pulse"></div>
+          <span class="update-count">{{ recentWeightUpdates }} updates</span>
+        </div>
       </div>
     </div>
 
-    <!-- Main visualization area -->
+    <!-- Main visualization area with improved layout -->
     <div class="visualization-content">
       <!-- Weight matrices visualization -->
-      <div v-if="currentMode === 'weights'" class="weights-grid">
+      <div v-if="currentMode === 'weights'" class="weights-section">
         <div v-if="selectedNeuronId === 'all'" class="all-neurons-grid">
           <div
             v-for="neuron in store.neurons"
             :key="neuron.id"
             class="neuron-weight-container"
-            @click="selectNeuron(neuron.id)"
+            @click="openWeightModal(neuron)"
+            :class="{ 
+              selected: selectedNeuronId === neuron.id.toString(),
+              'high-activity': recentWeightUpdates > 0 && isNeuronRecentlyUpdated(neuron.id)
+            }"
           >
             <div class="neuron-header">
-              <span class="neuron-label">{{ neuron.label || `Digit ${neuron.id}` }}</span>
+              <div class="neuron-title">
+                <span class="neuron-label">{{ getClassLabel(neuron.id) }}</span>
+                <span class="neuron-id">Class {{ neuron.id }}</span>
+                <button 
+                  @click.stop="openWeightModal(neuron)" 
+                  class="expand-btn"
+                  title="Click to expand weight visualization"
+                >
+                  🔍
+                </button>
+              </div>
               <div class="neuron-stats">
-                <div class="stat-line">‖w‖: {{ getNeuronWeightNorm(neuron).toFixed(3) }}</div>
-                <div class="stat-line">σ: {{ getWeightStandardDeviation(neuron).toFixed(3) }}</div>
+                <div class="stat-row">
+                  <span class="stat-label">‖w‖:</span>
+                  <span class="stat-value">{{ getNeuronWeightNorm(neuron).toFixed(3) }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">μ:</span>
+                  <span class="stat-value">{{ getAverageWeight(neuron).toFixed(3) }}</span>
+                </div>
+                <div class="stat-row">
+                  <span class="stat-label">σ:</span>
+                  <span class="stat-value">{{ getWeightStandardDeviation(neuron).toFixed(3) }}</span>
+                </div>
               </div>
             </div>
-            <canvas
-              :ref="el => { if (el) neuronCanvases[neuron.id] = el as HTMLCanvasElement }"
-              class="weight-canvas"
-              :width="imageSize"
-              :height="imageSize"
-            ></canvas>
+            <div class="canvas-container" @click.stop="openWeightModal(neuron)">
+              <canvas
+                :ref="el => { if (el) neuronCanvases[neuron.id] = el as HTMLCanvasElement }"
+                class="weight-canvas enhanced"
+                :width="enhancedImageSize"
+                :height="enhancedImageSize"
+              ></canvas>
+              <div class="canvas-overlay" v-if="isUpdatingWeights">
+                <div class="update-spinner"></div>
+              </div>
+              <div class="canvas-overlay-hover">
+                <div class="hover-text">
+                  <span class="hover-icon">🔍</span>
+                  <span>Click to expand</span>
+                </div>
+              </div>
+            </div>
+            <div class="weight-range">
+              <span class="range-min">{{ Math.min(...neuron.weights).toFixed(2) }}</span>
+              <div class="range-bar">
+                <div class="range-fill" :style="{ 
+                  width: `${Math.abs(getAverageWeight(neuron)) * 100}%`,
+                  backgroundColor: neuron.color 
+                }"></div>
+              </div>
+              <span class="range-max">{{ Math.max(...neuron.weights).toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div v-else-if="selectedNeuronId === 'comparison'" class="comparison-view">
+          <div class="comparison-grid">
+            <div 
+              v-for="neuron in store.neurons" 
+              :key="neuron.id"
+              class="comparison-item"
+            >
+              <div class="comparison-header">
+                <h4>{{ getClassLabel(neuron.id) }}</h4>
+                <div class="comparison-stats">
+                  <span>‖w‖: {{ getNeuronWeightNorm(neuron).toFixed(3) }}</span>
+                </div>
+              </div>
+              <canvas
+                :ref="el => { if (el) comparisonCanvases[neuron.id] = el as HTMLCanvasElement }"
+                class="comparison-canvas"
+                :width="imageSize * 2"
+                :height="imageSize * 2"
+              ></canvas>
+            </div>
           </div>
         </div>
         
         <div v-else-if="selectedNeuron" class="single-neuron-view">
           <div class="neuron-detail-header">
-            <h3>{{ selectedNeuron.label || `Digit ${selectedNeuron.id}` }}</h3>
+            <div class="detail-title">
+              <h3>{{ getClassLabel(selectedNeuron.id) }} (Class {{ selectedNeuron.id }})</h3>
+              <div class="detail-actions">
+                <button @click="resetNeuronWeights" class="reset-btn">Reset Weights</button>
+                <button @click="randomizeNeuronWeights" class="randomize-btn">Randomize</button>
+              </div>
+            </div>
             <div class="neuron-detail-stats">
-              <div class="stat-item">
-                <span class="stat-label">Weight Norm (‖w‖):</span>
-                <span class="stat-value">{{ getNeuronWeightNorm(selectedNeuron).toFixed(4) }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Bias (b):</span>
-                <span class="stat-value">{{ selectedNeuron.bias.toFixed(4) }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Mean Weight (μ):</span>
-                <span class="stat-value">{{ getAverageWeight(selectedNeuron).toFixed(4) }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Std Dev (σ):</span>
-                <span class="stat-value">{{ getWeightStandardDeviation(selectedNeuron).toFixed(4) }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Min Weight:</span>
-                <span class="stat-value">{{ Math.min(...selectedNeuron.weights).toFixed(4) }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Max Weight:</span>
-                <span class="stat-value">{{ Math.max(...selectedNeuron.weights).toFixed(4) }}</span>
+              <div class="stat-grid">
+                <div class="stat-item">
+                  <span class="stat-label">Weight Norm (‖w‖):</span>
+                  <span class="stat-value">{{ getNeuronWeightNorm(selectedNeuron).toFixed(4) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Bias (b):</span>
+                  <span class="stat-value">{{ selectedNeuron.bias.toFixed(4) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Mean Weight (μ):</span>
+                  <span class="stat-value">{{ getAverageWeight(selectedNeuron).toFixed(4) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Std Dev (σ):</span>
+                  <span class="stat-value">{{ getWeightStandardDeviation(selectedNeuron).toFixed(4) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Min Weight:</span>
+                  <span class="stat-value">{{ Math.min(...selectedNeuron.weights).toFixed(4) }}</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-label">Max Weight:</span>
+                  <span class="stat-value">{{ Math.max(...selectedNeuron.weights).toFixed(4) }}</span>
+                </div>
               </div>
             </div>
           </div>
-          <canvas
-            ref="detailCanvas"
-            class="weight-canvas-large"
-            :width="imageSize * 4"
-            :height="imageSize * 4"
-          ></canvas>
           
-          <!-- Weight histogram -->
-          <div class="weight-histogram">
-            <h4>Weight Distribution</h4>
-            <canvas
-              ref="histogramCanvas"
-              class="histogram-canvas"
-              width="300"
-              height="100"
-            ></canvas>
+          <div class="detail-visualization">
+            <div class="detail-canvas-container">
+              <canvas
+                ref="detailCanvas"
+                class="weight-canvas-large"
+                :width="imageSize * 6"
+                :height="imageSize * 6"
+              ></canvas>
+              <div class="canvas-info">
+                <div class="colormap-legend">
+                  <span class="legend-label">{{ Math.min(...selectedNeuron.weights).toFixed(3) }}</span>
+                  <div class="legend-gradient" :class="`${colormap}-gradient`"></div>
+                  <span class="legend-label">{{ Math.max(...selectedNeuron.weights).toFixed(3) }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Enhanced weight histogram -->
+            <div class="weight-histogram">
+              <h4>Weight Distribution</h4>
+              <canvas
+                ref="histogramCanvas"
+                class="histogram-canvas"
+                width="400"
+                height="200"
+              ></canvas>
+              <div class="histogram-stats">
+                <div class="hist-stat">
+                  <span class="hist-label">Skewness:</span>
+                  <span class="hist-value">{{ calculateSkewness(selectedNeuron.weights).toFixed(3) }}</span>
+                </div>
+                <div class="hist-stat">
+                  <span class="hist-label">Kurtosis:</span>
+                  <span class="hist-value">{{ calculateKurtosis(selectedNeuron.weights).toFixed(3) }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
       
-      <!-- Activations visualization -->
+      <!-- Enhanced activations visualization -->
       <div v-else-if="currentMode === 'activations'" class="activations-view">
-        <div class="activations-grid">
-          <div
-            v-for="neuron in store.neurons"
-            :key="neuron.id"
-            class="activation-bar-container"
-          >
-            <div class="activation-label">{{ neuron.label || `Digit ${neuron.id}` }}</div>
-            <div class="activation-bar-wrapper">
-              <div
-                class="activation-bar"
-                :style="{
-                  width: `${Math.max(2, getActivationLevel(neuron) * 100)}%`,
-                  backgroundColor: neuron.color
-                }"
-              ></div>
-              <span class="activation-value">{{ getActivationLevel(neuron).toFixed(3) }}</span>
-            </div>
+        <div class="activations-header">
+          <h3>Real-time Neural Activations</h3>
+          <div class="activation-controls">
+            <button @click="generateRandomSample" class="sample-btn">
+              🎲 Random Sample
+            </button>
+            <button @click="loadTestSample" class="sample-btn">
+              📊 Test Sample
+            </button>
+            <button @click="clearSample" class="sample-btn">
+              🗑️ Clear
+            </button>
           </div>
         </div>
         
-        <div class="sample-input-area">
-          <h4>Test with Sample Input</h4>
-          <canvas
-            ref="sampleCanvas"
-            class="sample-canvas"
-            :width="imageSize"
-            :height="imageSize"
-            @click="generateRandomSample"
-          ></canvas>
-          <p class="sample-hint">Click to generate a new random sample</p>
+        <div class="activations-content">
+          <div class="sample-input-section">
+            <div class="sample-container">
+              <h4>Input Sample</h4>
+              <canvas
+                ref="sampleCanvas"
+                class="sample-canvas"
+                :width="imageSize * 4"
+                :height="imageSize * 4"
+                @click="generateRandomSample"
+              ></canvas>
+              <p class="sample-hint">Click to generate a new random sample</p>
+              
+              <div class="sample-info" v-if="currentSampleInfo">
+                <div class="info-item">
+                  <span class="info-label">Predicted:</span>
+                  <span class="info-value prediction">{{ currentSampleInfo.predicted_class }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Confidence:</span>
+                  <span class="info-value confidence">{{ (currentSampleInfo.confidence * 100).toFixed(1) }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="activations-display">
+            <div class="activations-grid">
+              <div
+                v-for="(neuron, index) in store.neurons"
+                :key="neuron.id"
+                class="activation-item"
+              >
+                <div class="activation-header">
+                  <span class="activation-label">{{ getClassLabel(neuron.id) }}</span>
+                  <span class="activation-value">{{ getActivationLevel(neuron, index).toFixed(3) }}</span>
+                </div>
+                <div class="activation-bar-wrapper">
+                  <div
+                    class="activation-bar"
+                    :style="{
+                      width: `${Math.max(2, getActivationLevel(neuron, index) * 100)}%`,
+                      backgroundColor: getActivationColor(getActivationLevel(neuron, index))
+                    }"
+                  ></div>
+                </div>
+                <div class="activation-details" v-if="currentSampleInfo">
+                  <span class="similarity-score">
+                    Sim: {{ currentSampleInfo.similarity_breakdown?.[index]?.similarity_score?.toFixed(3) || '0.000' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       
-      <!-- Similarity metrics comparison -->
+      <!-- Enhanced similarity metrics comparison -->
       <div v-else-if="currentMode === 'similarity'" class="similarity-view">
-        <div class="similarity-comparison">
-          <h4>Similarity Metrics Comparison</h4>
-          <div class="metrics-grid">
+        <div class="similarity-header">
+          <h3>Similarity Metrics Comparison</h3>
+          <div class="similarity-controls">
+            <label class="control-label">Test Input:</label>
+            <select v-model="selectedTestInput" @change="updateSimilarityComparison">
+              <option value="random">Random Pattern</option>
+              <option value="zeros">All Zeros</option>
+              <option value="ones">All Ones</option>
+              <option value="test_sample">Test Sample</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="similarity-content">
+          <div class="test-input-display">
+            <canvas
+              ref="similarityInputCanvas"
+              class="similarity-input-canvas"
+              :width="imageSize * 3"
+              :height="imageSize * 3"
+            ></canvas>
+          </div>
+          
+          <div class="metrics-comparison">
             <div
               v-for="metric in availableMetrics"
               :key="metric.id"
-              class="metric-comparison"
+              class="metric-section"
+              :class="{ active: store.similarityMetric === metric.id }"
             >
-              <h5>{{ metric.label }}</h5>
+              <div class="metric-header">
+                <h5>{{ metric.label }}</h5>
+                <button 
+                  @click="setActiveMetric(metric.id)"
+                  :class="['metric-select-btn', { active: store.similarityMetric === metric.id }]"
+                >
+                  {{ store.similarityMetric === metric.id ? 'Active' : 'Select' }}
+                </button>
+              </div>
               <div class="metric-bars">
                 <div
                   v-for="neuron in store.neurons"
                   :key="neuron.id"
                   class="metric-bar-container"
                 >
-                  <span class="metric-neuron-label">{{ neuron.id }}</span>
+                  <span class="metric-neuron-label">{{ getClassLabel(neuron.id) }}</span>
                   <div class="metric-bar">
                     <div
                       class="metric-bar-fill"
                       :style="{
                         width: `${Math.max(2, getSimilarityScore(neuron, metric.id) * 100)}%`,
-                        backgroundColor: neuron.color
+                        backgroundColor: getSimilarityColor(getSimilarityScore(neuron, metric.id))
                       }"
                     ></div>
                   </div>
@@ -203,32 +434,80 @@
       </div>
     </div>
     
-    <!-- Info panel -->
+    <!-- Enhanced info panel -->
     <div class="info-panel">
-      <div class="info-item">
-        <span class="info-label">Dataset:</span>
-        <span class="info-value">{{ store.datasetInfo.trainSize }} train, {{ store.datasetInfo.testSize }} test</span>
+      <div class="info-section">
+        <h4>Dataset Info</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Dataset:</span>
+            <span class="info-value">{{ store.selectedDataset || 'Local' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Train Size:</span>
+            <span class="info-value">{{ store.datasetInfo.trainSize.toLocaleString() }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Test Size:</span>
+            <span class="info-value">{{ store.datasetInfo.testSize.toLocaleString() }}</span>
+          </div>
+        </div>
       </div>
-      <div class="info-item">
-        <span class="info-label">Similarity:</span>
-        <span class="info-value">{{ store.similarityMetric }}</span>
+      
+      <div class="info-section">
+        <h4>Model Config</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Similarity:</span>
+            <span class="info-value">{{ store.similarityMetric }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Activation:</span>
+            <span class="info-value">{{ store.activationFunction }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Classes:</span>
+            <span class="info-value">{{ store.activeClasses.length }}/10</span>
+          </div>
+        </div>
       </div>
-      <div class="info-item">
-        <span class="info-label">Activation:</span>
-        <span class="info-value">{{ store.activationFunction }}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Accuracy:</span>
-        <span class="info-value">{{ store.trainAccuracy.toFixed(1) }}%</span>
+      
+      <div class="info-section">
+        <h4>Performance</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Train Acc:</span>
+            <span class="info-value performance">{{ store.trainAccuracy.toFixed(1) }}%</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Test Acc:</span>
+            <span class="info-value performance">{{ store.testAccuracy.toFixed(1) }}%</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Loss:</span>
+            <span class="info-value performance">{{ currentLoss.toFixed(4) }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- Weight Visualization Modal -->
+  <WeightVisualizationModal
+    v-if="modalNeuron"
+    :neuron="modalNeuron"
+    :is-visible="showWeightModal"
+    :colormap="colormap"
+    @close="closeWeightModal"
+    @update-neuron="updateNeuronFromModal"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { useMNISTClassifierStore } from '@/stores/mnistClassifier'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useMNISTClassifierStore, visualizationEvents } from '@/stores/mnistClassifier'
 import { weightsToImage, calculateNDSimilarityScore } from '@/utils/ndMathCore'
+import { mnistApiService } from '@/services/mnistApiService'
 import type { NDNeuron, NDSimilarityMetric } from '@/types'
 import {
   EyeIcon,
@@ -236,6 +515,7 @@ import {
   ChartBarIcon,
   CpuChipIcon
 } from '@/components/ui/icons'
+import WeightVisualizationModal from './WeightVisualizationModal.vue'
 
 // Helper function to get CSS variable values for canvas operations
 function getCSSVar(varName: string): string {
@@ -259,21 +539,66 @@ const currentMode = ref<'weights' | 'activations' | 'similarity'>('weights')
 const selectedNeuronId = ref<string | number>('all')
 const colormap = ref('diverging')
 const imageSize = 28 // MNIST image size
+const enhancedImageSize = 224 // Much larger size for better visibility (28 * 8)
+const updateRate = ref('normal')
+
+// Modal state
+const showWeightModal = ref(false)
+const modalNeuron = ref<NDNeuron | null>(null)
+
+// Sync state
+const isSyncing = ref(false)
+const syncError = ref(false)
+const lastSyncTime = ref<number | null>(null)
+
+// Training state
+const currentEpoch = ref(0)
+const highTrainingActivity = ref(false)
+const currentLoss = computed(() => store.currentLoss)
+const isLiveUpdating = ref(false)
+const recentWeightUpdates = ref(0)
+const trainingSpeed = ref(0)
+
+// Loss and accuracy tracking for trends
+const previousLoss = ref(0)
+const previousAccuracy = ref(0)
+
+// Computed trend indicators
+const lossImproving = computed(() => currentLoss.value < previousLoss.value)
+const lossDegrading = computed(() => currentLoss.value > previousLoss.value)
+const accuracyImproving = computed(() => store.trainAccuracy > previousAccuracy.value)
+
+const lossTrendIcon = computed(() => {
+  if (lossImproving.value) return '↘️'
+  if (lossDegrading.value) return '↗️'
+  return '→'
+})
+
+const accuracyTrendIcon = computed(() => {
+  if (accuracyImproving.value) return '↗️'
+  if (store.trainAccuracy < previousAccuracy.value) return '↘️'
+  return '→'
+})
 
 // Canvas references
 const neuronCanvases = ref<Record<number, HTMLCanvasElement>>({})
+const comparisonCanvases = ref<Record<number, HTMLCanvasElement>>({})
 const detailCanvas = ref<HTMLCanvasElement | null>(null)
 const histogramCanvas = ref<HTMLCanvasElement | null>(null)
 const sampleCanvas = ref<HTMLCanvasElement | null>(null)
+const similarityInputCanvas = ref<HTMLCanvasElement | null>(null)
 
 // Test sample for activations
 const testSample = ref<number[]>(new Array(784).fill(0))
+const currentSampleInfo = ref<any>(null)
+const selectedTestInput = ref('random')
+const isUpdatingWeights = ref(false)
 
 // Configuration
 const visualizationModes = [
-  { id: 'weights', label: 'Weights', icon: EyeIcon },
-  { id: 'activations', label: 'Activations', icon: ChartBarIcon },
-  { id: 'similarity', label: 'Similarity', icon: ChartBarSquareIcon }
+  { id: 'weights', label: 'Weights', icon: EyeIcon, description: 'View weight matrices as images' },
+  { id: 'activations', label: 'Activations', icon: ChartBarIcon, description: 'Real-time neural activations' },
+  { id: 'similarity', label: 'Similarity', icon: ChartBarSquareIcon, description: 'Compare similarity metrics' }
 ]
 
 const availableMetrics: Array<{ id: NDSimilarityMetric, label: string }> = [
@@ -285,16 +610,98 @@ const availableMetrics: Array<{ id: NDSimilarityMetric, label: string }> = [
   { id: 'rbf', label: 'RBF' }
 ]
 
+// MNIST class labels
+const classLabels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
 // Computed properties
 const selectedNeuron = computed(() => {
-  if (selectedNeuronId.value === 'all') return null
-  return store.neurons.find(n => n.id === selectedNeuronId.value) || null
+  if (selectedNeuronId.value === 'all' || selectedNeuronId.value === 'comparison') return null
+  return store.neurons.find(n => n.id === parseInt(selectedNeuronId.value as string)) || null
 })
 
 // Methods
+function getClassLabel(classId: number): string {
+  return classLabels[classId] || `Class ${classId}`
+}
+
+function formatTime(timestamp: number): string {
+  const now = Date.now()
+  const diff = now - timestamp
+  if (diff < 1000) return 'now'
+  if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
+  return `${Math.floor(diff / 3600000)}h ago`
+}
+
+async function forceSync(): Promise<void> {
+  if (!store.apiConnected || isSyncing.value) return
+  
+  isSyncing.value = true
+  syncError.value = false
+  
+  try {
+    await store.forceWeightSync()
+    lastSyncTime.value = Date.now()
+    await updateVisualization()
+  } catch (error) {
+    console.error('Force sync failed:', error)
+    syncError.value = true
+  } finally {
+    isSyncing.value = false
+  }
+}
+
+function toggleAutoSync(): void {
+  store.autoSyncWeights = !store.autoSyncWeights
+  if (store.autoSyncWeights) {
+    store.startWeightSync()
+  } else {
+    store.stopWeightSync()
+  }
+}
+
+function adjustUpdateRate(): void {
+  // Adjust visualization update frequency based on selected rate
+  const rates = {
+    realtime: 100,
+    fast: 1000,
+    normal: 3000,
+    slow: 10000,
+    manual: 0
+  }
+  
+  // Implementation for update rate adjustment
+  console.log('Update rate changed to:', updateRate.value)
+}
+
 function selectNeuron(neuronId: number) {
-  selectedNeuronId.value = neuronId
+  selectedNeuronId.value = neuronId.toString()
   store.selectedNeuron = store.neurons.find(n => n.id === neuronId) || null
+}
+
+function openWeightModal(neuron: NDNeuron) {
+  modalNeuron.value = neuron
+  showWeightModal.value = true
+}
+
+function closeWeightModal() {
+  showWeightModal.value = false
+  modalNeuron.value = null
+}
+
+function updateNeuronFromModal(updatedNeuron: NDNeuron) {
+  // Update the neuron in the store
+  const neuronIndex = store.neurons.findIndex(n => n.id === updatedNeuron.id)
+  if (neuronIndex !== -1) {
+    store.neurons[neuronIndex] = updatedNeuron
+    // Trigger visualization update
+    updateVisualization()
+  }
+}
+
+function isNeuronRecentlyUpdated(neuronId: number): boolean {
+  // Check if this neuron was recently updated (within last 2 seconds)
+  return Date.now() - (lastSyncTime.value || 0) < 2000
 }
 
 function getNeuronWeightNorm(neuron: NDNeuron): number {
@@ -311,7 +718,25 @@ function getWeightStandardDeviation(neuron: NDNeuron): number {
   return Math.sqrt(variance)
 }
 
-function getActivationLevel(neuron: NDNeuron): number {
+function calculateSkewness(weights: number[]): number {
+  const mean = weights.reduce((sum, w) => sum + w, 0) / weights.length
+  const std = Math.sqrt(weights.reduce((sum, w) => sum + Math.pow(w - mean, 2), 0) / weights.length)
+  const skewness = weights.reduce((sum, w) => sum + Math.pow((w - mean) / std, 3), 0) / weights.length
+  return skewness
+}
+
+function calculateKurtosis(weights: number[]): number {
+  const mean = weights.reduce((sum, w) => sum + w, 0) / weights.length
+  const std = Math.sqrt(weights.reduce((sum, w) => sum + Math.pow(w - mean, 2), 0) / weights.length)
+  const kurtosis = weights.reduce((sum, w) => sum + Math.pow((w - mean) / std, 4), 0) / weights.length - 3
+  return kurtosis
+}
+
+function getActivationLevel(neuron: NDNeuron, index: number): number {
+  if (currentSampleInfo.value?.similarity_breakdown?.[index]) {
+    return Math.max(0, Math.min(1, currentSampleInfo.value.similarity_breakdown[index].activation_value || 0))
+  }
+  
   if (testSample.value.length === 0) return 0
   try {
     const score = calculateNDSimilarityScore(neuron, testSample.value, store.similarityMetric)
@@ -319,6 +744,12 @@ function getActivationLevel(neuron: NDNeuron): number {
   } catch {
     return 0
   }
+}
+
+function getActivationColor(level: number): string {
+  // Create a color gradient from blue to red based on activation level
+  const hue = (1 - level) * 240 // Blue (240) to Red (0)
+  return `hsl(${hue}, 70%, 50%)`
 }
 
 function getSimilarityScore(neuron: NDNeuron, metric: NDSimilarityMetric): number {
@@ -331,22 +762,110 @@ function getSimilarityScore(neuron: NDNeuron, metric: NDSimilarityMetric): numbe
   }
 }
 
-function generateRandomSample() {
+function getSimilarityColor(score: number): string {
+  // Create a color gradient from purple to yellow based on similarity score
+  const hue = score * 60 + 240 // Purple (300) to Yellow (60)
+  return `hsl(${hue}, 70%, 50%)`
+}
+
+async function generateRandomSample() {
   // Generate a simple random pattern
   testSample.value = new Array(784).fill(0).map(() => Math.random())
-  renderSampleCanvas()
-  
-  // Update activations display
-  if (currentMode.value === 'activations') {
-    // Force reactivity update
-    nextTick()
+  await renderSampleCanvas()
+  await updateActivations()
+}
+
+async function loadTestSample() {
+  // Load a real test sample from the dataset
+  try {
+    const batch = await store.getTrainingBatch(1)
+    if (batch.length > 0) {
+      testSample.value = batch[0].features
+      await renderSampleCanvas()
+      await updateActivations()
+    }
+  } catch (error) {
+    console.warn('Failed to load test sample:', error)
+    generateRandomSample()
   }
+}
+
+function clearSample() {
+  testSample.value = new Array(784).fill(0)
+  currentSampleInfo.value = null
+  renderSampleCanvas()
+}
+
+async function updateActivations() {
+  if (store.apiConnected && testSample.value.length > 0) {
+    try {
+      currentSampleInfo.value = await store.getActivationsForVisualization(testSample.value)
+    } catch (error) {
+      console.warn('Failed to get API activations:', error)
+      currentSampleInfo.value = null
+    }
+  }
+}
+
+function setActiveMetric(metric: NDSimilarityMetric) {
+  store.similarityMetric = metric
+  updateSimilarityComparison()
+}
+
+async function updateSimilarityComparison() {
+  // Generate test input based on selection
+  switch (selectedTestInput.value) {
+    case 'zeros':
+      testSample.value = new Array(784).fill(0)
+      break
+    case 'ones':
+      testSample.value = new Array(784).fill(1)
+      break
+    case 'test_sample':
+      await loadTestSample()
+      return
+    case 'random':
+    default:
+      await generateRandomSample()
+      return
+  }
+  
+  await renderSimilarityInputCanvas()
+}
+
+async function resetNeuronWeights() {
+  if (!selectedNeuron.value) return
+  
+  // Reset weights to random values
+  selectedNeuron.value.weights = Array.from({ length: 784 }, () => (Math.random() - 0.5) * 0.1)
+  selectedNeuron.value.bias = 0
+  
+  await store.syncWeightsToApi()
+  await updateVisualization()
+}
+
+async function randomizeNeuronWeights() {
+  if (!selectedNeuron.value) return
+  
+  // Randomize weights with larger range
+  selectedNeuron.value.weights = Array.from({ length: 784 }, () => (Math.random() - 0.5) * 0.5)
+  selectedNeuron.value.bias = (Math.random() - 0.5) * 0.1
+  
+  await store.syncWeightsToApi()
+  await updateVisualization()
 }
 
 function renderWeightCanvas(canvas: HTMLCanvasElement, weights: number[]) {
   const ctx = canvas.getContext('2d')
   
-  if (!ctx || weights.length !== 784) return
+  if (!ctx || weights.length !== 784) {
+    console.warn('❌ renderWeightCanvas: Invalid context or weights length:', { 
+      hasContext: !!ctx, 
+      weightsLength: weights.length,
+      expected: 784 
+    })
+    return
+  }
 
   try {
     const minWeight = Math.min(...weights)
@@ -381,213 +900,228 @@ function renderWeightCanvas(canvas: HTMLCanvasElement, weights: number[]) {
     
     ctx.putImageData(imageData, 0, 0)
     
-    // Add subtle border for visual separation
-    ctx.strokeStyle = getCSSVarAsColor('--border-tertiary')
-    ctx.lineWidth = 0.5
-    ctx.strokeRect(0, 0, canvas.width, canvas.height)
-    
   } catch (error) {
     console.error('Error rendering weight canvas:', error)
   }
 }
 
-function renderSampleCanvas() {
-  if (!sampleCanvas.value) return
+function applyColormap(value: number, colormap: string): { r: number, g: number, b: number } {
+  // Ensure value is between 0 and 1
+  value = Math.max(0, Math.min(1, value))
   
-  const ctx = sampleCanvas.value.getContext('2d')
-  if (!ctx) return
+  switch (colormap) {
+    case 'diverging':
+      // Blue to white to red
+      if (value < 0.5) {
+        const t = value * 2
+        return {
+          r: Math.round(t * 255),
+          g: Math.round(t * 255),
+          b: 255
+        }
+      } else {
+        const t = (value - 0.5) * 2
+        return {
+          r: 255,
+          g: Math.round((1 - t) * 255),
+          b: Math.round((1 - t) * 255)
+        }
+      }
+    case 'viridis':
+      // Viridis colormap approximation
+      return {
+        r: Math.round(value * 68 + (1 - value) * 68),
+        g: Math.round(value * 1 + (1 - value) * 1),
+        b: Math.round(value * 84 + (1 - value) * 84)
+      }
+    case 'grayscale':
+      const gray = Math.round(value * 255)
+      return { r: gray, g: gray, b: gray }
+    default:
+      // Default to grayscale
+      const defaultGray = Math.round(value * 255)
+      return { r: defaultGray, g: defaultGray, b: defaultGray }
+  }
+}
 
+async function renderSampleCanvas() {
+  const canvas = sampleCanvas.value
+  if (!canvas) return
+  
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  
   const imageData = ctx.createImageData(28, 28)
   
   for (let i = 0; i < 784; i++) {
-    const value = Math.floor(testSample.value[i] * 255)
+    const value = Math.round(testSample.value[i] * 255)
     const pixelIndex = i * 4
-    imageData.data[pixelIndex] = value
-    imageData.data[pixelIndex + 1] = value
-    imageData.data[pixelIndex + 2] = value
-    imageData.data[pixelIndex + 3] = 255
+    imageData.data[pixelIndex] = value     // R
+    imageData.data[pixelIndex + 1] = value // G
+    imageData.data[pixelIndex + 2] = value // B
+    imageData.data[pixelIndex + 3] = 255   // A
   }
   
-  ctx.putImageData(imageData, 0, 0)
+  // Scale up the 28x28 image to canvas size
+  const tempCanvas = document.createElement('canvas')
+  tempCanvas.width = 28
+  tempCanvas.height = 28
+  const tempCtx = tempCanvas.getContext('2d')!
+  tempCtx.putImageData(imageData, 0, 0)
+  
+  ctx.imageSmoothingEnabled = false
+  ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height)
 }
 
-function renderWeightHistogram(weights: number[]) {
-  if (!histogramCanvas.value) return
+async function renderSimilarityInputCanvas() {
+  const canvas = similarityInputCanvas.value
+  if (!canvas) return
   
-  const ctx = histogramCanvas.value.getContext('2d')
-  if (!ctx) return
+  await renderSampleCanvas() // Reuse the same logic
+}
 
-  ctx.clearRect(0, 0, 300, 100)
+async function updateVisualization() {
+  isUpdatingWeights.value = true
   
-  // Create histogram
+  try {
+    // Update all weight visualizations
+    for (const neuron of store.neurons) {
+      const canvas = neuronCanvases.value[neuron.id]
+      if (canvas) {
+        renderWeightCanvas(canvas, neuron.weights)
+      }
+      
+      const comparisonCanvas = comparisonCanvases.value[neuron.id]
+      if (comparisonCanvas) {
+        renderWeightCanvas(comparisonCanvas, neuron.weights)
+      }
+    }
+    
+    // Update detail view if a neuron is selected
+    if (selectedNeuron.value && detailCanvas.value) {
+      renderWeightCanvas(detailCanvas.value, selectedNeuron.value.weights)
+      renderHistogram()
+    }
+    
+  } finally {
+    isUpdatingWeights.value = false
+  }
+}
+
+function renderHistogram() {
+  if (!selectedNeuron.value || !histogramCanvas.value) return
+  
+  const canvas = histogramCanvas.value
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  
+  const weights = selectedNeuron.value.weights
   const bins = 20
   const minWeight = Math.min(...weights)
   const maxWeight = Math.max(...weights)
-  const binSize = (maxWeight - minWeight) / bins
-  const histogram = new Array(bins).fill(0)
+  const binWidth = (maxWeight - minWeight) / bins
   
-  weights.forEach(weight => {
-    const binIndex = Math.min(bins - 1, Math.floor((weight - minWeight) / binSize))
+  // Calculate histogram
+  const histogram = new Array(bins).fill(0)
+  for (const weight of weights) {
+    const binIndex = Math.min(bins - 1, Math.floor((weight - minWeight) / binWidth))
     histogram[binIndex]++
-  })
+  }
   
   const maxCount = Math.max(...histogram)
-  const barWidth = 300 / bins
   
-  // Draw bars
+  // Clear and draw histogram
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
   ctx.fillStyle = getCSSVarAsColor('--color-primary')
-  histogram.forEach((count, i) => {
-    const height = (count / maxCount) * 80
-    ctx.fillRect(i * barWidth, 100 - height, barWidth - 1, height)
-  })
   
-  // Draw axes
-  ctx.strokeStyle = getCSSVarAsColor('--border-secondary')
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(0, 100)
-  ctx.lineTo(300, 100)
-  ctx.stroke()
-}
-
-function applyColormap(value: number, cmapName: string): { r: number, g: number, b: number } {
-  // Clamp value to [0, 1]
-  value = Math.max(0, Math.min(1, value))
-  
-  switch (cmapName) {
-    case 'viridis':
-      return viridisColormap(value)
-    case 'plasma':
-      return plasmaColormap(value)
-    case 'diverging':
-      return divergingColormap(value)
-    case 'grayscale':
-      const gray = Math.floor(value * 255)
-      return { r: gray, g: gray, b: gray }
-    case 'cool':
-      return { r: Math.floor(value * 255), g: Math.floor((1 - value) * 255), b: 255 }
-    case 'hot':
-      if (value < 1/3) {
-        return { r: Math.floor(value * 3 * 255), g: 0, b: 0 }
-      } else if (value < 2/3) {
-        return { r: 255, g: Math.floor((value - 1/3) * 3 * 255), b: 0 }
-      } else {
-        return { r: 255, g: 255, b: Math.floor((value - 2/3) * 3 * 255) }
-      }
-    default:
-      const def = Math.floor(value * 255)
-      return { r: def, g: def, b: def }
+  const barWidth = canvas.width / bins
+  for (let i = 0; i < bins; i++) {
+    const barHeight = (histogram[i] / maxCount) * canvas.height
+    ctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth - 1, barHeight)
   }
 }
 
-function divergingColormap(t: number): { r: number, g: number, b: number } {
-  // Blue-White-Red diverging colormap (perfect for weights)
-  if (t < 0.5) {
-    // Blue to white
-    const intensity = t * 2
-    return {
-      r: Math.floor(255 * intensity),
-      g: Math.floor(255 * intensity),
-      b: 255
-    }
-  } else {
-    // White to red
-    const intensity = (t - 0.5) * 2
-    return {
-      r: 255,
-      g: Math.floor(255 * (1 - intensity)),
-      b: Math.floor(255 * (1 - intensity))
-    }
-  }
-}
+// Watch for changes and update visualization
+watch(() => store.visualizationUpdateTrigger, updateVisualization)
+watch(() => store.neurons, updateVisualization, { deep: true })
+watch(() => currentMode.value, updateVisualization)
+watch(() => colormap.value, updateVisualization)
 
-function viridisColormap(t: number): { r: number, g: number, b: number } {
-  // Simplified viridis colormap
-  const r = Math.floor(255 * (0.267 + 0.392 * t - 0.712 * t * t + 0.674 * t * t * t))
-  const g = Math.floor(255 * (0.004 + 1.336 * t - 1.055 * t * t))
-  const b = Math.floor(255 * (0.329 + 2.078 * t - 2.706 * t * t + 1.299 * t * t * t))
-  
-  return {
-    r: Math.max(0, Math.min(255, r)),
-    g: Math.max(0, Math.min(255, g)),
-    b: Math.max(0, Math.min(255, b))
+// Live update watchers
+watch(() => store.isTraining, (isTraining) => {
+  isLiveUpdating.value = isTraining
+  if (isTraining) {
+    currentEpoch.value = store.optimizationHistory.currentStep
   }
-}
+})
 
-function plasmaColormap(t: number): { r: number, g: number, b: number } {
-  // Simplified plasma colormap
-  const r = Math.floor(255 * (0.050 + 2.065 * t - 1.632 * t * t + 0.517 * t * t * t))
-  const g = Math.floor(255 * (0.013 + 0.775 * t + 0.624 * t * t - 0.412 * t * t * t))
-  const b = Math.floor(255 * (0.540 + 1.667 * t - 2.377 * t * t + 1.170 * t * t * t))
-  
-  return {
-    r: Math.max(0, Math.min(255, r)),
-    g: Math.max(0, Math.min(255, g)),
-    b: Math.max(0, Math.min(255, b))
-  }
-}
-
-function updateVisualization() {
-  nextTick(() => {
-    if (currentMode.value === 'weights') {
-      // Update all neuron canvases
-      for (const neuron of store.neurons) {
-        const canvas = neuronCanvases.value[neuron.id]
-        if (canvas) {
-          renderWeightCanvas(canvas, neuron.weights)
+watch(() => store.optimizationHistory.currentStep, (newStep) => {
+  currentEpoch.value = newStep
+  if (store.isTraining && newStep > 0) {
+    // Calculate training speed based on optimization history
+    const steps = store.optimizationHistory.steps
+    if (steps.length >= 2) {
+      const recent = steps.slice(-5) // Last 5 steps
+      if (recent.length >= 2) {
+        const timeSpan = recent[recent.length - 1].timestamp - recent[0].timestamp
+        const stepSpan = recent.length - 1
+        if (timeSpan > 0) {
+          trainingSpeed.value = (stepSpan / (timeSpan / 1000)) || 0
         }
       }
+    }
+  }
+})
+
+watch(() => store.currentLoss, (newLoss, oldLoss) => {
+  if (oldLoss !== undefined) {
+    previousLoss.value = oldLoss
+  }
+})
+
+watch(() => store.trainAccuracy, (newAccuracy, oldAccuracy) => {
+  if (oldAccuracy !== undefined) {
+    previousAccuracy.value = oldAccuracy
+  }
+})
+
+watch(() => store.neurons, (newNeurons, oldNeurons) => {
+  if (store.isTraining && oldNeurons) {
+    // Count weight updates
+    let updates = 0
+    newNeurons.forEach((neuron, index) => {
+      if (oldNeurons[index] && 
+          JSON.stringify(neuron.weights) !== JSON.stringify(oldNeurons[index].weights)) {
+        updates++
+      }
+    })
+    
+    if (updates > 0) {
+      recentWeightUpdates.value = updates
+      highTrainingActivity.value = true
       
-      // Update detailed view if needed
-      if (selectedNeuron.value && detailCanvas.value) {
-        renderWeightCanvas(detailCanvas.value, selectedNeuron.value.weights)
-        if (histogramCanvas.value) {
-          renderWeightHistogram(selectedNeuron.value.weights)
-        }
-      }
-    } else if (currentMode.value === 'activations') {
-      renderSampleCanvas()
+      // Reset indicators after a short time
+      setTimeout(() => {
+        recentWeightUpdates.value = 0
+        highTrainingActivity.value = false
+      }, 2000)
     }
-  })
-}
+  }
+}, { deep: true })
 
-// Watchers
-watch(() => store.neurons, () => {
-  updateVisualization()
-}, { deep: true, immediate: true })
-
-watch(currentMode, () => {
-  updateVisualization()
-})
-
-watch(colormap, () => {
-  updateVisualization()
-})
-
-watch(selectedNeuronId, () => {
-  updateVisualization()
-})
-
-// Watch the visualization update trigger for real-time updates during training
-watch(() => store.visualizationUpdateTrigger, () => {
-  updateVisualization()
-}, { immediate: true })
-
-// Expose methods for parent components
-function forceUpdate() {
-  updateVisualization()
-}
-
-// Lifecycle
+// Listen for visualization events
 onMounted(() => {
-  generateRandomSample()
+  visualizationEvents.on(updateVisualization)
   updateVisualization()
+  
+  // Generate initial sample
+  generateRandomSample()
 })
 
-// Expose methods
-defineExpose({
-  forceUpdate,
-  updateVisualization
+onUnmounted(() => {
+  visualizationEvents.off(updateVisualization)
 })
 </script>
 
@@ -608,6 +1142,12 @@ defineExpose({
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.header-section {
+  display: flex;
+  gap: 16px;
+  align-items: center;
 }
 
 .mode-selector {
@@ -645,11 +1185,118 @@ defineExpose({
   height: 14px;
 }
 
-.visualization-controls {
+.sync-controls {
   display: flex;
-  gap: 16px;
+  gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
+}
+
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgb(var(--bg-tertiary));
+  border: 1px solid rgb(var(--border-primary));
+  border-radius: 3px;
+  color: rgb(var(--text-secondary));
+  font-size: 11px;
+}
+
+.sync-status.connected {
+  background: rgb(var(--color-success));
+  border-color: rgb(var(--color-success));
+}
+
+.sync-status.syncing {
+  background: rgb(var(--color-warning));
+  border-color: rgb(var(--color-warning));
+}
+
+.sync-status.error {
+  background: rgb(var(--color-error));
+  border-color: rgb(var(--color-error));
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(var(--text-tertiary));
+}
+
+.status-text {
+  font-size: 10px;
+  color: rgb(var(--text-secondary));
+}
+
+.sync-time {
+  font-size: 9px;
+  color: rgb(var(--text-tertiary));
+}
+
+.sync-btn {
+  padding: 4px 8px;
+  background: rgb(var(--color-primary));
+  border: 1px solid rgb(var(--color-primary));
+  border-radius: 3px;
+  color: rgb(var(--text-primary));
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sync-btn:hover {
+  background: rgb(var(--color-primary-hover));
+}
+
+.auto-sync-btn {
+  padding: 4px 8px;
+  background: rgb(var(--color-primary));
+  border: 1px solid rgb(var(--color-primary));
+  border-radius: 3px;
+  color: rgb(var(--text-primary));
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.auto-sync-btn:hover {
+  background: rgb(var(--color-primary-hover));
+}
+
+.auto-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.auto-sync-btn.active {
+  background: rgb(var(--color-primary));
+  border-color: rgb(var(--color-primary));
+  color: rgb(var(--text-primary));
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.control-label {
+  font-size: 11px;
+  color: rgb(var(--text-tertiary));
+  white-space: nowrap;
+}
+
+.neuron-select,
+.colormap-select {
+  padding: 4px 8px;
+  background: rgb(var(--bg-tertiary));
+  border: 1px solid rgb(var(--border-primary));
+  border-radius: 3px;
+  color: rgb(var(--text-primary));
+  font-size: 11px;
+  min-width: 100px;
 }
 
 .training-indicator {
@@ -692,69 +1339,16 @@ defineExpose({
   color: rgb(var(--text-secondary));
 }
 
-.control-group {
+.training-stats {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
 }
 
-.control-label {
-  font-size: 11px;
+.stat {
+  font-size: 8px;
   color: rgb(var(--text-tertiary));
-  white-space: nowrap;
-}
-
-.neuron-select,
-.colormap-select {
-  padding: 4px 8px;
-  background: rgb(var(--bg-tertiary));
-  border: 1px solid rgb(var(--border-primary));
-  border-radius: 3px;
-  color: rgb(var(--text-primary));
-  font-size: 11px;
-  min-width: 100px;
-}
-
-.force-update-btn {
-  padding: 4px 8px;
-  background: rgb(var(--color-primary));
-  border: 1px solid rgb(var(--color-primary));
-  border-radius: 3px;
-  color: rgb(var(--text-primary));
-  font-size: 11px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.force-update-btn:hover {
-  background: rgb(var(--color-primary-hover));
-}
-
-.colormap-legend {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-}
-
-.legend-label {
-  font-size: 9px;
-  color: rgb(var(--text-tertiary));
-}
-
-.legend-gradient {
-  width: 60px;
-  height: 12px;
-  border-radius: 2px;
-  border: 1px solid rgb(var(--border-primary));
-}
-
-.diverging-gradient {
-  background: linear-gradient(to right, 
-    hsl(220, 100%, 50%), 
-    rgb(var(--bg-primary)), 
-    hsl(0, 100%, 50%)
-  );
 }
 
 .visualization-content {
@@ -766,22 +1360,41 @@ defineExpose({
 /* Weights visualization */
 .all-neurons-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
 }
 
 .neuron-weight-container {
   background: rgb(var(--bg-tertiary));
   border: 1px solid rgb(var(--border-primary));
-  border-radius: 6px;
-  padding: 8px;
+  border-radius: 8px;
+  padding: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  min-height: 280px;
 }
 
 .neuron-weight-container:hover {
   border-color: rgb(var(--color-primary));
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--color-primary), 0.15);
+}
+
+.neuron-weight-container.selected {
+  border-color: rgb(var(--color-primary));
+  background: rgb(var(--bg-quaternary));
+}
+
+.neuron-weight-container.high-activity {
+  border-color: rgb(var(--color-success));
+  box-shadow: 0 0 10px rgba(var(--color-success), 0.3);
+  animation: activity-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes activity-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(var(--color-success), 0.3); }
+  50% { box-shadow: 0 0 20px rgba(var(--color-success), 0.5); }
 }
 
 .neuron-header {
@@ -791,10 +1404,41 @@ defineExpose({
   margin-bottom: 8px;
 }
 
+.neuron-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
 .neuron-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: rgb(var(--text-primary));
+}
+
+.neuron-id {
+  font-size: 9px;
+  color: rgb(var(--text-tertiary));
+}
+
+.expand-btn {
+  padding: 4px 6px;
+  background: rgb(var(--bg-quaternary));
+  border: 1px solid rgb(var(--border-primary));
+  border-radius: 4px;
+  color: rgb(var(--text-secondary));
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.expand-btn:hover {
+  background: rgb(var(--color-primary));
+  border-color: rgb(var(--color-primary));
+  color: white;
+  transform: scale(1.05);
 }
 
 .neuron-stats {
@@ -806,98 +1450,130 @@ defineExpose({
   align-items: flex-end;
 }
 
-.stat-line {
+.stat-row {
   font-family: 'Courier New', monospace;
   background: var(--interactive-bg);
   padding: 1px 3px;
   border-radius: 2px;
 }
 
-.weight-canvas {
+.canvas-container {
+  position: relative;
   width: 100%;
-  height: auto;
-  max-width: 100px;
-  image-rendering: pixelated;
-  border: 1px solid rgb(var(--border-primary));
-  border-radius: 3px;
+  height: 0;
+  padding-bottom: 100%; /* Creates a perfect square aspect ratio */
+  margin: 12px auto;
+  border: 2px solid rgb(var(--border-primary));
+  border-radius: 8px;
   transition: all 0.2s ease;
-  box-shadow: var(--shadow-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
+  overflow: hidden;
 }
 
-.weight-canvas:hover {
-  transform: scale(1.05);
+.canvas-container:hover {
   border-color: rgb(var(--color-primary));
-  box-shadow: var(--shadow-glow);
+  box-shadow: 0 4px 16px rgba(var(--color-primary), 0.2);
+  transform: scale(1.02);
 }
 
-.single-neuron-view {
-  max-width: 600px;
-  margin: 0 auto;
+.weight-canvas.enhanced {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  object-fit: contain;
+  display: block;
 }
 
-.neuron-detail-header {
-  text-align: center;
-  margin-bottom: 20px;
+.canvas-overlay-hover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: 6px;
+  z-index: 2;
 }
 
-.neuron-detail-header h3 {
-  margin: 0 0 12px 0;
-  color: rgb(var(--color-primary));
+.canvas-container:hover .canvas-overlay-hover {
+  opacity: 1;
 }
 
-.neuron-detail-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.stat-item {
+.hover-text {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  color: white;
+  font-size: 11px;
+  font-weight: 500;
 }
 
-.stat-label {
-  font-size: 10px;
+.hover-icon {
+  font-size: 16px;
+}
+
+.canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.update-spinner {
+  width: 20px;
+  height: 20px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid rgb(var(--color-primary));
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.weight-range {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.range-min,
+.range-max {
+  font-size: 8px;
   color: rgb(var(--text-tertiary));
 }
 
-.stat-value {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgb(var(--text-primary));
-}
-
-.weight-canvas-large {
-  width: 100%;
-  max-width: 280px;
-  height: auto;
-  margin: 0 auto;
-  display: block;
-  image-rendering: pixelated;
-  border: 2px solid rgb(var(--border-primary));
+.range-bar {
+  flex: 1;
+  height: 12px;
+  background: rgb(var(--bg-tertiary));
   border-radius: 6px;
+  overflow: hidden;
 }
 
-.weight-histogram {
-  margin-top: 20px;
-  text-align: center;
-}
-
-.weight-histogram h4 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: rgb(var(--text-primary));
-}
-
-.histogram-canvas {
-  border: 1px solid rgb(var(--border-primary));
-  border-radius: 4px;
-  background: rgb(var(--bg-primary));
+.range-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 6px;
 }
 
 /* Activations visualization */
@@ -907,16 +1583,88 @@ defineExpose({
   gap: 24px;
 }
 
+.activations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.activation-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sample-btn {
+  padding: 4px 8px;
+  background: rgb(var(--color-primary));
+  border: 1px solid rgb(var(--color-primary));
+  border-radius: 3px;
+  color: rgb(var(--text-primary));
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sample-btn:hover {
+  background: rgb(var(--color-primary-hover));
+}
+
+.sample-input-section {
+  text-align: center;
+}
+
+.sample-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sample-canvas {
+  width: 140px;
+  height: 140px;
+  border: 2px solid rgb(var(--border-primary));
+  border-radius: 6px;
+  cursor: pointer;
+  image-rendering: pixelated;
+  transition: border-color 0.2s ease;
+}
+
+.sample-canvas:hover {
+  border-color: rgb(var(--color-primary));
+}
+
+.sample-hint {
+  margin: 8px 0 0 0;
+  font-size: 10px;
+  color: rgb(var(--text-tertiary));
+}
+
+.activations-display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .activations-grid {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.activation-bar-container {
+.activation-item {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.activation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .activation-label {
@@ -947,54 +1695,86 @@ defineExpose({
   min-width: 40px;
 }
 
-.sample-input-area {
-  text-align: center;
+.activation-details {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
 
-.sample-input-area h4 {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: rgb(var(--text-primary));
-}
-
-.sample-canvas {
-  width: 140px;
-  height: 140px;
-  border: 2px solid rgb(var(--border-primary));
-  border-radius: 6px;
-  cursor: pointer;
-  image-rendering: pixelated;
-  transition: border-color 0.2s ease;
-}
-
-.sample-canvas:hover {
-  border-color: rgb(var(--color-primary));
-}
-
-.sample-hint {
-  margin: 8px 0 0 0;
-  font-size: 10px;
+.similarity-score {
+  font-size: 9px;
   color: rgb(var(--text-tertiary));
 }
 
 /* Similarity visualization */
-.similarity-comparison h4 {
-  margin: 0 0 16px 0;
-  text-align: center;
-  color: rgb(var(--text-primary));
-}
-
-.metrics-grid {
+.similarity-view {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: 1fr 250px;
+  gap: 24px;
 }
 
-.metric-comparison h5 {
-  margin: 0 0 12px 0;
-  font-size: 12px;
-  color: rgb(var(--color-primary));
-  text-align: center;
+.similarity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.similarity-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.similarity-input-canvas {
+  width: 100%;
+  height: auto;
+  max-width: 250px;
+  image-rendering: pixelated;
+  border: 1px solid rgb(var(--border-primary));
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-light);
+  cursor: pointer;
+}
+
+.metrics-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metric-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metric-select-btn {
+  padding: 4px 8px;
+  background: rgb(var(--bg-tertiary));
+  border: 1px solid rgb(var(--border-primary));
+  border-radius: 3px;
+  color: rgb(var(--text-primary));
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.metric-select-btn:hover {
+  background: rgb(var(--bg-quaternary));
+}
+
+.metric-select-btn.active {
+  background: rgb(var(--color-primary));
+  border-color: rgb(var(--color-primary));
+  color: rgb(var(--text-primary));
 }
 
 .metric-bars {
@@ -1048,6 +1828,19 @@ defineExpose({
   background: var(--interactive-bg);
 }
 
+.info-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .info-item {
   display: flex;
   flex-direction: column;
@@ -1067,6 +1860,11 @@ defineExpose({
   color: rgb(var(--text-primary));
 }
 
+.performance {
+  font-size: 10px;
+  color: rgb(var(--text-tertiary));
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .visualization-header {
@@ -1074,15 +1872,16 @@ defineExpose({
     align-items: stretch;
   }
   
-  .visualization-controls {
-    justify-content: space-between;
+  .header-section {
+    flex-direction: column;
+    align-items: stretch;
   }
   
   .activations-view {
     grid-template-columns: 1fr;
   }
   
-  .metrics-grid {
+  .similarity-view {
     grid-template-columns: 1fr;
   }
 }

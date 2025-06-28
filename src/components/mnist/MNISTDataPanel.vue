@@ -1,5 +1,42 @@
 <template>
   <div class="mnist-data-panel">
+    <!-- Dataset Selection Section -->
+    <div class="panel-section">
+      <h3 class="section-title">Dataset Selection</h3>
+      
+      <div class="dataset-selector">
+        <label class="selector-label">Choose Dataset:</label>
+        <select 
+          v-model="store.selectedDataset" 
+          @change="onDatasetChange"
+          class="dataset-select"
+          :disabled="isLoading"
+        >
+          <option 
+            v-for="(info, name) in store.availableDatasets" 
+            :key="name" 
+            :value="name"
+          >
+            {{ info.description }}
+          </option>
+        </select>
+      </div>
+      
+      <div class="api-status" v-if="store.apiConnected">
+        <div class="status-indicator connected">
+          <div class="status-dot"></div>
+          <span>API Connected - Real Datasets Available</span>
+        </div>
+      </div>
+      
+      <div class="api-status" v-else>
+        <div class="status-indicator disconnected">
+          <div class="status-dot"></div>
+          <span>API Offline - Using Synthetic Data</span>
+        </div>
+      </div>
+    </div>
+    
     <div class="panel-section">
       <h3 class="section-title">Dataset</h3>
       
@@ -204,6 +241,21 @@ async function loadMediumDataset() {
   }
 }
 
+async function onDatasetChange() {
+  console.log(`Dataset changed to: ${store.selectedDataset}`)
+  notificationStore.addNotification({
+    message: `Switched to ${store.selectedDataset} dataset. Load data to see changes.`,
+    type: 'info'
+  })
+}
+
+function selectSample(sample: NDDataPoint) {
+  notificationStore.addNotification({
+    message: `Selected sample: digit ${sample.label}`,
+    type: 'info'
+  })
+}
+
 function refreshSamples() {
   if (store.trainData.length === 0) return
   
@@ -245,14 +297,6 @@ function renderSampleCanvases() {
   })
 }
 
-function selectSample(sample: NDDataPoint) {
-  // Could emit event or update store for detailed view
-  notificationStore.addNotification({
-    message: `Selected sample: Digit ${sample.label}`,
-    type: 'info'
-  })
-}
-
 // Watchers
 watch(() => store.trainData, refreshSamples, { deep: true })
 
@@ -265,33 +309,118 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Panel Structure */
 .mnist-data-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  padding: 16px;
   height: 100%;
+  overflow-y: auto;
+  background: var(--bg-primary);
 }
 
 .panel-section {
-  padding: 12px 0;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
 
-.panel-section:not(:last-child) {
-  border-bottom: 1px solid rgb(var(--border-secondary));
+.panel-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .section-title {
-  margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: 600;
-  color: rgb(var(--color-primary));
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Dataset Selection Styles */
+.dataset-selector {
+  margin-bottom: 16px;
+}
+
+.selector-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.dataset-select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.dataset-select:hover {
+  border-color: var(--primary);
+}
+
+.dataset-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-alpha);
+}
+
+.dataset-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* API Status Styles */
+.api-status {
+  margin-bottom: 12px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-indicator.connected {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.status-indicator.disconnected {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* Dataset Stats */
 .dataset-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 16px;
 }
 

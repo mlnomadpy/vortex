@@ -1,17 +1,13 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import type { 
   NDDataPoint, 
   NDNeuron, 
   NDOptimizationHistory, 
-  NDOptimizationStep, 
   NDSimilarityMetric, 
-  ActivationFunction,
-  MNISTDataset,
-  TrainingBatch
+  ActivationFunction
 } from '@/types'
 import { getNeuronColor } from '@/utils/colors'
-import { CONFIG } from '@/config'
 import {
   calculateNDSimilarityScore,
   applyNDActivationFunction,
@@ -24,9 +20,27 @@ import {
   getNDPrediction
 } from '@/utils/ndMathCore'
 import { mnistLoader } from '@/utils/mnistLoader'
-import gpuAcceleration from '@/utils/gpuAcceleration'
-import { mnistWorkerManager } from '@/utils/workerManager'
-import multiThreadManager from '@/utils/multiThreadManager'
+import { mnistApiService } from '@/services/mnistApiService'
+
+// Create a simple event emitter for visualization updates
+class VisualizationEventEmitter {
+  private listeners: Array<() => void> = []
+  
+  on(callback: () => void) {
+    this.listeners.push(callback)
+  }
+  
+  off(callback: () => void) {
+    this.listeners = this.listeners.filter(cb => cb !== callback)
+  }
+  
+  emit() {
+    console.log('🎆 Emitting visualization update event to', this.listeners.length, 'listeners')
+    this.listeners.forEach(callback => callback())
+  }
+}
+
+export const visualizationEvents = new VisualizationEventEmitter()
 
 export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
   // State
@@ -37,13 +51,17 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
   const activeClasses = ref<number[]>([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
   const allClasses = ref<number[]>([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
   
-  // Network configuration - supports all original similarity metrics and activation functions
+  // Network configuration
   const similarityMetric = ref<NDSimilarityMetric>('dotProduct')
   const activationFunction = ref<ActivationFunction>('softmax')
   
   // Visualization settings
   const visualizationMode = ref<'weights' | 'activations' | 'gradients'>('weights')
   const selectedNeuron = ref<NDNeuron | null>(null)
+  
+  // API settings
+  const useApiCompute = ref(true)
+  const apiConnected = ref(false)
   
   // Dataset info
   const datasetInfo = ref<{
@@ -75,17 +93,40 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
       }
     }
   })
-
-  // GPU acceleration settings
-  const useGpuAcceleration = ref(true)
-  const gpuAvailable = ref(false)
   
-  // Worker settings
-  const useWorkers = ref(true)
-  const workerAvailable = ref(false)
-  
-  // Visualization trigger counter (increments on every neuron update)
+  // Visualization trigger counter
   const visualizationUpdateTrigger = ref(0)
+  
+  // Reactive accuracy values (updated by API)
+  const computedTrainAccuracy = ref(0)
+  const computedTestAccuracy = ref(0)
+  
+  // API weight synchronization
+  const lastWeightUpdate = ref<number>(0)
+  const weightUpdateInterval = ref<ReturnType<typeof setInterval> | null>(null)
+  const autoSyncWeights = ref(true)
+  
+  // Ternary weights configuration
+  const useTernaryWeights = ref(true)
+  const ternarySparsityRatio = ref(0.7)
+  const ternaryStats = ref<{
+    is_ternary: boolean
+    unique_values: number[]
+    overall_distribution: {
+      negative_one_ratio: number
+      zero_ratio: number
+      positive_one_ratio: number
+      total_weights: number
+    }
+    per_class_stats: Array<{
+      class_id: number
+      distribution: any
+      weight_norm: number
+      unique_values: number[]
+    }>
+    total_parameters: number
+    use_ternary_weights: boolean
+  } | null>(null)
   
   // Computed properties
   const filteredTrainData = computed(() => {
@@ -98,38 +139,94 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
   
   const trainAccuracy = computed(() => {
     if (neurons.value.length === 0 || filteredTrainData.value.length === 0) return 0
+    if (useApiCompute.value && apiConnected.value) {
+      return computedTrainAccuracy.value
+    }
     return calculateNDAccuracy(filteredTrainData.value, neurons.value, similarityMetric.value, activationFunction.value) * 100
   })
   
   const testAccuracy = computed(() => {
     if (neurons.value.length === 0 || filteredTestData.value.length === 0) return 0
+    if (useApiCompute.value && apiConnected.value) {
+      return computedTestAccuracy.value
+    }
     return calculateNDAccuracy(filteredTestData.value, neurons.value, similarityMetric.value, activationFunction.value) * 100
   })
   
   const currentLoss = computed(() => {
     const steps = optimizationHistory.value.steps
-    if (steps.length === 0) return computeLoss(filteredTrainData.value)
+    if (steps.length === 0) return computeLossSync(filteredTrainData.value)
     return steps[steps.length - 1].loss
   })
   
   const isTraining = computed(() => optimizationHistory.value.isRunning)
   
-  // Actions
+  // State for dataset selection
+  const selectedDataset = ref<string>('mnist')
+  const availableDatasets = ref<{[key: string]: { classes: number[], class_names: string[], description: string }}>({})
   
-  /**
-   * Initialize MNIST classifier with 10 neurons (one for each digit)
-   */
-  function initializeClassifier(initStrategy: 'random' | 'xavier' | 'he' = 'xavier') {
+  // Helper functions
+  function computeLossSync(data: NDDataPoint[]): number {
+    return computeNDCategoricalCrossEntropyLoss(data, neurons.value, similarityMetric.value, activationFunction.value)
+  }
+
+  async function computeLoss(data: NDDataPoint[]): Promise<number> {
+    if (useApiCompute.value && apiConnected.value && data.length > 0) {
+      try {
+        const { weights, biases } = mnistApiService.extractNetworkParams(neurons.value)
+        const { features, labels } = mnistApiService.extractBatchData(data)
+        
+        const gradResult = await mnistApiService.computeGradients(
+          weights, biases, features, labels, similarityMetric.value, activationFunction.value
+        )
+        return gradResult.loss
+      } catch (error) {
+        console.warn('API loss computation failed, falling back to local:', error)
+      }
+    }
+    
+    return computeNDCategoricalCrossEntropyLoss(data, neurons.value, similarityMetric.value, activationFunction.value)
+  }
+
+  // Actions
+  async function initializeApiConnection(): Promise<void> {
+    try {
+      console.log('🔌 Checking API connection...')
+      apiConnected.value = await mnistApiService.checkConnection()
+      
+      if (apiConnected.value) {
+        console.log('✅ API connected successfully!')
+        console.log(`🌐 API URL: ${mnistApiService.apiUrl}`)
+        
+        // Load available datasets when API is connected
+        await loadAvailableDatasets()
+        
+        // Start weight synchronization if enabled
+        if (autoSyncWeights.value) {
+          startWeightSync()
+        }
+      } else {
+        console.warn('⚠️ API not available, falling back to local computation')
+        useApiCompute.value = false
+        // Still load the fallback dataset info
+        await loadAvailableDatasets()
+      }
+    } catch (error) {
+      console.error('❌ Failed to connect to API:', error)
+      apiConnected.value = false
+      useApiCompute.value = false
+      // Load fallback dataset info
+      await loadAvailableDatasets()
+    }
+  }
+  
+  async function initializeClassifier(initStrategy: 'random' | 'xavier' | 'he' = 'xavier') {
     console.log('Initializing MNIST classifier with 10 neurons...')
     
-    // Check GPU and Worker availability
-    checkGpuSupport()
-    checkWorkerSupport()
+    await initializeApiConnection()
     
-    // Clear existing neurons
     neurons.value = []
     
-    // Create 10 neurons (one for each digit 0-9)
     for (let i = 0; i < 10; i++) {
       const weights = initializeNDNeuronWeights(datasetInfo.value.numFeatures, initStrategy)
       
@@ -145,94 +242,205 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
     }
     
     console.log(`Initialized ${neurons.value.length} neurons with ${initStrategy} strategy`)
-    console.log(`GPU acceleration: ${gpuAvailable.value ? 'available' : 'not available'}`)
-    selectedNeuron.value = neurons.value[0]
     
-    // Initialize GPU.js kernels if GPU is available
-    if (gpuAvailable.value && useGpuAcceleration.value) {
-      try {
-        // GPU.js kernels are already initialized in the acceleration manager
-        console.log('GPU.js kernels ready for acceleration')
-      } catch (error) {
-        console.warn('Failed to initialize GPU.js kernels:', error)
-        useGpuAcceleration.value = false
-      }
+    if (apiConnected.value) {
+      console.log('🚀 Using JAX API for high-performance computation')
+    } else {
+      console.log('⚠️ Using local computation')
     }
-  }
-
-  /**
-   * Check GPU support and availability
-   */
-  function checkGpuSupport() {
-    try {
-      // Force initialization of GPU acceleration to test it
-      gpuAcceleration.ensureInitialized()
-      
-      gpuAvailable.value = gpuAcceleration.checkAvailability()
-      console.log(`🔍 GPU acceleration check - Available: ${gpuAvailable.value}`)
-      
-      if (gpuAvailable.value) {
-        console.log('🚀 GPU.js backend mode:', gpuAcceleration.gpu?.mode || 'unknown')
-        console.log('💪 GPU acceleration is ready for use!')
-      } else {
-        console.warn('⚠️ GPU acceleration not available, will use CPU fallback')
-      }
-    } catch (error) {
-      console.warn('❌ Error checking GPU support:', error)
-      gpuAvailable.value = false
-      useGpuAcceleration.value = false
-    }
-  }
-
-  /**
-   * Check Web Worker support and availability
-   */
-  function checkWorkerSupport() {
-    try {
-      workerAvailable.value = mnistWorkerManager.isWorkerReady()
-      console.log(`Web Workers available: ${workerAvailable.value}`)
-    } catch (error) {
-      console.warn('Error checking Worker support:', error)
-      workerAvailable.value = false
-      useWorkers.value = false
-    }
+    
+    selectedNeuron.value = neurons.value[0]
   }
   
-  /**
-   * Load MNIST dataset
-   */
   async function loadDataset(maxSamples: { train: number; test: number } = { train: 1000, test: 200 }): Promise<void> {
     try {
-      console.log('Loading MNIST dataset...')
-      const dataset = await mnistLoader.loadMNIST(maxSamples)
+      console.log(`Loading ${selectedDataset.value} dataset...`)
       
-      trainData.value = dataset.trainImages
-      testData.value = dataset.testImages
+      // Check if API is available for dataset loading
+      if (!apiConnected.value) {
+        console.warn('API not connected, falling back to synthetic data')
+        const dataset = await mnistLoader.loadMNIST(maxSamples)
+        
+        trainData.value = dataset.trainImages
+        testData.value = dataset.testImages
+        
+        datasetInfo.value = {
+          trainSize: dataset.trainImages.length,
+          testSize: dataset.testImages.length,
+          numFeatures: dataset.trainImages[0]?.features.length || 784,
+          numClasses: dataset.numClasses
+        }
+        
+        console.log('Synthetic dataset loaded successfully:', datasetInfo.value)
+        
+        if (neurons.value.length === 0) {
+          await initializeClassifier()
+        }
+        return
+      }
+
+      // Load real dataset from API
+      console.log('Loading real dataset from API...')
       
-      // Update dataset info
+      // First, load dataset metadata
+      const trainInfo = await mnistApiService.loadDataset(selectedDataset.value, 'train', maxSamples.train)
+      const testInfo = await mnistApiService.loadDataset(selectedDataset.value, 'test', maxSamples.test)
+      
+      console.log('Dataset metadata loaded:', { trainInfo, testInfo })
+      
+      // Load actual training data
+      const trainSample = await mnistApiService.getDatasetSample(
+        selectedDataset.value, 
+        'train', 
+        0, 
+        maxSamples.train
+      )
+      
+      // Load actual test data
+      const testSample = await mnistApiService.getDatasetSample(
+        selectedDataset.value, 
+        'test', 
+        0, 
+        maxSamples.test
+      )
+      
+      console.log('Dataset samples loaded:', {
+        trainSamples: trainSample.features.length,
+        testSamples: testSample.features.length
+      })
+      
+      // Convert to our internal format
+      trainData.value = trainSample.features.map((features, i) => ({
+        features,
+        label: trainSample.labels[i],
+        originalLabel: trainSample.labels[i]
+      }))
+      
+      testData.value = testSample.features.map((features, i) => ({
+        features,
+        label: testSample.labels[i],
+        originalLabel: testSample.labels[i]
+      }))
+      
+      // Update dataset info with real metadata
       datasetInfo.value = {
-        trainSize: dataset.trainImages.length,
-        testSize: dataset.testImages.length,
-        numFeatures: dataset.trainImages[0]?.features.length || 784,
-        numClasses: dataset.numClasses
+        trainSize: trainData.value.length,
+        testSize: testData.value.length,
+        numFeatures: trainInfo.feature_shape[1], // Should be 784 for MNIST
+        numClasses: trainInfo.num_classes
       }
       
-      console.log('Dataset loaded successfully:', datasetInfo.value)
+      // Update class information
+      allClasses.value = Array.from({length: trainInfo.num_classes}, (_, i) => i)
+      activeClasses.value = [...allClasses.value]
       
-      // Initialize classifier if not already done
+      console.log('Real dataset loaded successfully:', datasetInfo.value)
+      console.log('Available classes:', trainInfo.class_names)
+      
       if (neurons.value.length === 0) {
-        initializeClassifier()
+        await initializeClassifier()
       }
       
     } catch (error) {
       console.error('Failed to load dataset:', error)
-      throw error
+      
+      // Fallback to synthetic data if API fails
+      console.warn('Falling back to synthetic dataset generation...')
+      try {
+        const dataset = await mnistLoader.loadMNIST(maxSamples)
+        
+        trainData.value = dataset.trainImages
+        testData.value = dataset.testImages
+        
+        datasetInfo.value = {
+          trainSize: dataset.trainImages.length,
+          testSize: dataset.testImages.length,
+          numFeatures: dataset.trainImages[0]?.features.length || 784,
+          numClasses: dataset.numClasses
+        }
+        
+        console.log('Fallback synthetic dataset loaded:', datasetInfo.value)
+        
+        if (neurons.value.length === 0) {
+          await initializeClassifier()
+        }
+      } catch (fallbackError) {
+        console.error('Even fallback dataset loading failed:', fallbackError)
+        throw fallbackError
+      }
     }
   }
-  
-  /**
-   * Toggle class visibility
-   */
+
+  async function loadAvailableDatasets(): Promise<void> {
+    try {
+      if (apiConnected.value) {
+        availableDatasets.value = await mnistApiService.getAvailableDatasets()
+        console.log('Available datasets:', availableDatasets.value)
+      } else {
+        // Provide default info when API is not available
+        availableDatasets.value = {
+          'synthetic_mnist': {
+            classes: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            class_names: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+            description: 'Synthetic MNIST-like dataset (local generation)'
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load available datasets:', error)
+      availableDatasets.value = {}
+    }
+  }
+
+  function setSelectedDataset(datasetName: string): void {
+    selectedDataset.value = datasetName
+    console.log(`Selected dataset changed to: ${datasetName}`)
+  }
+
+  async function getTrainingBatch(batchSize: number = 32): Promise<NDDataPoint[]> {
+    try {
+      if (apiConnected.value && trainData.value.length === 0) {
+        // Get a fresh batch directly from API
+        const batch = await mnistApiService.getTrainingBatch(
+          selectedDataset.value,
+          'train',
+          batchSize,
+          activeClasses.value.length < allClasses.value.length ? activeClasses.value : undefined
+        )
+        
+        return batch.features.map((features, i) => ({
+          features,
+          label: batch.labels[i],
+          originalLabel: batch.labels[i]
+        }))
+      } else {
+        // Use local data
+        const availableData = filteredTrainData.value
+        if (availableData.length === 0) return []
+        
+        const batchData: NDDataPoint[] = []
+        for (let i = 0; i < batchSize && i < availableData.length; i++) {
+          const randomIndex = Math.floor(Math.random() * availableData.length)
+          batchData.push(availableData[randomIndex])
+        }
+        return batchData
+      }
+    } catch (error) {
+      console.warn('Failed to get training batch from API, using local data:', error)
+      
+      // Fallback to local data
+      const availableData = filteredTrainData.value
+      if (availableData.length === 0) return []
+      
+      const batchData: NDDataPoint[] = []
+      for (let i = 0; i < batchSize && i < availableData.length; i++) {
+        const randomIndex = Math.floor(Math.random() * availableData.length)
+        batchData.push(availableData[randomIndex])
+      }
+      return batchData
+    }
+  }
+
   function toggleClass(classLabel: number) {
     if (activeClasses.value.includes(classLabel)) {
       activeClasses.value = activeClasses.value.filter(c => c !== classLabel)
@@ -241,79 +449,59 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
     }
   }
   
-  /**
-   * Get prediction for a single input
-   */
-  function getPrediction(features: number[]) {
+  async function getPrediction(features: number[]): Promise<number | null> {
+    if (useApiCompute.value && apiConnected.value) {
+      try {
+        const { weights, biases } = mnistApiService.extractNetworkParams(neurons.value)
+        const result = await mnistApiService.forwardPass(
+          weights, biases, features, similarityMetric.value, activationFunction.value
+        )
+        return result.predicted_class
+      } catch (error) {
+        console.warn('API prediction failed, falling back to local:', error)
+      }
+    }
+    
     const prediction = getNDPrediction(features, neurons.value, similarityMetric.value, activationFunction.value)
     return prediction.winningNeuron?.id ?? null
   }
 
-  /**
-   * Get prediction using multi-threaded computation (for heavy workloads)
-   */
-  async function getPredictionAsync(features: number[]): Promise<number | null> {
-    if (neurons.value.length === 0) return null
-    
-    try {
-      const allNeuronWeights = neurons.value.map(n => n.weights)
-      
-      // Use multi-threaded manager for similarity computation
-      const scores = await multiThreadManager.computeSimilarity(
-        features,
-        allNeuronWeights,
-        similarityMetric.value,
-        gpuAvailable.value && useGpuAcceleration.value
-      )
-      
-      const predictions = applyNDActivationFunction(scores, activationFunction.value)
-      return predictions.indexOf(Math.max(...predictions))
-      
-    } catch (error) {
-      console.warn('Async prediction failed, falling back to sync:', error)
-      return getPrediction(features)
-    }
-  }
-  
-  /**
-   * Compute loss for current data
-   */
-  function computeLoss(data: NDDataPoint[]): number {
-    return computeNDCategoricalCrossEntropyLoss(data, neurons.value, similarityMetric.value, activationFunction.value)
+  function getPredictionSync(features: number[]): number | null {
+    const prediction = getNDPrediction(features, neurons.value, similarityMetric.value, activationFunction.value)
+    return prediction.winningNeuron?.id ?? null
   }
 
-  /**
-   * Compute loss using worker (async version)
-   */
-  async function computeLossAsync(data: NDDataPoint[]): Promise<number> {
-    if (workerAvailable.value && useWorkers.value) {
+  async function updateAccuracyMetrics(): Promise<void> {
+    if (useApiCompute.value && apiConnected.value) {
       try {
-        return await mnistWorkerManager.computeLoss(data, neurons.value, similarityMetric.value, activationFunction.value)
+        const { weights, biases } = mnistApiService.extractNetworkParams(neurons.value)
+        
+        if (filteredTrainData.value.length > 0) {
+          const { features: trainFeatures, labels: trainLabels } = mnistApiService.extractBatchData(filteredTrainData.value)
+          const trainAcc = await mnistApiService.computeAccuracy(
+            weights, biases, trainFeatures, trainLabels, similarityMetric.value, activationFunction.value
+          )
+          computedTrainAccuracy.value = trainAcc * 100
+        }
+        
+        if (filteredTestData.value.length > 0) {
+          const { features: testFeatures, labels: testLabels } = mnistApiService.extractBatchData(filteredTestData.value)
+          const testAcc = await mnistApiService.computeAccuracy(
+            weights, biases, testFeatures, testLabels, similarityMetric.value, activationFunction.value
+          )
+          computedTestAccuracy.value = testAcc * 100
+        }
       } catch (error) {
-        console.warn('Worker loss computation failed, falling back to main thread:', error)
+        console.warn('Failed to update accuracy metrics via API:', error)
       }
     }
-    
-    // Fallback to main thread computation
-    return computeLoss(data)
   }
-  
-  /**
-   * Calculate gradient for a specific neuron
-   */
-  function calculateGradient(neuron: NDNeuron, data: NDDataPoint[]): { weights: number[]; bias: number } {
-    return calculateNDNeuronGradient(neuron, data, neurons.value, similarityMetric.value, activationFunction.value)
-  }
-  
-  /**
-   * Run gradient descent training
-   */
+
   async function runTraining(): Promise<void> {
-    console.log('🎯 Store runTraining called')
-    console.log('Neurons:', neurons.value.length)
-    console.log('Filtered train data:', filteredTrainData.value.length)
+    console.log('🎯 Starting training')
+    console.log(`🔧 Training mode: ${useApiCompute.value && apiConnected.value ? 'API (JAX)' : 'Local (JS)'}`)
     
-    if (neurons.value.length === 0 || filteredTrainData.value.length === 0) {
+    if (neurons.value.length === 0 || (filteredTrainData.value.length === 0 && (!apiConnected.value || !useApiCompute.value))) {
       console.warn('Cannot start training: no neurons or training data')
       return
     }
@@ -321,7 +509,6 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
     const config = optimizationHistory.value.config
     console.log('Starting training with config:', config)
     
-    // Initialize optimization
     optimizationHistory.value = {
       steps: [],
       isRunning: true,
@@ -329,58 +516,148 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
       totalSteps: config.epochs,
       config
     }
+
+    try {
+      // Determine training strategy based on API availability
+      if (useApiCompute.value && apiConnected.value) {
+        console.log('🚀 Using API-based training with dynamic batch loading')
+        await runApiTraining(config)
+      } else {
+        console.log('💻 Using local training with pre-loaded batches')
+        await runLocalTraining(config)
+      }
+      
+      // Final accuracy update
+      await updateAccuracyMetrics()
+      
+    } catch (error) {
+      console.error('❌ Training failed:', error)
+      throw error
+    } finally {
+      optimizationHistory.value.isRunning = false
+      currentBatch.value = []
+      console.log('Training completed')
+    }
+  }
+
+  async function runApiTraining(config: any): Promise<void> {
+    console.log('🔧 API Training Mode - Dynamic batch loading')
     
-    // Create training batches
+    for (let epoch = 1; epoch <= config.epochs && optimizationHistory.value.isRunning; epoch++) {
+      console.log(`📊 API Epoch ${epoch}/${config.epochs}`)
+      optimizationHistory.value.currentStep = epoch
+      
+      // Calculate number of batches needed for this epoch
+      const totalSamples = Math.max(filteredTrainData.value.length, 1000) // Minimum 1000 samples
+      const batchesPerEpoch = Math.ceil(totalSamples / config.batchSize)
+      
+      console.log(`Processing ${batchesPerEpoch} batches for epoch ${epoch}`)
+      
+      for (let batchIdx = 0; batchIdx < batchesPerEpoch && optimizationHistory.value.isRunning; batchIdx++) {
+        try {
+          // Get fresh batch from API or local data
+          const batchData = await getTrainingBatch(config.batchSize)
+          
+          if (batchData.length === 0) {
+            console.warn('Empty batch received, skipping...')
+            continue
+          }
+          
+          currentBatch.value = batchData
+          
+          console.log(`🔄 Processing batch ${batchIdx + 1}/${batchesPerEpoch} (${batchData.length} samples)`)
+          
+          // Train on this batch using API
+          await updateNeuronsWithBatch(batchData, config.learningRate)
+          
+          // Compute current metrics for this batch
+          const currentLoss = await computeLoss(batchData)
+          const currentAccuracy = calculateNDAccuracy(batchData, neurons.value, similarityMetric.value, activationFunction.value) * 100
+          
+          // Update optimization history
+          optimizationHistory.value.steps.push({
+            step: optimizationHistory.value.steps.length,
+            loss: currentLoss,
+            accuracy: currentAccuracy,
+            trainAccuracy: currentAccuracy,
+            testAccuracy: 0,
+            timestamp: Date.now(),
+            neurons: neurons.value.map(n => ({
+              id: n.id,
+              weights: [...n.weights],
+              bias: n.bias
+            })),
+            learningMetrics: {
+              convergence: Math.abs(currentLoss - (optimizationHistory.value.steps[optimizationHistory.value.steps.length - 1]?.loss || currentLoss)),
+              weightDiversity: calculateWeightDiversity(),
+              activationSparsity: 0
+            }
+          })
+          
+          // Force reactivity update
+          neurons.value = neurons.value.map(n => ({
+            ...n,
+            weights: [...n.weights]
+          }))
+          visualizationUpdateTrigger.value++
+          
+          console.log(`✅ API Batch processed - Loss: ${currentLoss.toFixed(4)}, Accuracy: ${currentAccuracy.toFixed(1)}%`)
+          
+          // Add batch delay for visualization
+          const batchDelay = Math.max(10, 100 / config.speed)
+          await new Promise(resolve => setTimeout(resolve, batchDelay))
+          
+        } catch (error) {
+          console.error(`❌ Failed to process batch ${batchIdx + 1}:`, error)
+          // Continue with next batch instead of failing completely
+        }
+      }
+      
+      // Epoch delay
+      const epochDelay = Math.max(50, 500 / config.speed)
+      await new Promise(resolve => setTimeout(resolve, epochDelay))
+    }
+  }
+
+  async function runLocalTraining(config: any): Promise<void> {
+    console.log('💻 Local Training Mode - Pre-loaded batches')
+    
+    // Create all batches upfront for local training
     const batches = createTrainingBatches(filteredTrainData.value, config.batchSize)
     console.log(`Created ${batches.length} training batches`)
     
-    // Record initial state
-    await recordOptimizationStep(0)
-    
-    // Training loop
-    console.log('🔄 Starting training loop with', config.epochs, 'epochs')
     for (let epoch = 1; epoch <= config.epochs && optimizationHistory.value.isRunning; epoch++) {
-      console.log(`📊 Epoch ${epoch}/${config.epochs}`)
+      console.log(`📊 Local Epoch ${epoch}/${config.epochs}`)
       optimizationHistory.value.currentStep = epoch
       
-      // Shuffle batches for each epoch
       const shuffledBatches = [...batches].sort(() => Math.random() - 0.5)
       
-      // Process each batch
       for (const batch of shuffledBatches) {
-        if (!optimizationHistory.value.isRunning) {
-          console.log('⏹️ Training stopped by user')
-          break
-        }
+        if (!optimizationHistory.value.isRunning) break
         
         const batchData: NDDataPoint[] = batch.features.map((features, i) => ({
           features,
           label: batch.labels[i]
         }))
         
-        // Update current batch for visualization
         currentBatch.value = batchData
         
         try {
-          // Calculate gradients and update neurons
           await updateNeuronsWithBatch(batchData, config.learningRate)
         } catch (error) {
           console.error('❌ Batch update failed:', error)
           throw error
         }
         
-        // Calculate real-time metrics after each batch
-        const currentLoss = computeLoss(batchData)
+        const currentLoss = computeLossSync(batchData)
         const currentAccuracy = calculateNDAccuracy(batchData, neurons.value, similarityMetric.value, activationFunction.value) * 100
         
-        // Update optimization history with batch-level metrics
-        const currentStep = optimizationHistory.value.steps.length
         optimizationHistory.value.steps.push({
-          step: currentStep,
+          step: optimizationHistory.value.steps.length,
           loss: currentLoss,
           accuracy: currentAccuracy,
           trainAccuracy: currentAccuracy,
-          testAccuracy: 0, // We'll calculate this less frequently
+          testAccuracy: 0,
           timestamp: Date.now(),
           neurons: neurons.value.map(n => ({
             id: n.id,
@@ -388,533 +665,148 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
             bias: n.bias
           })),
           learningMetrics: {
-            convergence: 0,
-            weightDiversity: 0,
+            convergence: Math.abs(currentLoss - (optimizationHistory.value.steps[optimizationHistory.value.steps.length - 1]?.loss || currentLoss)),
+            weightDiversity: calculateWeightDiversity(),
             activationSparsity: 0
           }
         })
         
-        // Force reactivity update after each batch for real-time visualization
         neurons.value = neurons.value.map(n => ({
           ...n,
-          weights: [...n.weights] // Ensure weights array is also fresh
+          weights: [...n.weights]
         }))
-        visualizationUpdateTrigger.value++ // Trigger visualization updates
+        visualizationUpdateTrigger.value++
         
-        console.log(`✅ Batch processed - Loss: ${currentLoss.toFixed(4)}, Accuracy: ${currentAccuracy.toFixed(1)}%`)
+        console.log(`✅ Local Batch processed - Loss: ${currentLoss.toFixed(4)}, Accuracy: ${currentAccuracy.toFixed(1)}%`)
         
-        // Small delay between batches for visualization (based on speed)
         const batchDelay = Math.max(10, 100 / config.speed)
         await new Promise(resolve => setTimeout(resolve, batchDelay))
       }
       
-      // Record optimization step
-      await recordOptimizationStep(epoch)
-      
-      // Force reactivity update
-      neurons.value = neurons.value.map(n => ({
-        ...n,
-        weights: [...n.weights] // Ensure weights array is also fresh
-      }))
-      visualizationUpdateTrigger.value++ // Trigger visualization updates
-      console.log('📈 Optimization step recorded, reactivity triggered')
-      
-      // Wait for animation based on speed setting
       const delay = Math.max(50, 500 / config.speed)
       await new Promise(resolve => setTimeout(resolve, delay))
     }
-    
-    // Finish training
-    optimizationHistory.value.isRunning = false
-    currentBatch.value = []
-    console.log('Training completed')
-  }
-  
-  /**
-   * Update neurons using batch gradient descent (always off-main-thread)
-   */
-  async function updateNeuronsWithBatch(batchData: NDDataPoint[], learningRate: number): Promise<void> {
-    console.log('🎯 updateNeuronsWithBatch called with', batchData.length, 'samples')
-    
-    // For now, use CPU computation for reliability
-    // TODO: Fix multi-threading issues
-    console.log('🔄 Using CPU computation for reliability...')
-    await updateNeuronsWithBatchCPU(batchData, learningRate)
-    console.log('✅ CPU computation successful')
-    
-    // Original multi-threaded approach (temporarily disabled for debugging)
-    // try {
-    //   // Always use multi-threaded manager to keep UI responsive
-    //   console.log('🔄 Trying multi-threaded computation...')
-    //   await updateNeuronsWithBatchMultiThread(batchData, learningRate)
-    //   console.log('✅ Multi-threaded computation successful')
-    // } catch (error) {
-    //   console.warn('❌ Multi-threaded computation failed, falling back to workers:', error)
-    //   
-    //   // Fallback to original worker system
-    //   if (workerAvailable.value && useWorkers.value) {
-    //     console.log('🔄 Falling back to workers...')
-    //     await updateNeuronsWithBatchWorker(batchData, learningRate)
-    //     console.log('✅ Worker computation successful')
-    //   } else if (gpuAvailable.value && useGpuAcceleration.value && batchData.length > 10) {
-    //     console.log('🔄 Falling back to GPU...')
-    //     await updateNeuronsWithBatchGPU(batchData, learningRate)
-    //     console.log('✅ GPU computation successful')
-    //   } else {
-    //     console.log('🔄 Falling back to CPU...')
-    //     await updateNeuronsWithBatchCPU(batchData, learningRate)
-    //     console.log('✅ CPU computation successful')
-    //   }
-    // }
   }
 
-  /**
-   * Multi-threaded batch gradient descent (preferred method - keeps UI responsive)
-   */
-  async function updateNeuronsWithBatchMultiThread(batchData: NDDataPoint[], learningRate: number): Promise<void> {
-    try {
-      console.log('🔧 Starting multi-threaded batch update...')
-      
-      // Convert features to the format expected by workers
-      const batchFeatures = batchData.map(dp => dp.features)
-      const allNeuronWeights = neurons.value.map(n => n.weights)
-      
-      console.log('📊 Data prepared:', {
-        batchFeatures: batchFeatures.length,
-        neurons: allNeuronWeights.length,
-        metric: similarityMetric.value,
-        useGpu: gpuAvailable.value && useGpuAcceleration.value
-      })
-      
-      // Use multi-threaded manager for similarity computation (this runs off-main-thread)
-      console.log('🚀 Calling multiThreadManager.computeBatchSimilarity...')
-      
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Multi-thread computation timeout')), 5000)
-      )
-      
-      const similarities = await Promise.race([
-        multiThreadManager.computeBatchSimilarity(
-          batchFeatures,
-          allNeuronWeights,
-          similarityMetric.value,
-          gpuAvailable.value && useGpuAcceleration.value
-        ),
-        timeoutPromise
-      ]) as number[][]
-      
-      console.log('✅ Similarity computation completed, got', similarities.length, 'results')
-      
-      // Process gradients for each neuron (this runs on main thread but is fast)
-      const promises = neurons.value.map(async (neuron, neuronIndex) => {
-        const weightGradients = new Array(neuron.weights.length).fill(0)
-        let biasGradient = 0
-        
-        for (let i = 0; i < batchData.length; i++) {
-          const dataPoint = batchData[i]
-          const neuronSimilarities = similarities[i]
-          
-          // Apply activation function
-          const activatedScores = applyNDActivationFunction(neuronSimilarities, activationFunction.value)
-          const prediction = activatedScores[neuronIndex]
-          const target = dataPoint.label === neuronIndex ? 1 : 0
-          const error = prediction - target
-          
-          // Accumulate gradients
-          for (let j = 0; j < neuron.weights.length; j++) {
-            weightGradients[j] += error * dataPoint.features[j]
-          }
-          biasGradient += error
-        }
-        
-        // Apply gradients with regularization
-        const batchSize = batchData.length
-        const l1Reg = optimizationHistory.value.config.regularization?.l1 || 0
-        const l2Reg = optimizationHistory.value.config.regularization?.l2 || 0
-        
-        for (let j = 0; j < neuron.weights.length; j++) {
-          const gradient = weightGradients[j] / batchSize
-          let newWeight = neuron.weights[j] - learningRate * gradient
-          
-          // Apply L1 regularization (sparsity)
-          if (l1Reg > 0) {
-            newWeight -= learningRate * l1Reg * Math.sign(neuron.weights[j])
-          }
-          
-          // Apply L2 regularization (weight decay)
-          if (l2Reg > 0) {
-            newWeight -= learningRate * l2Reg * neuron.weights[j]
-          }
-          
-          neuron.weights[j] = clamp(newWeight, -10, 10)
-        }
-        
-        neuron.bias -= learningRate * (biasGradient / batchSize)
-      })
-      
-      await Promise.all(promises)
-      console.log(`✅ Multi-threaded batch processing completed (${batchData.length} samples)`)
-      
-    } catch (error) {
-      console.error('Multi-threaded computation failed:', error)
-      throw error
-    }
-  }
-
-  /**
-   * CPU-based batch gradient descent (original implementation)
-   */
-  async function updateNeuronsWithBatchCPU(batchData: NDDataPoint[], learningRate: number): Promise<void> {
-    console.log('🖥️ Starting CPU batch processing...')
+  function calculateWeightDiversity(): number {
+    if (neurons.value.length === 0) return 0
     
-    // Calculate gradients for all neurons
-    console.log('🧮 Calculating gradients for', neurons.value.length, 'neurons')
-    const gradients = neurons.value.map(neuron => 
-      calculateGradient(neuron, batchData)
+    // Calculate diversity as variance in weight magnitudes across neurons
+    const weightNorms = neurons.value.map(neuron => 
+      Math.sqrt(neuron.weights.reduce((sum, w) => sum + w * w, 0))
     )
-    console.log('✅ Gradients calculated')
     
-    // Apply gradients to update neuron parameters
-    console.log('⚙️ Applying gradients to neurons...')
-    neurons.value.forEach((neuron, i) => {
-      const gradient = gradients[i]
-      const l1Reg = optimizationHistory.value.config.regularization?.l1 || 0
-      const l2Reg = optimizationHistory.value.config.regularization?.l2 || 0
-      
-      // Update weights with regularization
-      neuron.weights = neuron.weights.map((weight, j) => {
-        let newWeight = weight - learningRate * gradient.weights[j]
-        
-        // Apply L1 regularization (sparsity)
-        if (l1Reg > 0) {
-          newWeight -= learningRate * l1Reg * Math.sign(weight)
-        }
-        
-        // Apply L2 regularization (weight decay)
-        if (l2Reg > 0) {
-          newWeight -= learningRate * l2Reg * weight
-        }
-        
-        return newWeight
-      })
-      
-      // Update bias
-      neuron.bias -= learningRate * gradient.bias
-    })
-    console.log('✅ CPU batch processing completed')
+    const mean = weightNorms.reduce((sum, norm) => sum + norm, 0) / weightNorms.length
+    const variance = weightNorms.reduce((sum, norm) => sum + (norm - mean) ** 2, 0) / weightNorms.length
+    
+    return Math.sqrt(variance)
   }
 
-  /**
-   * Worker-based batch gradient descent (keeps UI responsive)
-   */
-  async function updateNeuronsWithBatchWorker(batchData: NDDataPoint[], learningRate: number): Promise<void> {
-    try {
-      // Compute gradients using Web Worker
-      const result = await mnistWorkerManager.computeBatchGradients(
-        neurons.value,
-        batchData,
-        similarityMetric.value,
-        activationFunction.value,
-        useGpuAcceleration.value
-      )
-      
-      console.log(`[Worker] Gradients computed using ${result.usedGpu ? 'GPU' : 'CPU'}`)
-      
-      // Apply gradients to update neuron parameters
-      result.gradients.forEach((gradient) => {
-        const neuron = neurons.value.find(n => n.id === gradient.neuronId)
-        if (!neuron) return
+  async function updateNeuronsWithBatch(batchData: NDDataPoint[], learningRate: number): Promise<void> {
+    if (useApiCompute.value && apiConnected.value) {
+      try {
+        const { weights, biases } = mnistApiService.extractNetworkParams(neurons.value)
+        const { features, labels } = mnistApiService.extractBatchData(batchData)
         
-        const l1Reg = optimizationHistory.value.config.regularization?.l1 || 0
-        const l2Reg = optimizationHistory.value.config.regularization?.l2 || 0
-        
-        // Update weights with regularization
-        neuron.weights = neuron.weights.map((weight, j) => {
-          let newWeight = weight - learningRate * gradient.weights[j]
-          
-          // Apply L1 regularization (sparsity)
-          if (l1Reg > 0) {
-            newWeight -= learningRate * l1Reg * Math.sign(weight)
-          }
-          
-          // Apply L2 regularization (weight decay)
-          if (l2Reg > 0) {
-            newWeight -= learningRate * l2Reg * weight
-          }
-          
-          return newWeight
+        console.log('🔧 API Training Step - Input:', {
+          weightsShape: weights.map(w => w.length),
+          biasesLength: biases.length,
+          featuresShape: features.map(f => f.length),
+          labelsLength: labels.length
         })
         
-        // Update bias
-        neuron.bias -= learningRate * gradient.bias
+        const result = await mnistApiService.trainStep(
+          weights, biases, features, labels, similarityMetric.value, activationFunction.value, learningRate
+        )
+        
+        console.log('🔧 API Training Step - Result:', {
+          newWeightsShape: result.new_weights.map(w => w.length),
+          newBiasesLength: result.new_biases.length,
+          resultKeys: Object.keys(result)
+        })
+        
+        // Update neurons with new weights and biases
+        result.new_weights.forEach((newWeights, i) => {
+          if (neurons.value[i]) {
+            console.log(`🔧 Updating neuron ${i}: ${neurons.value[i].weights.length} → ${newWeights.length} weights`)
+            neurons.value[i].weights = newWeights
+            neurons.value[i].bias = result.new_biases[i]
+          }
+        })
+        
+        // Force reactivity by creating completely new neuron objects with new weight arrays
+        neurons.value = neurons.value.map((n, i) => ({
+          ...n,
+          weights: [...result.new_weights[i]], // Use the new weights directly
+          bias: result.new_biases[i]
+        }))
+        
+        // Trigger visualization update
+        visualizationUpdateTrigger.value++
+        
+        // Emit visualization event for immediate canvas updates
+        setTimeout(() => {
+          visualizationEvents.emit()
+        }, 0)
+        
+        return
+      } catch (error) {
+        console.warn('API training step failed, falling back to local:', error)
+      }
+    }
+    
+    // Local computation fallback
+    const gradients = neurons.value.map(neuron => 
+      calculateNDNeuronGradient(neuron, batchData, neurons.value, similarityMetric.value, activationFunction.value)
+    )
+    
+    neurons.value.forEach((neuron, i) => {
+      const gradient = gradients[i]
+      
+      neuron.weights = neuron.weights.map((weight, j) => {
+        return weight - learningRate * gradient.weights[j]
       })
       
-    } catch (error) {
-      console.warn('Worker gradient computation failed, falling back to CPU:', error)
-      await updateNeuronsWithBatchCPU(batchData, learningRate)
-    }
+      neuron.bias -= learningRate * gradient.bias
+    })
+    
+    // Force reactivity by creating completely new neuron objects with updated weights
+    neurons.value = neurons.value.map((n, i) => ({
+      ...n,
+      weights: [...n.weights], // Ensure new array reference
+      bias: n.bias
+    }))
+    
+    // Trigger visualization update
+    visualizationUpdateTrigger.value++
+    
+    // Emit visualization event for immediate canvas updates
+    setTimeout(() => {
+      visualizationEvents.emit()
+    }, 0)
   }
 
-  /**
-   * GPU-accelerated batch gradient descent using GPU.js
-   */
-  async function updateNeuronsWithBatchGPU(batchData: NDDataPoint[], learningRate: number): Promise<void> {
-    try {
-      if (!gpuAcceleration.checkAvailability()) {
-        await updateNeuronsWithBatchCPU(batchData, learningRate)
-        return
-      }
-
-      // Prepare data for GPU processing
-      const weights = neurons.value.map(n => n.weights)
-      const batchFeatures = batchData.map(d => d.features)
-      const batchLabels = batchData.map(d => d.label)
-      
-      // Ensure GPU acceleration is initialized and get kernels
-      gpuAcceleration.ensureInitialized()
-      const kernels = gpuAcceleration.getKernels()
-      const similarityKernel = kernels.similarity[similarityMetric.value]
-      
-      if (similarityKernel) {
-        console.log(`🚀 Processing batch of ${batchData.length} samples with GPU acceleration`)
-        
-        // Try to use batch processing for better GPU performance
-        const batchKernel = gpuAcceleration.createBatchSimilarityKernel(similarityMetric.value, batchData.length)
-        
-        if (batchKernel && batchData.length > 1) {
-          // Process entire batch at once using GPU
-          try {
-            const batchResults = batchKernel(batchFeatures, weights, neurons.value.length, batchFeatures[0].length)
-            
-            // Process results for each sample in the batch
-            batchData.forEach((point, batchIndex) => {
-              // Extract similarity scores for this sample
-              const scores = Array.from(batchResults[batchIndex] || []) as number[]
-              
-              // Apply activation function
-              const activations = applyNDActivationFunction(scores, activationFunction.value)
-              
-              // Compute gradients and update weights
-              neurons.value.forEach((neuron, neuronIndex) => {
-                const gradient = calculateNDNeuronGradient(neuron, [point], neurons.value, similarityMetric.value, activationFunction.value)
-                const l1Reg = optimizationHistory.value.config.regularization?.l1 || 0
-                const l2Reg = optimizationHistory.value.config.regularization?.l2 || 0
-                
-                // Update weights with regularization
-                neuron.weights = neuron.weights.map((weight, j) => {
-                  let newWeight = weight - learningRate * gradient.weights[j]
-                  
-                  // Apply L1 regularization (sparsity)
-                  if (l1Reg > 0) {
-                    newWeight -= learningRate * l1Reg * Math.sign(weight)
-                  }
-                  
-                  // Apply L2 regularization (weight decay)
-                  if (l2Reg > 0) {
-                    newWeight -= learningRate * l2Reg * weight
-                  }
-                  
-                  return clamp(newWeight, -10, 10) // Prevent exploding gradients
-                })
-                
-                // Update bias
-                neuron.bias -= learningRate * gradient.bias
-              })
-            })
-            
-            console.log('✅ GPU batch processing completed successfully')
-          } catch (batchError) {
-            console.warn('Batch kernel failed, falling back to individual processing:', batchError)
-            // Fall back to individual processing
-            throw batchError
-          }
-        } else {
-          // Process each data point individually using GPU kernels
-          for (const [batchIndex, point] of batchData.entries()) {
-            // Configure kernel for correct output dimensions
-            const configuredKernel = similarityKernel.setOutput([neurons.value.length])
-            
-            // Compute similarity scores using GPU
-            const scores = configuredKernel(point.features, weights, neurons.value.length, point.features.length)
-            
-            // Apply activation function
-            const activations = applyNDActivationFunction(Array.from(scores), activationFunction.value)
-            
-            // Compute gradients and update weights
-            neurons.value.forEach((neuron, neuronIndex) => {
-              const gradient = calculateNDNeuronGradient(neuron, [point], neurons.value, similarityMetric.value, activationFunction.value)
-              const l1Reg = optimizationHistory.value.config.regularization?.l1 || 0
-              const l2Reg = optimizationHistory.value.config.regularization?.l2 || 0
-              
-              // Update weights with regularization
-              neuron.weights = neuron.weights.map((weight, j) => {
-                let newWeight = weight - learningRate * gradient.weights[j]
-                
-                // Apply L1 regularization (sparsity)
-                if (l1Reg > 0) {
-                  newWeight -= learningRate * l1Reg * Math.sign(weight)
-                }
-                
-                // Apply L2 regularization (weight decay)
-                if (l2Reg > 0) {
-                  newWeight -= learningRate * l2Reg * weight
-                }
-                
-                return clamp(newWeight, -10, 10) // Prevent exploding gradients
-              })
-              
-              // Update bias
-              neuron.bias -= learningRate * gradient.bias
-            })
-          }
-          
-          console.log(`✅ GPU individual processing completed for ${batchData.length} samples`)
-        }
-      } else {
-        // Fallback to CPU if kernel not available
-        await updateNeuronsWithBatchCPU(batchData, learningRate)
-      }
-      
-    } catch (error) {
-      console.warn('GPU.js computation failed, falling back to CPU:', error)
-      await updateNeuronsWithBatchCPU(batchData, learningRate)
-    }
-  }
-  
-  /**
-   * Record optimization step
-   */
-  async function recordOptimizationStep(step: number): Promise<void> {
-    const trainAcc = trainAccuracy.value
-    const testAcc = testAccuracy.value
-    const loss = await computeLossAsync(filteredTrainData.value)
-    
-    const optimizationStep: NDOptimizationStep = {
-      step,
-      loss,
-      accuracy: trainAcc,
-      trainAccuracy: trainAcc,
-      testAccuracy: testAcc,
-      timestamp: Date.now(),
-      neurons: neurons.value.map(n => ({
-        id: n.id,
-        weights: [...n.weights],
-        bias: n.bias,
-        weightNorm: Math.sqrt(n.weights.reduce((sum, w) => sum + w * w, 0)),
-        gradientNorm: 0 // Could be calculated if needed
-      })),
-      learningMetrics: {
-        convergence: step > 5 ? calculateConvergence() : 0,
-        weightDiversity: calculateWeightDiversity(),
-        activationSparsity: calculateActivationSparsity()
-      }
-    }
-    
-    optimizationHistory.value.steps.push(optimizationStep)
-  }
-  
-  /**
-   * Calculate convergence metric
-   */
-  function calculateConvergence(): number {
-    const recentSteps = optimizationHistory.value.steps.slice(-5)
-    if (recentSteps.length < 2) return 0
-    
-    const losses = recentSteps.map(s => s.loss)
-    const variance = losses.reduce((acc, loss) => acc + Math.pow(loss - losses[0], 2), 0) / losses.length
-    return Math.exp(-variance) // Higher values mean more converged
-  }
-  
-  /**
-   * Calculate weight diversity across neurons
-   */
-  function calculateWeightDiversity(): number {
-    if (neurons.value.length < 2) return 0
-    
-    let totalDiversity = 0
-    let comparisons = 0
-    
-    for (let i = 0; i < neurons.value.length; i++) {
-      for (let j = i + 1; j < neurons.value.length; j++) {
-        const neuronA = neurons.value[i]
-        const neuronB = neurons.value[j]
-        
-        // Calculate cosine similarity between weight vectors
-        const dotProduct = neuronA.weights.reduce((sum, w, k) => sum + w * neuronB.weights[k], 0)
-        const normA = Math.sqrt(neuronA.weights.reduce((sum, w) => sum + w * w, 0))
-        const normB = Math.sqrt(neuronB.weights.reduce((sum, w) => sum + w * w, 0))
-        
-        if (normA > 0 && normB > 0) {
-          const similarity = dotProduct / (normA * normB)
-          totalDiversity += (1 - Math.abs(similarity)) // Higher diversity for lower similarity
-        }
-        
-        comparisons++
-      }
-    }
-    
-    return comparisons > 0 ? totalDiversity / comparisons : 0
-  }
-  
-  /**
-   * Calculate activation sparsity
-   */
-  function calculateActivationSparsity(): number {
-    if (filteredTrainData.value.length === 0) return 0
-    
-    let totalSparsity = 0
-    const sampleSize = Math.min(100, filteredTrainData.value.length)
-    
-    for (let i = 0; i < sampleSize; i++) {
-      const point = filteredTrainData.value[i]
-      const scores = neurons.value.map(n => calculateNDSimilarityScore(n, point.features, similarityMetric.value))
-      const activations = applyNDActivationFunction(scores, activationFunction.value)
-      
-      // Calculate sparsity (percentage of near-zero activations)
-      const nearZero = activations.filter(a => Math.abs(a) < 0.01).length
-      totalSparsity += nearZero / activations.length
-    }
-    
-    return totalSparsity / sampleSize
-  }
-  
-  /**
-   * Stop training
-   */
   function stopTraining(): void {
     optimizationHistory.value.isRunning = false
     currentBatch.value = []
   }
-  
-  /**
-   * Pause training (can be resumed)
-   */
+
   function pauseTraining(): void {
     optimizationHistory.value.isRunning = false
     console.log('Training paused by user')
   }
-  
-  /**
-   * Resume training (continues from current state)
-   */
+
   function resumeTraining(): void {
     optimizationHistory.value.isRunning = true
     console.log('Training resumed by user')
   }
-  
-  /**
-   * Clear training history
-   */
+
   function clearHistory(): void {
     optimizationHistory.value.steps = []
     optimizationHistory.value.currentStep = 0
     currentBatch.value = []
   }
-  
-  /**
-   * Update optimization configuration
-   */
+
   function updateOptimizationConfig(config: {
     learningRate?: number
     epochs?: number
@@ -941,10 +833,7 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
       }
     }
   }
-  
-  /**
-   * Reset the entire classifier
-   */
+
   function reset(): void {
     neurons.value = []
     trainData.value = []
@@ -953,15 +842,12 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
     selectedNeuron.value = null
     activeClasses.value = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     
-    // Reset configuration to defaults
     similarityMetric.value = 'dotProduct'
     activationFunction.value = 'softmax'
     visualizationMode.value = 'weights'
     
-    // Clear optimization history
     clearHistory()
     
-    // Reset dataset info
     datasetInfo.value = {
       trainSize: 0,
       testSize: 0,
@@ -969,61 +855,287 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
       numClasses: 10
     }
   }
-  
-  /**
-   * Quick test with a few samples
-   */
+
   async function quickTest(numSamples: number = 50): Promise<void> {
-    const testSamples = await mnistLoader.getQuickSample(numSamples)
-    trainData.value = testSamples
-    testData.value = testSamples.slice(0, Math.floor(numSamples * 0.2))
-    
-    datasetInfo.value = {
-      trainSize: trainData.value.length,
-      testSize: testData.value.length,
-      numFeatures: 784,
-      numClasses: 10
-    }
-    
-    if (neurons.value.length === 0) {
-      initializeClassifier()
-    }
-    
-    console.log(`Quick test setup with ${numSamples} samples`)
-  }
-  
-  /**
-   * Force GPU acceleration initialization (for diagnostics)
-   */
-  function forceGpuInitialization() {
     try {
-      gpuAcceleration.ensureInitialized()
-      checkGpuSupport()
-      return { success: true, message: 'GPU acceleration initialized successfully' }
-    } catch (error: any) {
-      return { success: false, message: error?.message || 'Failed to initialize GPU acceleration' }
+      console.log(`Loading quick test with ${numSamples} samples...`)
+      await loadDataset({ train: numSamples, test: Math.floor(numSamples * 0.2) })
+      
+      if (neurons.value.length === 0) {
+        await initializeClassifier()
+      }
+      
+      console.log(`Quick test setup completed with ${numSamples} samples`)
+    } catch (error) {
+      console.error('Quick test failed:', error)
+      throw error
     }
   }
 
   /**
-   * Get detailed GPU status for diagnostics
+   * Sync weights from API to local store
    */
-  function getGpuStatus() {
-    return {
-      available: gpuAvailable.value,
-      enabled: useGpuAcceleration.value,
-      backend: gpuAcceleration.gpu?.mode || 'unknown',
-      initialized: gpuAcceleration.checkAvailability(),
-      kernelCount: (() => {
-        try {
-          const kernels = gpuAcceleration.getKernels()
-          return Object.keys(kernels.similarity || {}).length + 
-                 Object.keys(kernels.matrixOps || {}).length + 
-                 Object.keys(kernels.activations || {}).length
-        } catch {
-          return 0
+  async function syncWeightsFromApi(): Promise<void> {
+    if (!apiConnected.value || !useApiCompute.value) {
+      return
+    }
+
+    try {
+      const weightData = await mnistApiService.getModelWeights()
+      
+      // Update neurons with API weights
+      if (weightData.weights.length === neurons.value.length) {
+        for (let i = 0; i < neurons.value.length; i++) {
+          if (weightData.weights[i] && weightData.weights[i].length === neurons.value[i].weights.length) {
+            neurons.value[i].weights = [...weightData.weights[i]]
+            neurons.value[i].bias = weightData.biases[i] || neurons.value[i].bias
+          }
         }
-      })()
+        
+        lastWeightUpdate.value = Date.now()
+        visualizationUpdateTrigger.value++
+        visualizationEvents.emit()
+        
+        console.log('🔄 Weights synced from API:', {
+          neuronsUpdated: neurons.value.length,
+          timestamp: new Date(lastWeightUpdate.value).toISOString()
+        })
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to sync weights from API:', error)
+    }
+  }
+
+  /**
+   * Sync weights to API from local store
+   */
+  async function syncWeightsToApi(): Promise<void> {
+    if (!apiConnected.value || !useApiCompute.value || neurons.value.length === 0) {
+      return
+    }
+
+    try {
+      const { weights, biases } = mnistApiService.extractNetworkParams(neurons.value)
+      await mnistApiService.updateModelWeights(weights, biases)
+      
+      lastWeightUpdate.value = Date.now()
+      console.log('📤 Weights synced to API:', {
+        neuronsUpdated: neurons.value.length,
+        timestamp: new Date(lastWeightUpdate.value).toISOString()
+      })
+    } catch (error) {
+      console.warn('⚠️ Failed to sync weights to API:', error)
+    }
+  }
+
+  /**
+   * Start automatic weight synchronization
+   */
+  function startWeightSync(): void {
+    if (weightUpdateInterval.value) {
+      clearInterval(weightUpdateInterval.value)
+    }
+
+    // Sync every 2 seconds during training, every 10 seconds when idle
+    const syncInterval = isTraining.value ? 2000 : 10000
+    
+    weightUpdateInterval.value = setInterval(async () => {
+      if (apiConnected.value && autoSyncWeights.value) {
+        await syncWeightsFromApi()
+      }
+    }, syncInterval)
+
+    console.log('🔄 Started weight synchronization:', { interval: syncInterval })
+  }
+
+  /**
+   * Stop automatic weight synchronization
+   */
+  function stopWeightSync(): void {
+    if (weightUpdateInterval.value) {
+      clearInterval(weightUpdateInterval.value)
+      weightUpdateInterval.value = null
+      console.log('⏹️ Stopped weight synchronization')
+    }
+  }
+
+  /**
+   * Force immediate weight sync
+   */
+  async function forceWeightSync(): Promise<void> {
+    console.log('🔄 Force syncing weights...')
+    await syncWeightsFromApi()
+  }
+
+  /**
+   * Get real-time activations for visualization
+   */
+  async function getActivationsForVisualization(features: number[]): Promise<{
+    raw_similarities: number[]
+    activations: number[]
+    predicted_class: number
+    confidence: number
+    similarity_breakdown: Array<{
+      class_id: number
+      similarity_score: number
+      activation_value: number
+    }>
+  } | null> {
+    if (!apiConnected.value || !useApiCompute.value) {
+      return null
+    }
+
+    try {
+      return await mnistApiService.getModelActivations(
+        features,
+        undefined, // Use current API weights
+        undefined, // Use current API biases
+        similarityMetric.value,
+        activationFunction.value
+      )
+    } catch (error) {
+      console.warn('⚠️ Failed to get activations from API:', error)
+      return null
+    }
+  }
+
+  /**
+   * Get weight visualization data from API
+   */
+  async function getWeightVisualizationData(classId?: number, colormap: string = 'diverging'): Promise<any> {
+    if (!apiConnected.value || !useApiCompute.value) {
+      return null
+    }
+
+    try {
+      return await mnistApiService.getWeightVisualization(classId, colormap)
+    } catch (error) {
+      console.warn('⚠️ Failed to get weight visualization from API:', error)
+      return null
+    }
+  }
+
+  // Ternary weights actions
+  async function initializeTernaryWeights(
+    numClasses: number = 10,
+    numFeatures: number = 784,
+    sparsityRatio: number = ternarySparsityRatio.value
+  ): Promise<void> {
+    try {
+      if (apiConnected.value) {
+        console.log('🔧 Initializing ternary weights via API...')
+        const result = await mnistApiService.initializeTernaryModel(numClasses, numFeatures, sparsityRatio)
+        
+        // Convert API weights to neurons
+        neurons.value = result.weights.map((weights, id) => ({
+          id,
+          weights,
+          bias: result.biases[id],
+          color: `hsl(${(id * 36) % 360}, 70%, 50%)`
+        }))
+        
+        // Update ternary configuration
+        useTernaryWeights.value = result.model_info.use_ternary_weights
+        ternarySparsityRatio.value = result.model_info.sparsity_ratio
+        
+        console.log('✅ Ternary weights initialized:', result.weight_distribution)
+        
+        // Refresh ternary stats
+        await refreshTernaryStats()
+        
+      } else {
+        // Local ternary initialization (simplified)
+        console.log('🔧 Initializing ternary weights locally...')
+        neurons.value = Array.from({ length: numClasses }, (_, id) => ({
+          id,
+          weights: Array.from({ length: numFeatures }, () => {
+            const rand = Math.random()
+            if (rand < sparsityRatio) return 0
+            return rand > 0.5 + sparsityRatio/2 ? 1 : -1
+          }),
+          bias: (Math.random() - 0.5) * 0.1,
+          color: `hsl(${(id * 36) % 360}, 70%, 50%)`
+        }))
+        
+        console.log('✅ Local ternary weights initialized')
+      }
+      
+      visualizationEvents.emit()
+      
+    } catch (error) {
+      console.error('❌ Failed to initialize ternary weights:', error)
+      throw error
+    }
+  }
+
+  async function quantizeWeightsToTernary(): Promise<void> {
+    try {
+      if (!apiConnected.value) {
+        console.warn('⚠️ API not connected, cannot quantize weights')
+        return
+      }
+      
+      console.log('🔧 Quantizing weights to ternary...')
+      const result = await mnistApiService.quantizeWeights()
+      
+      // Update neurons with quantized weights
+      neurons.value = result.quantized_weights.map((weights, id) => ({
+        ...neurons.value[id],
+        weights
+      }))
+      
+      console.log('✅ Weights quantized to ternary:', result.quantized_distribution)
+      
+      // Refresh ternary stats
+      await refreshTernaryStats()
+      visualizationEvents.emit()
+      
+    } catch (error) {
+      console.error('❌ Failed to quantize weights:', error)
+      throw error
+    }
+  }
+
+  async function refreshTernaryStats(): Promise<void> {
+    try {
+      if (!apiConnected.value) {
+        console.warn('⚠️ API not connected, cannot get ternary stats')
+        return
+      }
+      
+      const stats = await mnistApiService.getTernaryStats()
+      ternaryStats.value = stats
+      
+      console.log('📊 Ternary stats updated:', {
+        is_ternary: stats.is_ternary,
+        unique_values: stats.unique_values,
+        distribution: stats.overall_distribution
+      })
+      
+    } catch (error) {
+      console.warn('⚠️ Failed to refresh ternary stats:', error)
+      ternaryStats.value = null
+    }
+  }
+
+  function setTernarySparsity(sparsity: number): void {
+    ternarySparsityRatio.value = Math.max(0, Math.min(1, sparsity))
+    console.log('🔧 Ternary sparsity ratio set to:', ternarySparsityRatio.value)
+  }
+
+  function toggleTernaryWeights(): void {
+    useTernaryWeights.value = !useTernaryWeights.value
+    console.log('🔧 Ternary weights', useTernaryWeights.value ? 'enabled' : 'disabled')
+    
+    // Sync with API if connected
+    if (apiConnected.value) {
+      mnistApiService.toggleTernaryWeights(useTernaryWeights.value)
+        .then(result => {
+          console.log('✅ API ternary weights updated:', result.message)
+        })
+        .catch(error => {
+          console.warn('⚠️ Failed to sync ternary weights with API:', error)
+        })
     }
   }
 
@@ -1035,17 +1147,17 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
     currentBatch,
     activeClasses,
     allClasses,
+    selectedDataset,
+    availableDatasets,
     similarityMetric,
     activationFunction,
     visualizationMode,
     selectedNeuron,
     datasetInfo,
     optimizationHistory,
-    useGpuAcceleration,
-    gpuAvailable,
-    useWorkers,
-    workerAvailable,
     visualizationUpdateTrigger,
+    useApiCompute,
+    apiConnected,
     
     // Computed
     filteredTrainData,
@@ -1055,15 +1167,24 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
     currentLoss,
     isTraining,
     
+    // API weight synchronization
+    lastWeightUpdate,
+    weightUpdateInterval,
+    autoSyncWeights,
+    
+    // Ternary weights
+    useTernaryWeights,
+    ternarySparsityRatio,
+    ternaryStats,
+    
     // Actions
+    initializeApiConnection,
     initializeClassifier,
     loadDataset,
     toggleClass,
     getPrediction,
-    getPredictionAsync,
-    computeLoss,
-    computeLossAsync,
-    calculateGradient,
+    getPredictionSync,
+    updateAccuracyMetrics,
     runTraining,
     stopTraining,
     pauseTraining,
@@ -1072,8 +1193,22 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
     updateOptimizationConfig,
     reset,
     quickTest,
-    checkGpuSupport,
-    forceGpuInitialization,
-    getGpuStatus
+    loadAvailableDatasets,
+    setSelectedDataset,
+    getTrainingBatch,
+    syncWeightsFromApi,
+    syncWeightsToApi,
+    startWeightSync,
+    stopWeightSync,
+    forceWeightSync,
+    getActivationsForVisualization,
+    getWeightVisualizationData,
+    
+    // Ternary weights actions
+    initializeTernaryWeights,
+    quantizeWeightsToTernary,
+    refreshTernaryStats,
+    setTernarySparsity,
+    toggleTernaryWeights
   }
 }) 

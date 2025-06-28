@@ -1,14 +1,31 @@
 <template>
   <div class="mnist-training-panel">
-    <!-- Training Status Header -->
+    <!-- Enhanced Training Status Header with Live Updates -->
     <div class="training-status-header">
       <div class="status-indicator">
-        <div :class="['status-dot', trainingStatusClass]"></div>
+        <div :class="['status-dot', trainingStatusClass, { pulsing: store.isTraining && !isPaused }]"></div>
         <span class="status-text">{{ trainingStatusText }}</span>
+        <div class="live-indicator" v-if="store.isTraining && !isPaused">
+          <div class="pulse-ring"></div>
+          <span class="live-text">LIVE</span>
+        </div>
       </div>
-      <div class="training-timer" v-if="trainingStartTime">
-        <BoltIcon class="timer-icon" />
-        <span>{{ formattedTrainingTime }}</span>
+      
+      <div class="training-metrics-header">
+        <div class="training-timer" v-if="trainingStartTime || pausedTime > 0">
+          <BoltIcon class="timer-icon" />
+          <span>{{ formattedTrainingTime }}</span>
+        </div>
+        
+        <div class="connection-status" :class="{ connected: store.apiConnected, local: !store.apiConnected }">
+          <div class="connection-dot"></div>
+          <span>{{ store.apiConnected ? 'JAX API' : 'Local CPU' }}</span>
+        </div>
+        
+        <div class="training-speed" v-if="store.isTraining">
+          <span class="speed-label">Speed:</span>
+          <span class="speed-value">{{ getBatchesPerSecond() }}</span>
+        </div>
       </div>
     </div>
 
@@ -105,41 +122,7 @@
           </div>
         </div>
         
-                 <div class="control-group gpu-control" v-if="store.gpuAvailable">
-           <label class="control-label gpu-label">
-             <CpuChipIcon class="gpu-icon" />
-             GPU Acceleration
-           </label>
-           <div class="gpu-toggle">
-             <input 
-               v-model="store.useGpuAcceleration"
-               type="checkbox"
-               class="gpu-checkbox"
-               :disabled="store.isTraining"
-             />
-             <span class="gpu-status" :class="{ active: store.useGpuAcceleration }">
-               {{ store.useGpuAcceleration ? 'Enabled' : 'Disabled' }}
-             </span>
-           </div>
-         </div>
-         
-         <div class="control-group worker-control" v-if="store.workerAvailable">
-           <label class="control-label worker-label">
-             <BoltIcon class="worker-icon" />
-             Web Workers
-           </label>
-           <div class="worker-toggle">
-             <input 
-               v-model="store.useWorkers"
-               type="checkbox"
-               class="worker-checkbox"
-               :disabled="store.isTraining"
-             />
-             <span class="worker-status" :class="{ active: store.useWorkers }">
-               {{ store.useWorkers ? 'Enabled' : 'Disabled' }}
-             </span>
-           </div>
-         </div>
+                 
       </div>
       
       <!-- Enhanced Training Actions -->
@@ -292,21 +275,25 @@
         </div>
       </div>
       
-      <!-- Real-time Batch Metrics -->
+      <!-- Enhanced Real-time Batch Metrics with Live Updates -->
       <div class="batch-metrics" v-if="store.isTraining && store.optimizationHistory.steps.length > 0">
-        <h5 class="subsection-title">Live Batch Metrics</h5>
+        <h5 class="subsection-title">
+          Live Batch Metrics
+          <div class="live-pulse" v-if="store.isTraining && !isPaused"></div>
+        </h5>
         <div class="metrics-grid">
-          <div class="metric-card">
+          <div class="metric-card" :class="{ updating: recentMetricUpdate }">
             <div class="metric-header">
               <span class="metric-title">Current Batch</span>
               <span class="metric-value">{{ store.currentBatch.length }} samples</span>
             </div>
             <div class="metric-details">
               <span>Step {{ store.optimizationHistory.steps.length }}</span>
+              <div class="update-indicator" v-if="recentMetricUpdate">📊</div>
             </div>
           </div>
           
-          <div class="metric-card">
+          <div class="metric-card" :class="{ improving: lossChange < 0, degrading: lossChange > 0 }">
             <div class="metric-header">
               <span class="metric-title">Loss Trend</span>
               <span class="metric-value" :class="getLossChangeClass">
@@ -317,10 +304,20 @@
               <span v-if="lossHistory.length > 1">
                 {{ Math.abs(lossChange * 100).toFixed(2) }}% change
               </span>
+              <div class="trend-sparkline" v-if="lossHistory.length > 5">
+                <svg width="40" height="16" class="mini-sparkline">
+                  <polyline 
+                    :points="getSparklinePoints(lossHistory.slice(-10))" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    stroke-width="1"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
           
-          <div class="metric-card">
+          <div class="metric-card" :class="{ improving: getAccuracyChangeValue() > 0, degrading: getAccuracyChangeValue() < 0 }">
             <div class="metric-header">
               <span class="metric-title">Accuracy Trend</span>
               <span class="metric-value accuracy">
@@ -331,6 +328,16 @@
               <span v-if="accuracyHistory.length > 1">
                 {{ getAccuracyChange() }}
               </span>
+              <div class="trend-sparkline" v-if="accuracyHistory.length > 5">
+                <svg width="40" height="16" class="mini-sparkline">
+                  <polyline 
+                    :points="getSparklinePoints(accuracyHistory.slice(-10))" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    stroke-width="1"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
           
@@ -340,7 +347,10 @@
               <span class="metric-value">{{ getBatchesPerSecond() }}</span>
             </div>
             <div class="metric-details">
-              <span>batches/sec</span>
+              <span>{{ store.apiConnected ? 'JAX accelerated' : 'CPU compute' }}</span>
+              <div class="performance-indicator" :class="{ high: store.apiConnected, standard: !store.apiConnected }">
+                {{ store.apiConnected ? '🚀' : '💻' }}
+              </div>
             </div>
           </div>
         </div>
@@ -399,6 +409,7 @@ const trainingStartTime = ref<number | null>(null)
 const pausedTime = ref(0)
 const previousLoss = ref(0)
 const recentlyUpdatedNeurons = ref<number[]>([])
+const recentMetricUpdate = ref(false)
 let updateAnimationTimeout: NodeJS.Timeout | null = null
 
 // Real-time metrics tracking
@@ -415,7 +426,11 @@ const config = ref({
 
 // Computed properties
 const canTrain = computed(() => {
-  return store.neurons.length > 0 && store.trainData.length > 0
+  // Allow training to start if:
+  // 1. We have both neurons and data ready, OR
+  // 2. The training system can auto-initialize (always possible now)
+  // The startTraining function will handle initialization and data loading as needed
+  return !store.isTraining
 })
 
 const trainingProgress = computed(() => {
@@ -481,6 +496,16 @@ const getStartButtonText = computed(() => {
   if (store.isTraining) {
     return isPaused.value ? 'Resume Training' : 'Training...'
   }
+  
+  // Provide helpful text based on current state
+  if (store.neurons.length === 0 && store.trainData.length === 0) {
+    return 'Start Training (Auto-setup)'
+  } else if (store.neurons.length === 0) {
+    return 'Start Training (Init Network)'
+  } else if (store.trainData.length === 0) {
+    return 'Start Training (Load Data)'
+  }
+  
   return 'Start Training'
 })
 
@@ -534,62 +559,168 @@ const accuracySparklinePoints = computed(() => {
 
 async function startTraining() {
   console.log('🚀 Start Training clicked')
+  console.log('API Connected:', store.apiConnected)
+  console.log('Use API Compute:', store.useApiCompute)
   console.log('Can train?', canTrain.value)
   console.log('Neurons count:', store.neurons.length)
   console.log('Train data count:', store.trainData.length)
   console.log('Filtered train data count:', store.filteredTrainData.length)
   
-  if (!canTrain.value) {
-    // Check if we need to load data or initialize classifier
-    if (store.neurons.length === 0) {
-      console.log('No neurons found, initializing classifier...')
-      store.initializeClassifier()
-    }
+  // Check if we need to initialize the API connection first
+  if (!store.apiConnected && store.useApiCompute) {
+    console.log('Attempting to connect to API...')
+    notificationStore.addNotification({
+      message: 'Connecting to API...',
+      type: 'info'
+    })
     
-    if (store.trainData.length === 0) {
-      console.log('No training data found, loading quick test data...')
-      try {
-        await store.quickTest(500) // Load 500 samples for training
+    try {
+      await store.initializeApiConnection()
+      if (store.apiConnected) {
         notificationStore.addNotification({
-          message: 'Loaded 500 MNIST samples for training',
-          type: 'info'
+          message: 'Successfully connected to API!',
+          type: 'success'
         })
-      } catch (error) {
+      } else {
         notificationStore.addNotification({
-          message: `Failed to load training data: ${error}`,
-          type: 'error'
+          message: 'API unavailable, using local computation',
+          type: 'warning'
         })
-        return
       }
-    }
-    
-    // Check again after initialization
-    if (!canTrain.value) {
+    } catch (error) {
+      console.error('Failed to connect to API:', error)
       notificationStore.addNotification({
-        message: 'Cannot start training: missing neurons or training data',
+        message: 'API connection failed, using local computation',
         type: 'warning'
+      })
+    }
+  }
+  
+  // Always check if we need to initialize, regardless of canTrain status
+  // Initialize classifier if needed
+  if (store.neurons.length === 0) {
+    console.log('No neurons found, initializing classifier...')
+    notificationStore.addNotification({
+      message: 'Initializing neural network...',
+      type: 'info'
+    })
+    
+    try {
+      await store.initializeClassifier()
+      notificationStore.addNotification({
+        message: 'Neural network initialized!',
+        type: 'success'
+      })
+    } catch (error) {
+      notificationStore.addNotification({
+        message: `Failed to initialize classifier: ${error}`,
+        type: 'error'
       })
       return
     }
   }
   
+  // Load dataset if needed
+  if (store.trainData.length === 0) {
+    console.log('No training data found, loading dataset...')
+    notificationStore.addNotification({
+      message: 'Loading training dataset...',
+      type: 'info'
+    })
+    
+    try {
+      // Use a reasonable amount of data for training
+      await store.loadDataset({ train: 1000, test: 200 })
+      notificationStore.addNotification({
+        message: `Loaded ${store.trainData.length} training samples!`,
+        type: 'success'
+      })
+    } catch (error) {
+      notificationStore.addNotification({
+        message: `Failed to load dataset: ${error}`,
+        type: 'error'
+      })
+      return
+    }
+  }
+  
+  // Final check - ensure we have what we need for training
+  if (store.neurons.length === 0) {
+    notificationStore.addNotification({
+      message: 'Cannot start training: failed to initialize neural network',
+      type: 'error'
+    })
+    return
+  }
+  
+  if (store.trainData.length === 0 && !store.apiConnected) {
+    notificationStore.addNotification({
+      message: 'Cannot start training: no training data available and API not connected',
+      type: 'error'
+    })
+    return
+  }
+  
+  // Validate training configuration
+  if (config.value.learningRate <= 0) {
+    notificationStore.addNotification({
+      message: 'Learning rate must be greater than 0',
+      type: 'error'
+    })
+    return
+  }
+  
+  if (config.value.epochs <= 0) {
+    notificationStore.addNotification({
+      message: 'Number of epochs must be greater than 0',
+      type: 'error'
+    })
+    return
+  }
+  
   console.log('✅ Starting training with config:', config.value)
+  console.log(`🔧 Training mode: ${store.apiConnected && store.useApiCompute ? 'API (JAX)' : 'Local (JS)'}`)
   
   // Update store config
   store.updateOptimizationConfig(config.value)
   
+  // Set training start time for timer
+  trainingStartTime.value = Date.now()
+  isPaused.value = false
+  
+  // Clear previous history if requested
+  lossHistory.value = []
+  accuracyHistory.value = []
+  previousLoss.value = 0
+  
+  // Show training status
+  notificationStore.addNotification({
+    message: `Training started with ${store.apiConnected && store.useApiCompute ? 'JAX API acceleration' : 'local computation'}`,
+    type: 'success'
+  })
+  
   try {
     await store.runTraining()
+    
+    // Training completed successfully
     notificationStore.addNotification({
       message: 'Training completed successfully!',
       type: 'success'
     })
+    
+    // Update final accuracy metrics
+    await store.updateAccuracyMetrics()
+    
   } catch (error) {
     console.error('Training error:', error)
     notificationStore.addNotification({
       message: `Training failed: ${error}`,
       type: 'error'
     })
+  } finally {
+    // Reset training state
+    trainingStartTime.value = null
+    isPaused.value = false
   }
 }
 
@@ -668,6 +799,30 @@ async function quickTrain() {
   config.value.epochs = 10
   config.value.speed = 5
   await startTraining()
+}
+
+// Helper functions for live metrics
+function getSparklinePoints(data: number[]): string {
+  if (data.length < 2) return ''
+  
+  const max = Math.max(...data)
+  const min = Math.min(...data)
+  const range = max - min || 1
+  
+  return data
+    .map((value, index) => {
+      const x = (index / (data.length - 1)) * 40
+      const y = 16 - ((value - min) / range) * 16
+      return `${x},${y}`
+    })
+    .join(' ')
+}
+
+function getAccuracyChangeValue(): number {
+  if (accuracyHistory.value.length < 2) return 0
+  const current = accuracyHistory.value[accuracyHistory.value.length - 1]
+  const previous = accuracyHistory.value[accuracyHistory.value.length - 2]
+  return current - previous
 }
 
 // Neuron visualization helper functions
@@ -794,6 +949,12 @@ watch(() => store.optimizationHistory.steps, (newSteps) => {
     if (lossHistory.value.length > 1) {
       previousLoss.value = lossHistory.value[lossHistory.value.length - 2]
     }
+    
+    // Trigger metric update animation
+    recentMetricUpdate.value = true
+    setTimeout(() => {
+      recentMetricUpdate.value = false
+    }, 1000)
     
     console.log(`📊 Metrics updated - Loss: ${latestStep.loss.toFixed(4)}, Accuracy: ${latestStep.trainAccuracy.toFixed(1)}%`)
   }
@@ -997,70 +1158,6 @@ onUnmounted(() => {
   font-size: 10px;
   color: rgb(var(--text-tertiary));
   min-width: 35px;
-}
-
-/* Performance Controls */
-.gpu-control,
-.worker-control {
-  grid-column: 1 / -1;
-  border-top: 1px solid rgb(var(--border-secondary));
-  padding-top: 12px;
-  margin-top: 8px;
-}
-
-.gpu-label,
-.worker-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-}
-
-.gpu-icon {
-  width: 14px;
-  height: 14px;
-  color: rgb(var(--color-primary));
-}
-
-.worker-icon {
-  width: 14px;
-  height: 14px;
-  color: rgb(var(--color-error));
-}
-
-.gpu-toggle,
-.worker-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.gpu-checkbox,
-.worker-checkbox {
-  width: 16px;
-  height: 16px;
-  accent-color: rgb(var(--color-primary));
-}
-
-.worker-checkbox {
-  accent-color: rgb(var(--color-error));
-}
-
-.gpu-status,
-.worker-status {
-  font-size: 10px;
-  color: rgb(var(--text-tertiary));
-  transition: color 0.2s ease;
-}
-
-.gpu-status.active {
-  color: rgb(var(--color-primary));
-  font-weight: 600;
-}
-
-.worker-status.active {
-  color: rgb(var(--color-error));
-  font-weight: 600;
 }
 
 /* Enhanced Training Status Header */

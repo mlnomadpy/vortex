@@ -51,7 +51,7 @@
           data-tour="visualization-panel"
         >
           <div class="visualization-content">
-            <MNISTWeightVisualization />
+            <MNISTVisualization />
           </div>
         </FloatingPanel>
         
@@ -72,6 +72,9 @@
               :activation-function="store.activationFunction"
               @update-similarity="handleSimilarityUpdate"
               @update-activation="handleActivationUpdate"
+              @initialize-ternary="handleInitializeTernary"
+              @quantize-weights="handleQuantizeWeights"
+              @refresh-stats="handleRefreshTernaryStats"
             />
           </div>
         </FloatingPanel>
@@ -109,50 +112,18 @@
         </FloatingPanel>
         
         <FloatingPanel
-          title="Test & Inference"
-          :icon="ChartBarSquareIcon"
+          title="API Status"
+          :icon="CpuChipIcon"
           :initial-position="{ x: 880, y: 420 }"
-          :width="350"
+          :width="400"
           :height="350"
           :z-index="150"
-          @close="panels.inference = false"
-          v-if="panels.inference"
-          data-tour="inference-panel"
+          @close="panels.apiStatus = false"
+          v-if="panels.apiStatus"
+          data-tour="api-status-panel"
         >
-          <div class="inference-content">
-            <MNISTInferencePanel />
-          </div>
-        </FloatingPanel>
-
-        <FloatingPanel
-          title="GPU Acceleration"
-          :icon="CpuChipIcon"
-          :initial-position="{ x: 1240, y: 420 }"
-          :width="400"
-          :height="450"
-          :z-index="150"
-          @close="panels.gpuDiagnostics = false"
-          v-if="panels.gpuDiagnostics"
-          data-tour="gpu-diagnostics-panel"
-        >
-          <div class="gpu-diagnostics-content">
-            <MNISTGPUDiagnostics />
-          </div>
-        </FloatingPanel>
-
-        <FloatingPanel
-          title="Multi-Threading Status"
-          :icon="CpuChipIcon"
-          :initial-position="{ x: 1240, y: 10 }"
-          :width="500"
-          :height="600"
-          :z-index="150"
-          @close="panels.threading = false"
-          v-if="panels.threading"
-          data-tour="threading-panel"
-        >
-          <div class="threading-content">
-            <MNISTThreadingStatus />
+          <div class="api-status-content">
+            <MNISTApiStatus />
           </div>
         </FloatingPanel>
         
@@ -198,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import FloatingPanel from '@/components/ui/FloatingPanel.vue'
 
@@ -206,13 +177,10 @@ import FloatingPanel from '@/components/ui/FloatingPanel.vue'
 import MNISTVisualization from '@/components/mnist/MNISTVisualization.vue'
 import MNISTClassToggles from '@/components/mnist/MNISTClassToggles.vue'
 import MNISTDataPanel from '@/components/mnist/MNISTDataPanel.vue'
-import MNISTWeightVisualization from '@/components/mnist/MNISTWeightVisualization.vue'
 import MNISTNetworkConfig from '@/components/mnist/MNISTNetworkConfig.vue'
 import MNISTTrainingPanel from '@/components/mnist/MNISTTrainingPanel.vue'
 import MNISTMetricsPanel from '@/components/mnist/MNISTMetricsPanel.vue'
-import MNISTInferencePanel from '@/components/mnist/MNISTInferencePanel.vue'
-import MNISTGPUDiagnostics from '@/components/mnist/MNISTGPUDiagnostics.vue'
-import MNISTThreadingStatus from '@/components/mnist/MNISTThreadingStatus.vue'
+import MNISTApiStatus from '@/components/mnist/MNISTApiStatus.vue'
 
 // Icons
 import { 
@@ -245,9 +213,33 @@ const panels = reactive({
   networkConfig: false, // Similarity metrics and activation functions
   training: false,     // Training controls and progress
   metrics: false,      // Performance metrics and charts
-  inference: false,    // Test and prediction interface
-  gpuDiagnostics: true, // GPU acceleration diagnostics and controls
-  threading: true      // Multi-threading worker status and performance
+  apiStatus: false,    // JAX API connection status and control
+})
+
+// Initialize the app when mounted
+onMounted(async () => {
+  try {
+    console.log('🚀 Initializing MNIST Classifier...')
+    
+    // Initialize API connection and load available datasets
+    await store.initializeApiConnection()
+    
+    notificationStore.addNotification({
+      message: store.apiConnected 
+        ? 'Connected to API - Real datasets available' 
+        : 'Using local computation - Synthetic data mode',
+      type: store.apiConnected ? 'success' : 'info'
+    })
+    
+    console.log('✅ MNIST Classifier initialized successfully')
+    
+  } catch (error) {
+    console.error('❌ Failed to initialize MNIST Classifier:', error)
+    notificationStore.addNotification({
+      message: 'Failed to initialize classifier. Check console for details.',
+      type: 'error'
+    })
+  }
 })
 
 // Panel management functions
@@ -267,9 +259,7 @@ function getPanelName(key: string): string {
     networkConfig: 'Network',
     training: 'Training',
     metrics: 'Metrics',
-    inference: 'Inference',
-    gpuDiagnostics: 'GPU',
-    threading: 'Threading'
+    apiStatus: 'API Status'
   }
   return names[key] || key
 }
@@ -281,9 +271,7 @@ function getPanelIcon(key: string) {
     networkConfig: CogIcon,
     training: RocketLaunchIcon,
     metrics: ChartBarIcon,
-    inference: ChartBarSquareIcon,
-    gpuDiagnostics: CpuChipIcon,
-    threading: CpuChipIcon
+    apiStatus: CpuChipIcon
   }
   return icons[key] || CpuChipIcon
 }
@@ -345,6 +333,7 @@ async function quickDemo() {
     panels.visualization = true
     panels.training = true
     panels.metrics = true
+    panels.apiStatus = true
     
     notificationStore.addNotification({
       message: 'Quick demo ready! You can now start training.',
@@ -373,6 +362,57 @@ function handleActivationUpdate(value: string) {
     message: `Activation function changed to ${value}!`,
     type: 'info'
   })
+}
+
+async function handleInitializeTernary() {
+  try {
+    console.log('🔧 Initializing ternary weights...')
+    await store.initializeTernaryWeights()
+    notificationStore.addNotification({
+      message: 'Network initialized with ternary weights (-1, 0, 1)',
+      type: 'success'
+    })
+  } catch (error) {
+    console.error('❌ Failed to initialize ternary weights:', error)
+    notificationStore.addNotification({
+      message: 'Failed to initialize ternary weights. Check API connection.',
+      type: 'error'
+    })
+  }
+}
+
+async function handleQuantizeWeights() {
+  try {
+    console.log('⚡ Quantizing weights to ternary...')
+    await store.quantizeWeightsToTernary()
+    notificationStore.addNotification({
+      message: 'Current weights quantized to ternary values',
+      type: 'success'
+    })
+  } catch (error) {
+    console.error('❌ Failed to quantize weights:', error)
+    notificationStore.addNotification({
+      message: 'Failed to quantize weights. Check API connection.',
+      type: 'error'
+    })
+  }
+}
+
+async function handleRefreshTernaryStats() {
+  try {
+    console.log('📊 Refreshing ternary stats...')
+    await store.refreshTernaryStats()
+    notificationStore.addNotification({
+      message: 'Ternary weight statistics updated',
+      type: 'info'
+    })
+  } catch (error) {
+    console.error('❌ Failed to refresh ternary stats:', error)
+    notificationStore.addNotification({
+      message: 'Could not refresh ternary statistics',
+      type: 'warning'
+    })
+  }
 }
 </script>
 
