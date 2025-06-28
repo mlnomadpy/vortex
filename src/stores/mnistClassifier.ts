@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, reactive } from 'vue'
+import { ref, computed } from 'vue'
 import type { 
   NDDataPoint, 
   NDNeuron, 
@@ -9,14 +9,11 @@ import type {
 } from '@/types'
 import { getNeuronColor } from '@/utils/colors'
 import {
-  calculateNDSimilarityScore,
-  applyNDActivationFunction,
   computeNDCategoricalCrossEntropyLoss,
   calculateNDNeuronGradient,
   calculateNDAccuracy,
   initializeNDNeuronWeights,
   createTrainingBatches,
-  clamp,
   getNDPrediction
 } from '@/utils/ndMathCore'
 import { mnistLoader } from '@/utils/mnistLoader'
@@ -725,24 +722,15 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
           resultKeys: Object.keys(result)
         })
         
-        // Update neurons with new weights and biases
-        result.new_weights.forEach((newWeights, i) => {
-          if (neurons.value[i]) {
-            console.log(`🔧 Updating neuron ${i}: ${neurons.value[i].weights.length} → ${newWeights.length} weights`)
-            neurons.value[i].weights = newWeights
-            neurons.value[i].bias = result.new_biases[i]
-          }
-        })
-        
         // Force reactivity by creating completely new neuron objects with new weight arrays
         neurons.value = neurons.value.map((n, i) => ({
           ...n,
           weights: [...result.new_weights[i]], // Use the new weights directly
           bias: result.new_biases[i]
-        }))
+        }));
         
         // Trigger visualization update
-        visualizationUpdateTrigger.value++
+        visualizationUpdateTrigger.value++;
         
         // Emit visualization event for immediate canvas updates
         setTimeout(() => {
@@ -771,14 +759,14 @@ export const useMNISTClassifierStore = defineStore('mnistClassifier', () => {
     })
     
     // Force reactivity by creating completely new neuron objects with updated weights
-    neurons.value = neurons.value.map((n, i) => ({
+    neurons.value = neurons.value.map((n) => ({
       ...n,
       weights: [...n.weights], // Ensure new array reference
       bias: n.bias
-    }))
+    }));
     
     // Trigger visualization update
-    visualizationUpdateTrigger.value++
+    visualizationUpdateTrigger.value++;
     
     // Emit visualization event for immediate canvas updates
     setTimeout(() => {

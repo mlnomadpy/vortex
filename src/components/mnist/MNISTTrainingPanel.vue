@@ -386,14 +386,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useMNISTClassifierStore } from '@/stores/mnistClassifier'
 import { useNotificationStore } from '@/stores/notification'
 import {
   RocketLaunchIcon,
   StopIcon,
   ArrowPathIcon,
-  CpuChipIcon,
   BoltIcon,
   PlayIcon,
   PauseIcon,
@@ -915,6 +914,7 @@ watch(() => store.neurons, (newNeurons, oldNeurons) => {
   console.log('👁️ Neurons updated:', newNeurons.length)
   if (store.isTraining) {
     console.log('🔥 Highlighting updated neurons')
+    console.log(oldNeurons)
     highlightUpdatedNeurons()
     previousLoss.value = store.currentLoss
   }

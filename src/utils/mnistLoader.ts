@@ -71,7 +71,7 @@ export class MNISTLoader {
   private async generateMNISTSamples(numSamples: number, split: 'train' | 'test'): Promise<NDDataPoint[]> {
     const data: NDDataPoint[] = []
     const samplesPerDigit = Math.ceil(numSamples / 10)
-    
+    console.log(split)
     for (let digit = 0; digit < 10; digit++) {
       for (let variation = 0; variation < samplesPerDigit && data.length < numSamples; variation++) {
         const features = this.generateRealisticDigit(digit, variation)
@@ -98,8 +98,6 @@ export class MNISTLoader {
    */
   private generateRealisticDigit(digit: number, variation: number): number[] {
     const size = 28
-    const features = new Array(784).fill(0)
-    
     // Generate base pattern for the digit
     const basePattern = this.getDigitBasePattern(digit, size)
     

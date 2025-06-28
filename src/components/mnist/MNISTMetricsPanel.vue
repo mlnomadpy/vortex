@@ -427,8 +427,6 @@ const metricsUpdateRate = ref(0)
 
 // Previous values for trend calculation
 const previousTrainAccuracy = ref(0)
-const previousTestAccuracy = ref(0)
-const previousLoss = ref(0)
 
 // Metrics update tracking
 const metricsUpdateTimes = ref<number[]>([])

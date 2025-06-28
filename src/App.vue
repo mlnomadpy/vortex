@@ -20,7 +20,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, computed } from 'vue'
 import { ParticlesBackground, NotificationContainer, LoadingSpinner } from '@/components/ui'
 import { useNotificationStore } from '@/stores/notification'
 import { useTheme } from '@/composables/useTheme'
@@ -32,7 +32,7 @@ const notificationStore = useNotificationStore()
 const { initializeTheme } = useTheme()
 const { hasAnyLoading, loadingMessage, loadingProgress } = useLoadingState()
 const { handleError } = useErrorHandler()
-const { preferences, updatePreference } = useUserPreferences()
+const { preferences } = useUserPreferences()
 
 const appClasses = computed(() => [
   'min-h-screen scroll-smooth momentum-scroll',

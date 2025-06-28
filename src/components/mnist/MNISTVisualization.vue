@@ -504,16 +504,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useMNISTClassifierStore, visualizationEvents } from '@/stores/mnistClassifier'
 import { weightsToImage, calculateNDSimilarityScore } from '@/utils/ndMathCore'
-import { mnistApiService } from '@/services/mnistApiService'
 import type { NDNeuron, NDSimilarityMetric } from '@/types'
 import {
   EyeIcon,
   ChartBarSquareIcon,
   ChartBarIcon,
-  CpuChipIcon
 } from '@/components/ui/icons'
 import WeightVisualizationModal from './WeightVisualizationModal.vue'
 
@@ -661,23 +659,10 @@ function toggleAutoSync(): void {
 }
 
 function adjustUpdateRate(): void {
-  // Adjust visualization update frequency based on selected rate
-  const rates = {
-    realtime: 100,
-    fast: 1000,
-    normal: 3000,
-    slow: 10000,
-    manual: 0
-  }
-  
   // Implementation for update rate adjustment
   console.log('Update rate changed to:', updateRate.value)
 }
 
-function selectNeuron(neuronId: number) {
-  selectedNeuronId.value = neuronId.toString()
-  store.selectedNeuron = store.neurons.find(n => n.id === neuronId) || null
-}
 
 function openWeightModal(neuron: NDNeuron) {
   modalNeuron.value = neuron
@@ -700,6 +685,7 @@ function updateNeuronFromModal(updatedNeuron: NDNeuron) {
 }
 
 function isNeuronRecentlyUpdated(neuronId: number): boolean {
+    console.log(neuronId)
   // Check if this neuron was recently updated (within last 2 seconds)
   return Date.now() - (lastSyncTime.value || 0) < 2000
 }
@@ -1079,12 +1065,15 @@ watch(() => store.currentLoss, (newLoss, oldLoss) => {
   if (oldLoss !== undefined) {
     previousLoss.value = oldLoss
   }
+  console.log(newLoss)
+
 })
 
 watch(() => store.trainAccuracy, (newAccuracy, oldAccuracy) => {
   if (oldAccuracy !== undefined) {
     previousAccuracy.value = oldAccuracy
   }
+  console.log(newAccuracy)
 })
 
 watch(() => store.neurons, (newNeurons, oldNeurons) => {

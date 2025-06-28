@@ -189,7 +189,6 @@ import {
   EyeIcon,
   CogIcon,
   RocketLaunchIcon,
-  ChartBarSquareIcon,
   Square3Stack3DIcon,
   BoltIcon,
   ArrowPathIcon,
