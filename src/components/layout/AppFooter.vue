@@ -14,7 +14,7 @@
       <!-- Links -->
       <div class="flex justify-center space-x-6 text-sm">
         <a 
-          href="https://github.com/yourusername/vortex" 
+          href="https://github.com/mlnomadpy/vortex" 
           target="_blank"
           class="text-blue-500 hover:text-blue-600 transition-colors"
         >
