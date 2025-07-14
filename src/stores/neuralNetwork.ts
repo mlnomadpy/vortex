@@ -1,16 +1,20 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { DataPoint, Neuron, OptimizationHistory, OptimizationStep, NeuronMovement } from '@/types'
+import type { DataPoint, Neuron, OptimizationHistory, OptimizationStep, NeuronMovement, LossFunction } from '@/types'
 import { getNeuronColor } from '@/utils/colors'
 import { CONFIG } from '@/config'
 import {
   calculateSimilarityScore,
   applyActivationFunction,
-  computeCategoricalCrossEntropyLoss,
+  computeLoss,
   calculateNeuronGradient,
+  calculateNeuronGradientWithLoss,
   calculateAccuracy as mathCalculateAccuracy,
   getActivationDerivative as mathGetActivationDerivative,
-  clamp
+  clamp,
+  initializeOptimizer,
+  applyOptimizerUpdate,
+  type OptimizerState
 } from '@/utils/mathCore'
 
 export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
@@ -21,6 +25,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   const allClasses = ref<number[]>([])
   const similarityMetric = ref<'dotProduct' | 'euclidean' | 'yatProduct'>('dotProduct')
   const activationFunction = ref<'none' | 'softmax' | 'softermax' | 'sigmoid' | 'relu' | 'gelu'>('none')
+  const lossFunction = ref<LossFunction>('categoricalCrossEntropy')
   const showPredictedColors = ref(true)
   const showBoundaries = ref(false)
   const showDataPoints = ref(true)
@@ -48,6 +53,9 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   
   const neuronMovements = ref<NeuronMovement[]>([])
   
+  // Optimizer state
+  const optimizerState = ref<OptimizerState | null>(null)
+  
   // Computed - optimized with memoization
   const filteredDataPoints = computed(() => {
     return dataPoints.value.filter(point => activeClasses.value.includes(point.label))
@@ -60,7 +68,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   // Get the latest loss from optimization history
   const currentLoss = computed(() => {
     const steps = optimizationHistory.value.steps
-    if (steps.length === 0) return computeLoss(filteredDataPoints.value)
+    if (steps.length === 0) return computeLossWithFunction(filteredDataPoints.value)
     return steps[steps.length - 1].loss
   })
   
@@ -138,13 +146,13 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
     return { winningNeuron, scores: activatedScores }
   }
   
-  function computeLoss(data: DataPoint[]): number {
-    return computeCategoricalCrossEntropyLoss(data, neurons.value, similarityMetric.value, activationFunction.value)
+  function computeLossWithFunction(data: DataPoint[]): number {
+    return computeLoss(data, neurons.value, similarityMetric.value, activationFunction.value, lossFunction.value)
   }
   
   // Calculate gradient for a neuron
   function calculateGradient(neuron: Neuron, data: DataPoint[]): { x: number; y: number } {
-    return calculateNeuronGradient(neuron, data, neurons.value, similarityMetric.value, activationFunction.value)
+    return calculateNeuronGradientWithLoss(neuron, data, neurons.value, similarityMetric.value, activationFunction.value, lossFunction.value)
   }
   
   // Get derivative of activation function at given index
@@ -186,9 +194,21 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
         const gradient = calculateGradient(neuron, filteredDataPoints.value)
         const oldPosition = { x: neuron.x, y: neuron.y }
         
-        // Update neuron position (gradient descent: subtract gradient)
-        const newX = neuron.x - config.learningRate * gradient.x
-        const newY = neuron.y - config.learningRate * gradient.y
+        // Apply optimizer update
+        let update: { x: number; y: number }
+        if (optimizerState.value) {
+          update = applyOptimizerUpdate(neuron, gradient, optimizerState.value)
+        } else {
+          // Fallback to basic gradient descent
+          update = {
+            x: -config.learningRate * gradient.x,
+            y: -config.learningRate * gradient.y
+          }
+        }
+        
+        // Update neuron position
+        const newX = neuron.x + update.x
+        const newY = neuron.y + update.y
         
         // Clamp to coordinate ranges
         neuron.x = clamp(newX, coordinateRanges.value.xMin, coordinateRanges.value.xMax)
@@ -222,7 +242,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
   }
   
   function recordOptimizationStep(step: number): void {
-    const loss = computeLoss(filteredDataPoints.value)
+    const loss = computeLossWithFunction(filteredDataPoints.value)
     const acc = accuracy.value
     
     const optimizationStep: OptimizationStep = {
@@ -254,6 +274,19 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
     Object.assign(optimizationHistory.value.config, config)
   }
   
+  function initializeOptimizerState(
+    type: 'sgd' | 'sgd_momentum' | 'adam' | 'adamw' | 'rmsprop' | 'adagrad' | 'adadelta',
+    learningRate: number,
+    momentum: number = 0.9,
+    weightDecay: number = 0.0001,
+    beta1: number = 0.9,
+    beta2: number = 0.999,
+    epsilon: number = 1e-8,
+    rho: number = 0.9
+  ): void {
+    optimizerState.value = initializeOptimizer(type, learningRate, momentum, weightDecay, beta1, beta2, epsilon, rho)
+  }
+
   function reset() {
     neurons.value = []
     dataPoints.value = []
@@ -262,6 +295,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
     selectedNeuronForLandscape.value = null
     similarityMetric.value = 'dotProduct'
     activationFunction.value = 'none'
+    lossFunction.value = 'categoricalCrossEntropy'
     showPredictedColors.value = true
     showBoundaries.value = false
     showDataPoints.value = true
@@ -272,6 +306,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
       yMin: -1,
       yMax: 1
     }
+    optimizerState.value = null
     clearOptimizationHistory()
   }
   
@@ -283,6 +318,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
     allClasses,
     similarityMetric,
     activationFunction,
+    lossFunction,
     showPredictedColors,
     showBoundaries,
     showDataPoints,
@@ -291,6 +327,7 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
     selectedNeuronForLandscape,
     optimizationHistory,
     neuronMovements,
+    optimizerState,
     
     // Computed
     filteredDataPoints,
@@ -306,13 +343,14 @@ export const useNeuralNetworkStore = defineStore('neuralNetwork', () => {
     calculateScore,
     applyActivation,
     getPrediction,
-    computeLoss,
+    computeLoss: computeLossWithFunction,
     calculateGradient,
     getActivationDerivative,
     runGradientDescent,
     stopOptimization,
     clearOptimizationHistory,
     updateOptimizationConfig,
+    initializeOptimizerState,
     reset
   }
 })

@@ -249,12 +249,32 @@
               <span>10x</span>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Advanced Parameters -->
-      <div v-if="activeConfigTab === 'advanced'" class="config-content">
-        <div class="param-group">
+          <!-- Loss Function -->
+          <div class="param-control">
+            <div class="param-header">
+              <label class="param-label">Loss Function</label>
+              <div class="loss-function-selection">
+                <select 
+                  v-model="store.lossFunction"
+                  class="param-select"
+                  :disabled="isRunning"
+                  @change="onLossFunctionChange"
+                >
+                  <option value="categoricalCrossEntropy">Categorical Cross-Entropy</option>
+                  <option value="binaryCrossEntropy">Binary Cross-Entropy</option>
+                  <option value="meanSquaredError">Mean Squared Error</option>
+                  <option value="huberLoss">Huber Loss</option>
+                  <option value="hingeLoss">Hinge Loss</option>
+                  <option value="focalLoss">Focal Loss</option>
+                </select>
+              </div>
+            </div>
+            <div class="param-help">
+              <span class="loss-description">{{ getLossFunctionDescription(store.lossFunction) }}</span>
+            </div>
+          </div>
+
           <!-- Optimizer -->
           <div class="param-control">
             <div class="param-header">
@@ -270,6 +290,9 @@
                   <option value="sgd_momentum">SGD with Momentum</option>
                   <option value="adam">Adam</option>
                   <option value="adamw">AdamW</option>
+                  <option value="rmsprop">RMSprop</option>
+                  <option value="adagrad">Adagrad</option>
+                  <option value="adadelta">Adadelta</option>
                 </select>
                 <button 
                   @click="initializeOptimizer"
@@ -289,8 +312,28 @@
                 Click "Initialize" to prepare the optimizer
               </span>
             </div>
+                      <div class="optimizer-info">
+            <div class="optimizer-description">
+              {{ getOptimizerDescription(config.optimizer) }}
+            </div>
+            <div class="optimizer-formula">
+              <strong>Formula:</strong> {{ getOptimizerFormula(config.optimizer) }}
+            </div>
+            <div class="optimizer-best-for">
+              <strong>Best for:</strong> {{ getOptimizerBestFor(config.optimizer) }}
+            </div>
+            <div class="optimizer-comparison-tip">
+              <strong>💡 Tip:</strong> Try different optimizers on the same dataset to compare performance! 
+              Reset training history between tests for fair comparison.
+            </div>
           </div>
+          </div>
+        </div>
+      </div>
 
+      <!-- Advanced Parameters -->
+      <div v-if="activeConfigTab === 'advanced'" class="config-content">
+        <div class="param-group">
           <!-- Batch Size -->
           <div class="param-control">
             <div class="param-header">
@@ -343,6 +386,82 @@
               @input="updateConfig"
             />
             <div class="param-help">Regularization to prevent overfitting</div>
+          </div>
+
+          <!-- Beta1 (for Adam/AdamW) -->
+          <div v-if="config.optimizer === 'adam' || config.optimizer === 'adamw'" class="param-control">
+            <div class="param-header">
+              <label class="param-label">Beta1 (First Moment)</label>
+              <span class="param-value">{{ config.beta1.toFixed(3) }}</span>
+            </div>
+            <input
+              v-model.number="config.beta1"
+              type="range"
+              min="0"
+              max="0.99"
+              step="0.01"
+              class="param-slider"
+              :disabled="isRunning"
+              @input="updateConfig"
+            />
+            <div class="param-help">Exponential decay rate for first moment estimates</div>
+          </div>
+
+          <!-- Beta2 (for Adam/AdamW) -->
+          <div v-if="config.optimizer === 'adam' || config.optimizer === 'adamw'" class="param-control">
+            <div class="param-header">
+              <label class="param-label">Beta2 (Second Moment)</label>
+              <span class="param-value">{{ config.beta2.toFixed(3) }}</span>
+            </div>
+            <input
+              v-model.number="config.beta2"
+              type="range"
+              min="0"
+              max="0.999"
+              step="0.001"
+              class="param-slider"
+              :disabled="isRunning"
+              @input="updateConfig"
+            />
+            <div class="param-help">Exponential decay rate for second moment estimates</div>
+          </div>
+
+          <!-- Rho (for RMSprop/Adadelta) -->
+          <div v-if="config.optimizer === 'rmsprop' || config.optimizer === 'adadelta'" class="param-control">
+            <div class="param-header">
+              <label class="param-label">Rho (Decay Rate)</label>
+              <span class="param-value">{{ config.rho.toFixed(3) }}</span>
+            </div>
+            <input
+              v-model.number="config.rho"
+              type="range"
+              min="0"
+              max="0.99"
+              step="0.01"
+              class="param-slider"
+              :disabled="isRunning"
+              @input="updateConfig"
+            />
+            <div class="param-help">Decay rate for squared gradient moving average</div>
+          </div>
+
+          <!-- Epsilon (for adaptive optimizers) -->
+          <div v-if="config.optimizer !== 'sgd' && config.optimizer !== 'sgd_momentum'" class="param-control">
+            <div class="param-header">
+              <label class="param-label">Epsilon (Stability)</label>
+              <span class="param-value">{{ config.epsilon.toExponential(2) }}</span>
+            </div>
+            <input
+              v-model.number="config.epsilon"
+              type="range"
+              min="1e-10"
+              max="1e-4"
+              step="1e-9"
+              class="param-slider"
+              :disabled="isRunning"
+              @input="updateConfig"
+            />
+            <div class="param-help">Small constant for numerical stability</div>
           </div>
         </div>
       </div>
@@ -401,6 +520,33 @@
                 />
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Optimizer Diagnostics (shown during/after training) -->
+      <div v-if="optimizerStatus.initialized && (isRunning || hasHistory)" class="optimizer-diagnostics">
+        <h4 class="diagnostics-title">Optimizer Diagnostics</h4>
+        <div class="diagnostics-grid">
+          <div class="diagnostic-item">
+            <span class="diagnostic-label">Gradient Norm:</span>
+            <span class="diagnostic-value">{{ getOptimizerDiagnostic('gradientNorm') }}</span>
+          </div>
+          <div class="diagnostic-item">
+            <span class="diagnostic-label">Update Norm:</span>
+            <span class="diagnostic-value">{{ getOptimizerDiagnostic('updateNorm') }}</span>
+          </div>
+          <div class="diagnostic-item">
+            <span class="diagnostic-label">Learning Rate Scale:</span>
+            <span class="diagnostic-value">{{ getOptimizerDiagnostic('learningRateScale') }}</span>
+          </div>
+          <div class="diagnostic-item">
+            <span class="diagnostic-label">Effective LR:</span>
+            <span class="diagnostic-value">{{ getOptimizerDiagnostic('effectiveLearningRate') }}</span>
+          </div>
+          <div class="diagnostic-item">
+            <span class="diagnostic-label">Step:</span>
+            <span class="diagnostic-value">{{ getOptimizerDiagnostic('step') }}</span>
           </div>
         </div>
       </div>
@@ -468,6 +614,7 @@ import {
 } from '@/components/ui/icons'
 import { useNeuralNetworkStore } from '@/stores/neuralNetwork'
 import { useNotificationStore } from '@/stores/notification'
+import { getLossFunctionInfo, getOptimizerInfo, getOptimizerDiagnostics } from '@/utils/mathCore'
 
 // Child Components
 import ProgressBarEnhanced from '../ui/ProgressBarEnhanced.vue'
@@ -533,6 +680,10 @@ const config = ref({
   batchSize: 10,
   momentum: 0.9,
   weightDecay: 0.0001,
+  beta1: 0.9,
+  beta2: 0.999,
+  epsilon: 1e-8,
+  rho: 0.9,
   optimizer: 'sgd',
   earlyStopping: false,
   patience: 20
@@ -669,6 +820,11 @@ async function startOptimization() {
   
   updateConfig()
   
+  // Auto-initialize optimizer if not already initialized
+  if (!optimizerStatus.value.initialized) {
+    await initializeOptimizer()
+  }
+  
   try {
     await store.runGradientDescent()
     
@@ -721,6 +877,10 @@ function resetToDefaults() {
     batchSize: 10,
     momentum: 0.9,
     weightDecay: 0.0001,
+    beta1: 0.9,
+    beta2: 0.999,
+    epsilon: 1e-8,
+    rho: 0.9,
     optimizer: 'sgd',
     earlyStopping: false,
     patience: 20
@@ -801,24 +961,16 @@ function onOptimizerChange() {
 
 async function initializeOptimizer() {
   try {
-    // Import the MNIST API service
-    const { mnistApiService } = await import('@/services/mnistApiService')
-    
-    // Map our optimizer names to API names
-    const optimizerTypeMap: Record<string, 'sgd' | 'adam' | 'adamw'> = {
-      'sgd': 'sgd',
-      'sgd_momentum': 'sgd',
-      'adam': 'adam',
-      'adamw': 'adamw'
-    }
-    
-    const apiOptimizerType = optimizerTypeMap[config.value.optimizer] || 'sgd'
-    
-    await mnistApiService.initializeOptimizer(
-      apiOptimizerType,
+    // Initialize the optimizer state in the neural network store
+    store.initializeOptimizerState(
+      config.value.optimizer as 'sgd' | 'sgd_momentum' | 'adam' | 'adamw' | 'rmsprop' | 'adagrad' | 'adadelta',
       config.value.learningRate,
       config.value.momentum,
-      config.value.weightDecay
+      config.value.weightDecay,
+      config.value.beta1,
+      config.value.beta2,
+      config.value.epsilon,
+      config.value.rho
     )
     
     // Update status
@@ -835,6 +987,32 @@ async function initializeOptimizer() {
       type: 'success'
     })
     
+    // Try to also initialize MNIST API optimizer if available
+    try {
+      const { mnistApiService } = await import('@/services/mnistApiService')
+      
+      // Map our optimizer names to API names
+      const optimizerTypeMap: Record<string, 'sgd' | 'adam' | 'adamw'> = {
+        'sgd': 'sgd',
+        'sgd_momentum': 'sgd',
+        'adam': 'adam',
+        'adamw': 'adamw'
+      }
+      
+      const apiOptimizerType = optimizerTypeMap[config.value.optimizer] || 'sgd'
+      
+      await mnistApiService.initializeOptimizer(
+        apiOptimizerType,
+        config.value.learningRate,
+        config.value.momentum,
+        config.value.weightDecay
+      )
+      
+      console.log('MNIST API optimizer also initialized')
+    } catch (apiError) {
+      console.warn('MNIST API optimizer initialization failed (this is okay for playground):', apiError)
+    }
+    
   } catch (error) {
     console.error('Failed to initialize optimizer:', error)
     notificationStore.addNotification({
@@ -842,6 +1020,66 @@ async function initializeOptimizer() {
       type: 'error'
     })
   }
+}
+
+// Loss function methods
+function onLossFunctionChange() {
+  notificationStore.addNotification({
+    message: `Loss function changed to ${getLossFunctionInfo(store.lossFunction).description}`,
+    type: 'info'
+  })
+}
+
+function getLossFunctionDescription(lossFunction: string) {
+  try {
+    const info = getLossFunctionInfo(lossFunction as any)
+    return `${info.description} - ${info.useFor}`
+  } catch (error) {
+    return 'Unknown loss function'
+  }
+}
+
+// Optimizer information methods
+function getOptimizerDescription(optimizer: string): string {
+  try {
+    const info = getOptimizerInfo(optimizer as any)
+    return info.description
+  } catch (error) {
+    return 'Unknown optimizer'
+  }
+}
+
+function getOptimizerFormula(optimizer: string): string {
+  try {
+    const info = getOptimizerInfo(optimizer as any)
+    return info.formula
+  } catch (error) {
+    return 'N/A'
+  }
+}
+
+function getOptimizerBestFor(optimizer: string): string {
+  try {
+    const info = getOptimizerInfo(optimizer as any)
+    return info.bestFor.join(', ')
+  } catch (error) {
+    return 'N/A'
+  }
+}
+
+function getOptimizerDiagnostic(metric: string): string {
+  if (!store.optimizerState) return 'N/A'
+  
+  const diagnostics = getOptimizerDiagnostics(store.optimizerState)
+  
+  const value = diagnostics[metric as keyof typeof diagnostics]
+  if (typeof value === 'number') {
+    if (metric === 'step') {
+      return value.toString()
+    }
+    return value.toFixed(6)
+  }
+  return 'N/A'
 }
 
 // Watch for store config changes
@@ -1145,6 +1383,42 @@ section {
   margin-top: 4px;
 }
 
+.optimizer-info {
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.optimizer-description {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.optimizer-formula {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+  font-family: 'Courier New', monospace;
+}
+
+.optimizer-best-for {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.optimizer-comparison-tip {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 122, 204, 0.1);
+  border-radius: 0.25rem;
+  border-left: 3px solid var(--primary);
+}
+
 .param-suggestions {
   display: flex;
   gap: 4px;
@@ -1414,6 +1688,47 @@ section {
 .status-warning {
   color: #ce9178;
   font-size: 12px;
+}
+
+/* Optimizer Diagnostics */
+.optimizer-diagnostics {
+  margin-top: 16px;
+  padding: 12px;
+  background: #383838;
+  border-radius: 4px;
+  border: 1px solid #555555;
+}
+
+.diagnostics-title {
+  font-size: 12px;
+  color: #cccccc;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #464647;
+}
+
+.diagnostics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.diagnostic-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #cccccc;
+}
+
+.diagnostic-label {
+  font-weight: 500;
+  color: #999999;
+}
+
+.diagnostic-value {
+  font-weight: 600;
+  color: #007acc;
 }
 
 /* Responsive Design */

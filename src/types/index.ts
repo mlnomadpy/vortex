@@ -144,6 +144,8 @@ export interface NeuronMovement {
 
 export type SimilarityMetric = 'dotProduct' | 'euclidean' | 'yatProduct'
 export type ActivationFunction = 'none' | 'softmax' | 'softermax' | 'sigmoid' | 'relu' | 'gelu'
+export type LossFunction = 'categoricalCrossEntropy' | 'meanSquaredError' | 'huberLoss' | 'hingeLoss' | 'binaryCrossEntropy' | 'focalLoss'
+export type OptimizerType = 'sgd' | 'sgd_momentum' | 'adam' | 'adamw' | 'rmsprop' | 'adagrad' | 'adadelta'
 
 // New: Extended similarity metrics for n-dimensional space
 export type NDSimilarityMetric = SimilarityMetric | 'cosine' | 'manhattan' | 'rbf'
