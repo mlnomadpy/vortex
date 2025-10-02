@@ -28,8 +28,8 @@
     
     <button 
       class="apply-button"
-      @click.stop="$emit('apply', preset)"
       :class="{ active: isSelected }"
+      @click.stop="$emit('apply', preset)"
     >
       {{ isSelected ? 'Applied' : 'Apply' }}
     </button>

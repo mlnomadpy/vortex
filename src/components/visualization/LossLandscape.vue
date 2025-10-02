@@ -34,10 +34,10 @@
           
           <!-- Neuron glow effect -->
           <filter id="neuronGlow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
             <feMerge> 
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/> 
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" /> 
             </feMerge>
           </filter>
         </defs>
@@ -235,7 +235,7 @@
       class="landscape-tooltip"
       :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
       v-html="tooltip.content"
-    />
+    ></div>
   </div>
 </template>
 

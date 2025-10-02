@@ -19,31 +19,31 @@
     <!-- Panel Header -->
     <div class="panel-header" @mousedown="handleHeaderMouseDown">
       <div class="panel-title-section">
-        <component v-if="icon" :is="icon" class="panel-icon" />
+        <component :is="icon" v-if="icon" class="panel-icon" />
         <span class="panel-title">{{ title }}</span>
         <span v-if="subtitle" class="panel-subtitle">{{ subtitle }}</span>
       </div>
       <div class="panel-controls">
         <button 
-          @click="toggleMinimize" 
-          class="panel-control-btn minimize-btn"
+          class="panel-control-btn minimize-btn" 
           :title="isMinimized ? 'Expand' : 'Collapse'"
+          @click="toggleMinimize"
         >
           <component :is="isMinimized ? ChevronDownIcon : ChevronUpIcon" class="control-icon" />
         </button>
         <button 
           v-if="resizable"
-          @mousedown="startResize"
           class="panel-control-btn resize-btn"
           title="Resize"
+          @mousedown="startResize"
         >
           <ArrowsPointingOutIcon class="control-icon" />
         </button>
         <button 
           v-if="closable"
-          @click="$emit('close')" 
-          class="panel-control-btn close-btn"
+          class="panel-control-btn close-btn" 
           title="Close"
+          @click="$emit('close')"
         >
           <XMarkIcon class="control-icon" />
         </button>

@@ -10,14 +10,16 @@
       <div class="controls-row">
         <FileUpload
           accept=".csv"
-          @file-selected="handleFileSelected"
           class="compact-upload"
+          @file-selected="handleFileSelected"
         >
           <template #default="{ isDragging }">
-            <div :class="[
-              'compact-btn upload-btn',
-              isDragging ? 'dragging' : ''
-            ]">
+            <div
+              :class="[
+                'compact-btn upload-btn',
+                isDragging ? 'dragging' : ''
+              ]"
+            >
               <ArrowUpTrayIcon class="w-3 h-3" />
               <span class="btn-text">{{ selectedFileName || 'CSV' }}</span>
             </div>
@@ -25,11 +27,11 @@
         </FileUpload>
         
         <Button 
-          @click="loadData"
           :disabled="!selectedFile || isLoading"
           variant="default"
           size="xs"
           title="Load Data"
+          @click="loadData"
         >
           <component 
             :is="isLoading ? 'div' : PlayIcon" 
@@ -39,11 +41,11 @@
         </Button>
         
         <Button 
-          @click="exportData"
           :disabled="store.dataPoints.length === 0"
           variant="outline"
           size="xs"
           title="Export Data"
+          @click="exportData"
         >
           <ArrowDownTrayIcon class="w-3 h-3 mr-1" />
           Export
@@ -75,8 +77,8 @@
       <div class="controls-row">
         <FileUpload
           accept=".csv"
-          @file-selected="handleNeuronFileSelected"
           class="compact-upload"
+          @file-selected="handleNeuronFileSelected"
         >
           <template #default>
             <div class="compact-btn success">
@@ -87,22 +89,22 @@
         </FileUpload>
         
         <Button 
-          @click="saveNeurons"
           :disabled="store.neurons.length === 0"
           variant="outline"
           size="xs"
           title="Save Neurons"
+          @click="saveNeurons"
         >
           <DocumentArrowDownIcon class="w-3 h-3 mr-1" />
           Save
         </Button>
         
         <Button 
-          @click="store.removeLastNeuron()"
           :disabled="store.neurons.length === 0"
           variant="destructive"
           size="xs"
           title="Remove Last Neuron"
+          @click="store.removeLastNeuron()"
         >
           <TrashIcon class="w-3 h-3 mr-1" />
           Remove
@@ -121,12 +123,12 @@
       </div>
       <div class="controls-row">
         <Button 
-          @click="runGradientDescent"
           :disabled="store.neurons.length === 0 || store.filteredDataPoints.length === 0"
           variant="default"
           size="xs"
           title="Run Gradient Descent"
           data-tour="gradient-descent"
+          @click="runGradientDescent"
         >
           <RocketLaunchIcon class="w-3 h-3 mr-1" />
           Optimize

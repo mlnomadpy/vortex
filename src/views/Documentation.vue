@@ -4,7 +4,6 @@
     
     <main class="container mx-auto px-6 py-8 max-w-6xl">
       <div class="main-container p-8">
-        
         <!-- Header Section -->
         <div class="text-center mb-12">
           <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-500 to-red-600 rounded-full mb-6">
@@ -98,7 +97,6 @@
           <!-- Main Content -->
           <div class="lg:col-span-3">
             <div class="space-y-12">
-              
               <!-- Mathematical Foundations -->
               <section id="mathematical-foundations">
                 <h2 class="text-3xl font-bold text-theme-primary mb-6 border-b-2 border-purple-500 pb-2">1. Mathematical Foundations</h2>
@@ -315,11 +313,11 @@
                   
                   <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm mb-4">
                     <div class="text-gray-500 mb-2">// Required CSV format</div>
-                    x,y,label<br>
-                    0.5,0.3,0<br>
-                    -0.2,0.8,1<br>
-                    0.1,-0.4,0<br>
-                    0.7,-0.6,2<br>
+                    x,y,label<br />
+                    0.5,0.3,0<br />
+                    -0.2,0.8,1<br />
+                    0.1,-0.4,0<br />
+                    0.7,-0.6,2<br />
                     ...
                   </div>
                   
@@ -327,24 +325,24 @@
                     <div class="constraint-card">
                       <h4 class="font-semibold text-blue-500 mb-2">X Coordinate</h4>
                       <p class="text-sm text-theme-secondary">
-                        <strong>Range:</strong> [-1, 1] recommended<br>
-                        <strong>Type:</strong> Float<br>
+                        <strong>Range:</strong> [-1, 1] recommended<br />
+                        <strong>Type:</strong> Float<br />
                         <strong>Meaning:</strong> Horizontal position
                       </p>
                     </div>
                     <div class="constraint-card">
                       <h4 class="font-semibold text-green-500 mb-2">Y Coordinate</h4>
                       <p class="text-sm text-theme-secondary">
-                        <strong>Range:</strong> [-1, 1] recommended<br>
-                        <strong>Type:</strong> Float<br>
+                        <strong>Range:</strong> [-1, 1] recommended<br />
+                        <strong>Type:</strong> Float<br />
                         <strong>Meaning:</strong> Vertical position
                       </p>
                     </div>
                     <div class="constraint-card">
                       <h4 class="font-semibold text-purple-500 mb-2">Label</h4>
                       <p class="text-sm text-theme-secondary">
-                        <strong>Range:</strong> 0, 1, 2, ...<br>
-                        <strong>Type:</strong> Integer<br>
+                        <strong>Range:</strong> 0, 1, 2, ...<br />
+                        <strong>Type:</strong> Integer<br />
                         <strong>Meaning:</strong> Class identifier
                       </p>
                     </div>
@@ -594,11 +592,9 @@
                   </div>
                 </div>
               </section>
-
             </div>
           </div>
         </div>
-        
       </div>
     </main>
   </div>

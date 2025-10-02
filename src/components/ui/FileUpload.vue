@@ -1,25 +1,25 @@
 <template>
   <div
-    @drop.prevent="handleDrop"
-    @dragover.prevent="handleDragOver"
-    @dragleave.prevent="handleDragLeave"
-    @click="openFileDialog"
     :class="containerClasses"
     role="button"
     :tabindex="disabled ? -1 : 0"
     :aria-label="ariaLabel"
     :aria-disabled="disabled"
-    @keydown="handleKeydown"
     data-tour="file-upload"
+    @drop.prevent="handleDrop"
+    @dragover.prevent="handleDragOver"
+    @dragleave.prevent="handleDragLeave"
+    @click="openFileDialog"
+    @keydown="handleKeydown"
   >
     <input
       ref="fileInput"
       type="file"
       :accept="accept"
       :multiple="multiple"
-      @change="handleFileSelect"
       class="hidden"
       :disabled="disabled"
+      @change="handleFileSelect"
     />
     
     <!-- Loading overlay -->
@@ -28,11 +28,11 @@
     </div>
     
     <slot 
-      :isDragging="isDragging" 
-      :isProcessing="isProcessing"
-      :hasError="hasError"
-      :errorMessage="errorMessage"
-    />
+      :is-dragging="isDragging" 
+      :is-processing="isProcessing"
+      :has-error="hasError"
+      :error-message="errorMessage"
+    ></slot>
     
     <!-- Error display -->
     <div v-if="hasError && showInlineErrors" class="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-600 dark:text-red-400">

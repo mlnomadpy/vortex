@@ -53,17 +53,17 @@
               <!-- Grid lines -->
               <defs>
                 <pattern id="grid" width="20" height="10" patternUnits="userSpaceOnUse">
-                  <path d="M 20 0 L 0 0 0 10" fill="none" stroke="#374151" stroke-width="0.5" opacity="0.3"/>
+                  <path d="M 20 0 L 0 0 0 10" fill="none" stroke="#374151" stroke-width="0.5" opacity="0.3" />
                 </pattern>
               </defs>
               <rect width="200" height="100" fill="url(#grid)" />
               
               <!-- Axes -->
-              <line x1="0" y1="50" x2="200" y2="50" stroke="#6b7280" stroke-width="1"/>
-              <line x1="100" y1="0" x2="100" y2="100" stroke="#6b7280" stroke-width="1"/>
+              <line x1="0" y1="50" x2="200" y2="50" stroke="#6b7280" stroke-width="1" />
+              <line x1="100" y1="0" x2="100" y2="100" stroke="#6b7280" stroke-width="1" />
               
               <!-- Function curve -->
-              <path :d="getActivationCurve()" fill="none" stroke="#3b82f6" stroke-width="2"/>
+              <path :d="getActivationCurve()" fill="none" stroke="#3b82f6" stroke-width="2" />
             </svg>
           </div>
         </div>
@@ -114,9 +114,9 @@
           <button
             v-for="preset in configPresets"
             :key="preset.name"
-            @click="applyPreset(preset)"
             class="preset-button"
             :class="preset.type"
+            @click="applyPreset(preset)"
           >
             <component :is="preset.icon" class="preset-icon" />
             <div class="preset-info">

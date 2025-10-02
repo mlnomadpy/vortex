@@ -28,9 +28,9 @@
           <button 
             v-for="preset in trainingPresets"
             :key="preset.id"
-            @click="applyPreset(preset)"
             :class="['preset-btn', preset.color, { selected: selectedPreset === preset.id }]"
             :disabled="isRunning"
+            @click="applyPreset(preset)"
           >
             <component :is="preset.icon" class="preset-icon" />
             <div class="preset-info">
@@ -45,11 +45,11 @@
       <div class="primary-controls">
         <Button
           v-if="!isRunning"
-          @click="startOptimization"
           :disabled="!canOptimize"
           variant="default"
           size="lg"
           class="start-btn"
+          @click="startOptimization"
         >
           <PlayIcon class="btn-icon" />
           Start Training
@@ -57,20 +57,20 @@
         
         <div v-else class="training-controls">
           <Button
-            @click="pauseOptimization"
             variant="outline"
             size="lg"
             class="pause-btn"
+            @click="pauseOptimization"
           >
             <PauseIcon class="btn-icon" />
             Pause
           </Button>
           
           <Button
-            @click="stopOptimization"
             variant="destructive"
             size="lg"
             class="stop-btn"
+            @click="stopOptimization"
           >
             <StopIcon class="btn-icon" />
             Stop
@@ -107,8 +107,8 @@
         <div class="metrics-header">
           <span>Performance Metrics</span>
           <button 
-            @click="showDetailedMetrics = !showDetailedMetrics"
             class="metrics-toggle"
+            @click="showDetailedMetrics = !showDetailedMetrics"
           >
             {{ showDetailedMetrics ? 'Compact' : 'Detailed' }}
           </button>
@@ -141,9 +141,9 @@
         <CogIcon class="section-icon" />
         Configuration
         <button 
-          @click="resetToDefaults"
           class="reset-btn"
           :disabled="isRunning"
+          @click="resetToDefaults"
         >
           <ArrowPathIcon class="reset-icon" />
           Reset
@@ -155,8 +155,8 @@
         <button
           v-for="tab in configTabs"
           :key="tab.id"
-          @click="activeConfigTab = tab.id"
           :class="['config-tab', { active: activeConfigTab === tab.id }]"
+          @click="activeConfigTab = tab.id"
         >
           <component :is="tab.icon" class="tab-icon" />
           {{ tab.name }}
@@ -205,9 +205,9 @@
                   @change="updateConfig"
                 />
                 <button 
-                  @click="suggestEpochs"
                   class="suggest-btn"
                   :disabled="isRunning"
+                  @click="suggestEpochs"
                 >
                   Auto
                 </button>
@@ -217,9 +217,9 @@
               <button 
                 v-for="suggestion in epochSuggestions"
                 :key="suggestion.value"
-                @click="config.epochs = suggestion.value; updateConfig()"
                 class="suggestion-chip"
                 :disabled="isRunning"
+                @click="config.epochs = suggestion.value; updateConfig()"
               >
                 {{ suggestion.value }} <span class="chip-label">{{ suggestion.label }}</span>
               </button>
@@ -295,10 +295,10 @@
                   <option value="adadelta">Adadelta</option>
                 </select>
                 <button 
-                  @click="initializeOptimizer"
                   :disabled="isRunning || !canInitializeOptimizer"
                   class="init-optimizer-btn"
                   :class="{ 'initialized': optimizerStatus.initialized }"
+                  @click="initializeOptimizer"
                 >
                   {{ optimizerStatus.initialized ? '✓ Ready' : 'Initialize' }}
                 </button>
@@ -312,21 +312,21 @@
                 Click "Initialize" to prepare the optimizer
               </span>
             </div>
-                      <div class="optimizer-info">
-            <div class="optimizer-description">
-              {{ getOptimizerDescription(config.optimizer) }}
+            <div class="optimizer-info">
+              <div class="optimizer-description">
+                {{ getOptimizerDescription(config.optimizer) }}
+              </div>
+              <div class="optimizer-formula">
+                <strong>Formula:</strong> {{ getOptimizerFormula(config.optimizer) }}
+              </div>
+              <div class="optimizer-best-for">
+                <strong>Best for:</strong> {{ getOptimizerBestFor(config.optimizer) }}
+              </div>
+              <div class="optimizer-comparison-tip">
+                <strong>💡 Tip:</strong> Try different optimizers on the same dataset to compare performance! 
+                Reset training history between tests for fair comparison.
+              </div>
             </div>
-            <div class="optimizer-formula">
-              <strong>Formula:</strong> {{ getOptimizerFormula(config.optimizer) }}
-            </div>
-            <div class="optimizer-best-for">
-              <strong>Best for:</strong> {{ getOptimizerBestFor(config.optimizer) }}
-            </div>
-            <div class="optimizer-comparison-tip">
-              <strong>💡 Tip:</strong> Try different optimizers on the same dataset to compare performance! 
-              Reset training history between tests for fair comparison.
-            </div>
-          </div>
           </div>
         </div>
       </div>
@@ -561,31 +561,31 @@
 
       <div class="history-actions">
         <Button
-          @click="exportTrainingData"
           variant="outline"
           size="sm"
           class="history-btn"
+          @click="exportTrainingData"
         >
           <ArrowDownTrayIcon class="btn-icon" />
           Export Data
         </Button>
         
         <Button
-          @click="visualizeTrainingHistory"
           variant="outline"
           size="sm"
           class="history-btn"
+          @click="visualizeTrainingHistory"
         >
           <ChartLineIcon class="btn-icon" />
           View Charts
         </Button>
         
         <Button
-          @click="resetOptimization"
           :disabled="isRunning"
           variant="outline"
           size="sm"
           class="history-btn destructive"
+          @click="resetOptimization"
         >
           <TrashIcon class="btn-icon" />
           Clear History

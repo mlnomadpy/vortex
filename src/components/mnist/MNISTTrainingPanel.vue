@@ -5,14 +5,14 @@
       <div class="status-indicator">
         <div :class="['status-dot', trainingStatusClass, { pulsing: store.isTraining && !isPaused }]"></div>
         <span class="status-text">{{ trainingStatusText }}</span>
-        <div class="live-indicator" v-if="store.isTraining && !isPaused">
+        <div v-if="store.isTraining && !isPaused" class="live-indicator">
           <div class="pulse-ring"></div>
           <span class="live-text">LIVE</span>
         </div>
       </div>
       
       <div class="training-metrics-header">
-        <div class="training-timer" v-if="trainingStartTime || pausedTime > 0">
+        <div v-if="trainingStartTime || pausedTime > 0" class="training-timer">
           <BoltIcon class="timer-icon" />
           <span>{{ formattedTrainingTime }}</span>
         </div>
@@ -22,7 +22,7 @@
           <span>{{ store.apiConnected ? 'JAX API' : 'Local CPU' }}</span>
         </div>
         
-        <div class="training-speed" v-if="store.isTraining">
+        <div v-if="store.isTraining" class="training-speed">
           <span class="speed-label">Speed:</span>
           <span class="speed-value">{{ getBatchesPerSecond() }}</span>
         </div>
@@ -49,9 +49,9 @@
               :disabled="store.isTraining && !isPaused"
             />
             <div class="preset-buttons">
-              <button @click="config.learningRate = 0.001" class="preset-btn" :disabled="store.isTraining && !isPaused">Slow</button>
-              <button @click="config.learningRate = 0.01" class="preset-btn" :disabled="store.isTraining && !isPaused">Normal</button>
-              <button @click="config.learningRate = 0.1" class="preset-btn" :disabled="store.isTraining && !isPaused">Fast</button>
+              <button class="preset-btn" :disabled="store.isTraining && !isPaused" @click="config.learningRate = 0.001">Slow</button>
+              <button class="preset-btn" :disabled="store.isTraining && !isPaused" @click="config.learningRate = 0.01">Normal</button>
+              <button class="preset-btn" :disabled="store.isTraining && !isPaused" @click="config.learningRate = 0.1">Fast</button>
             </div>
           </div>
         </div>
@@ -121,35 +121,33 @@
             </div>
           </div>
         </div>
-        
-                 
       </div>
       
       <!-- Enhanced Training Actions -->
       <div class="training-actions">
         <div class="primary-actions">
           <button 
-            @click="startTraining"
             :disabled="!canTrain || (store.isTraining && !isPaused)"
             class="action-btn primary large"
+            @click="startTraining"
           >
             <RocketLaunchIcon class="btn-icon" />
             {{ getStartButtonText }}
           </button>
           
           <button 
-            @click="togglePauseResume"
             :disabled="!store.isTraining"
             class="action-btn secondary"
+            @click="togglePauseResume"
           >
             <component :is="isPaused ? PlayIcon : PauseIcon" class="btn-icon" />
             {{ isPaused ? 'Resume' : 'Pause' }}
           </button>
           
           <button 
-            @click="stopTraining"
             :disabled="!store.isTraining"
             class="action-btn danger"
+            @click="stopTraining"
           >
             <StopIcon class="btn-icon" />
             Stop
@@ -158,27 +156,27 @@
         
         <div class="secondary-actions">
           <button 
-            @click="resetTraining"
             :disabled="store.isTraining && !isPaused"
             class="action-btn outline"
+            @click="resetTraining"
           >
             <ArrowPathIcon class="btn-icon" />
             Reset All
           </button>
           
           <button 
-            @click="clearHistory"
             :disabled="store.isTraining && !isPaused"
             class="action-btn outline"
+            @click="clearHistory"
           >
             <TrashIcon class="btn-icon" />
             Clear History
           </button>
           
           <button 
-            @click="quickTrain"
             :disabled="!canTrain || store.isTraining"
             class="action-btn outline quick-train"
+            @click="quickTrain"
           >
             <BoltIcon class="btn-icon" />
             Quick Train (10 epochs)
@@ -188,7 +186,7 @@
     </div>
     
     <!-- Enhanced Training Progress -->
-    <div class="training-progress" v-if="store.optimizationHistory.steps.length > 0">
+    <div v-if="store.optimizationHistory.steps.length > 0" class="training-progress">
       <h4 class="section-title">Real-time Training Progress</h4>
       
       <div class="progress-overview">
@@ -206,8 +204,8 @@
             <div class="stat-info">
               <span class="stat-label">Loss</span>
               <span class="stat-value" :class="getLossChangeClass">{{ currentLossDisplay }}</span>
-              <span class="stat-change" v-if="lossChange !== 0">{{ lossChange > 0 ? '+' : '' }}{{ lossChange.toFixed(4) }}</span>
-              <div class="stat-trend" v-if="lossHistory.length > 1">
+              <span v-if="lossChange !== 0" class="stat-change">{{ lossChange > 0 ? '+' : '' }}{{ lossChange.toFixed(4) }}</span>
+              <div v-if="lossHistory.length > 1" class="stat-trend">
                 <div class="mini-chart">
                   <svg width="60" height="20" class="loss-sparkline">
                     <polyline 
@@ -227,7 +225,7 @@
             <div class="stat-info">
               <span class="stat-label">Train Accuracy</span>
               <span class="stat-value accuracy">{{ currentAccuracyDisplay }}</span>
-              <div class="stat-trend" v-if="accuracyHistory.length > 1">
+              <div v-if="accuracyHistory.length > 1" class="stat-trend">
                 <div class="mini-chart">
                   <svg width="60" height="20" class="accuracy-sparkline">
                     <polyline 
@@ -242,7 +240,7 @@
             </div>
           </div>
           
-          <div class="stat-card" v-if="store.testAccuracy > 0">
+          <div v-if="store.testAccuracy > 0" class="stat-card">
             <div class="stat-icon">✅</div>
             <div class="stat-info">
               <span class="stat-label">Test Accuracy</span>
@@ -258,7 +256,7 @@
                 class="progress-fill"
                 :style="{ width: `${trainingProgress}%` }"
               ></div>
-              <div class="progress-segments" v-if="store.optimizationHistory.totalSteps > 0">
+              <div v-if="store.optimizationHistory.totalSteps > 0" class="progress-segments">
                 <div 
                   v-for="step in Math.min(store.optimizationHistory.totalSteps, 20)" 
                   :key="step"
@@ -269,17 +267,17 @@
             </div>
             <div class="progress-labels">
               <span class="progress-text">{{ trainingProgress.toFixed(1) }}%</span>
-              <span class="eta-text" v-if="estimatedTimeRemaining">ETA: {{ estimatedTimeRemaining }}</span>
+              <span v-if="estimatedTimeRemaining" class="eta-text">ETA: {{ estimatedTimeRemaining }}</span>
             </div>
           </div>
         </div>
       </div>
       
       <!-- Enhanced Real-time Batch Metrics with Live Updates -->
-      <div class="batch-metrics" v-if="store.isTraining && store.optimizationHistory.steps.length > 0">
+      <div v-if="store.isTraining && store.optimizationHistory.steps.length > 0" class="batch-metrics">
         <h5 class="subsection-title">
           Live Batch Metrics
-          <div class="live-pulse" v-if="store.isTraining && !isPaused"></div>
+          <div v-if="store.isTraining && !isPaused" class="live-pulse"></div>
         </h5>
         <div class="metrics-grid">
           <div class="metric-card" :class="{ updating: recentMetricUpdate }">
@@ -289,7 +287,7 @@
             </div>
             <div class="metric-details">
               <span>Step {{ store.optimizationHistory.steps.length }}</span>
-              <div class="update-indicator" v-if="recentMetricUpdate">📊</div>
+              <div v-if="recentMetricUpdate" class="update-indicator">📊</div>
             </div>
           </div>
           
@@ -304,7 +302,7 @@
               <span v-if="lossHistory.length > 1">
                 {{ Math.abs(lossChange * 100).toFixed(2) }}% change
               </span>
-              <div class="trend-sparkline" v-if="lossHistory.length > 5">
+              <div v-if="lossHistory.length > 5" class="trend-sparkline">
                 <svg width="40" height="16" class="mini-sparkline">
                   <polyline 
                     :points="getSparklinePoints(lossHistory.slice(-10))" 
@@ -328,7 +326,7 @@
               <span v-if="accuracyHistory.length > 1">
                 {{ getAccuracyChange() }}
               </span>
-              <div class="trend-sparkline" v-if="accuracyHistory.length > 5">
+              <div v-if="accuracyHistory.length > 5" class="trend-sparkline">
                 <svg width="40" height="16" class="mini-sparkline">
                   <polyline 
                     :points="getSparklinePoints(accuracyHistory.slice(-10))" 
@@ -357,7 +355,7 @@
       </div>
       
       <!-- Live Neuron Updates Visualization -->
-      <div class="neuron-updates" v-if="store.currentBatch.length > 0">
+      <div v-if="store.currentBatch.length > 0" class="neuron-updates">
         <h5 class="subsection-title">Live Neuron Updates</h5>
         <div class="neuron-grid">
           <div 

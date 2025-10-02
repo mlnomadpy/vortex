@@ -9,50 +9,50 @@
       </div>
       <div class="controls-row">
         <Button 
-          @click="toggleColorMode"
           :variant="store.showPredictedColors ? 'default' : 'outline'"
           size="xs"
           title="Toggle Color Mode"
+          @click="toggleColorMode"
         >
           <EyeIcon class="w-3 h-3" />
           <span class="ml-1">{{ store.showPredictedColors ? 'Predicted' : 'Actual' }}</span>
         </Button>
         
         <Button 
-          @click="toggleBoundaries"
           :variant="store.showBoundaries ? 'default' : 'outline'"
           size="xs"
           title="Toggle Decision Boundaries"
+          @click="toggleBoundaries"
         >
           <Square3Stack3DIcon class="w-3 h-3" />
           <span class="ml-1">Boundaries</span>
         </Button>
         
         <Button 
-          @click="toggleDataPoints"
           :variant="store.showDataPoints ? 'default' : 'outline'"
           size="xs"
           title="Toggle Data Points"
+          @click="toggleDataPoints"
         >
           <ChartLineIcon class="w-3 h-3" />
           <span class="ml-1">Points</span>
         </Button>
         
         <Button 
-          @click="toggleFullscreen"
           variant="ghost"
           size="xs"
           title="Open Fullscreen"
+          @click="toggleFullscreen"
         >
           <CurveIcon class="w-3 h-3" />
           <span class="ml-1">Fullscreen</span>
         </Button>
         
         <Button 
-          @click="resetView"
           variant="destructive"
           size="xs"
           title="Reset View"
+          @click="resetView"
         >
           <ArrowPathIcon class="w-3 h-3" />
           <span class="ml-1">Reset</span>
@@ -154,42 +154,42 @@
       </div>
       <div class="controls-row">
         <Button
-          @click="setCoordinatePreset('standard')"
           variant="outline"
           size="xs"
           title="[-1, 1]"
+          @click="setCoordinatePreset('standard')"
         >
           ±1
         </Button>
         <Button
-          @click="setCoordinatePreset('extended')"
           variant="outline"
           size="xs"
           title="[-5, 5]"
+          @click="setCoordinatePreset('extended')"
         >
           ±5
         </Button>
         <Button
-          @click="setCoordinatePreset('large')"
           variant="outline"
           size="xs"
           title="[-10, 10]"
+          @click="setCoordinatePreset('large')"
         >
           ±10
         </Button>
         <Button
-          @click="setCoordinatePreset('positive')"
           variant="outline"
           size="xs"
           title="[0, 10]"
+          @click="setCoordinatePreset('positive')"
         >
           0-10
         </Button>
         <Button
-          @click="autoFitToData"
           variant="default"
           size="xs"
           title="Auto-fit to Data"
+          @click="autoFitToData"
         >
           Auto
         </Button>

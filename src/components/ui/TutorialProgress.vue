@@ -18,17 +18,17 @@
       <div class="progress-actions">
         <button
           v-if="showSkip"
-          @click="$emit('skip')"
           class="progress-action skip"
           title="Skip tutorial"
+          @click="$emit('skip')"
         >
           Skip
         </button>
         <button
           v-if="showNext && !waitingForAction"
-          @click="$emit('next')"
           class="progress-action next"
           title="Continue to next step"
+          @click="$emit('next')"
         >
           Next
         </button>

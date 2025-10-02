@@ -1,21 +1,60 @@
 import { ref } from 'vue'
 import { useNotificationStore } from '@/stores/notification'
 
+/**
+ * Represents an application error with metadata
+ */
 export interface AppError {
+  /** Unique identifier for the error */
   id: string
+  /** Error classification code */
   code: string
+  /** Technical error message */
   message: string
+  /** User-friendly error message */
   userMessage: string
+  /** When the error occurred */
   timestamp: Date
+  /** Additional contextual information */
   context?: Record<string, any>
+  /** Whether the error can be recovered from */
   recoverable: boolean
 }
 
 const errors = ref<AppError[]>([])
 
+/**
+ * Composable for centralized error handling
+ * 
+ * Features:
+ * - Automatic error classification
+ * - User-friendly error messages
+ * - Error persistence and history
+ * - Automatic notifications
+ * - Development logging
+ * 
+ * @example
+ * ```ts
+ * const { handleError, clearError } = useErrorHandler()
+ * 
+ * try {
+ *   await fetchData()
+ * } catch (err) {
+ *   handleError(err, { userId: 123 })
+ * }
+ * ```
+ */
 export function useErrorHandler() {
   const notificationStore = useNotificationStore()
   
+  /**
+   * Handle an error and create an AppError instance
+   * 
+   * @param error - Error object or error message string
+   * @param context - Optional contextual information
+   * @param userMessage - Optional custom user-facing message
+   * @returns Created AppError instance
+   */
   const handleError = (
     error: Error | string,
     context?: Record<string, any>,
@@ -49,6 +88,11 @@ export function useErrorHandler() {
     return appError
   }
   
+  /**
+   * Remove a specific error from the error list
+   * 
+   * @param id - Unique identifier of the error to clear
+   */
   const clearError = (id: string) => {
     const index = errors.value.findIndex(e => e.id === id)
     if (index > -1) {
@@ -56,6 +100,9 @@ export function useErrorHandler() {
     }
   }
   
+  /**
+   * Clear all errors from the error list
+   */
   const clearAllErrors = () => {
     errors.value = []
   }

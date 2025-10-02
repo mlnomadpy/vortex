@@ -32,11 +32,11 @@
           </select>
           
           <Button
-            @click="initializeOptimizer"
             :disabled="isTraining || !canInitialize"
             variant="default"
             size="sm"
             :class="initBtnClass"
+            @click="initializeOptimizer"
           >
             <PlayIcon class="btn-icon" />
             {{ optimizerStatus.initialized ? 'Initialized' : 'Initialize' }}
@@ -110,20 +110,20 @@
       <!-- Actions -->
       <div class="optimizer-actions">
         <Button
-          @click="resetOptimizer"
           :disabled="isTraining"
           variant="outline"
           size="sm"
+          @click="resetOptimizer"
         >
           <ArrowPathIcon class="btn-icon" />
           Reset
         </Button>
         
         <Button
-          @click="getOptimizerStatus"
           :disabled="!apiConnected"
           variant="outline"
           size="sm"
+          @click="getOptimizerStatus"
         >
           <InformationCircleIcon class="btn-icon" />
           Status

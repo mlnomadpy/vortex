@@ -40,9 +40,9 @@
             </div>
           </div>
           <button
-            @click="skipTour"
             class="close-button"
             aria-label="Skip tutorial"
+            @click="skipTour"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -131,8 +131,8 @@
           <div class="navigation-buttons">
             <button
               v-if="currentStepIndex > 0"
-              @click="previousStep"
               class="nav-button secondary"
+              @click="previousStep"
             >
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -143,17 +143,17 @@
             <div class="flex-1"></div>
             
             <button
-              @click="skipTour"
               class="nav-button ghost"
+              @click="skipTour"
             >
               Skip Tutorial
             </button>
             
             <button
               v-if="currentStepIndex < steps.length - 1"
-              @click="nextStep"
               class="nav-button primary"
               :disabled="currentStep.waitForInteraction && !interactionCompleted"
+              @click="nextStep"
             >
               {{ currentStep.waitForInteraction && !interactionCompleted ? 'Complete Action First' : 'Next' }}
               <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,8 +163,8 @@
             
             <button
               v-else
-              @click="completeTour"
               class="nav-button success"
+              @click="completeTour"
             >
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -178,10 +178,10 @@
       <!-- Floating Help Button -->
       <div class="floating-help">
         <button 
-          @click="showKeyboardShortcuts = !showKeyboardShortcuts"
           class="help-button"
           :class="{ active: showKeyboardShortcuts }"
           title="Toggle keyboard shortcuts"
+          @click="showKeyboardShortcuts = !showKeyboardShortcuts"
         >
           <span class="help-icon">?</span>
         </button>

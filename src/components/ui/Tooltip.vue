@@ -7,13 +7,13 @@
     @blur="hideTooltip"
     @keydown="handleKeydown"
   >
-    <slot />
+    <slot></slot>
     
     <Teleport to="body">
       <div
         v-if="isVisible && shouldShow"
-        ref="tooltipRef"
         :id="tooltipId"
+        ref="tooltipRef"
         role="tooltip"
         :class="tooltipClasses"
         :style="tooltipStyle"

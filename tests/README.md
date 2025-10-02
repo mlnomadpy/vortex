@@ -91,6 +91,18 @@ Tests grid update service:
 - Helper functions for common update patterns
 - Error handling during updates
 
+### 12. **helpers.test.ts** (32 tests)
+Tests utility helper functions:
+- Unique ID generation
+- Async delay functionality
+- Debounce and throttle utilities
+- Type checking utilities (isDefined, isEmpty)
+- Deep cloning objects and arrays
+- Number formatting with separators
+- String manipulation (truncate, capitalize, toKebabCase)
+- Query string parsing
+- Nested object property access
+
 ## Running Tests
 
 ```bash
@@ -106,8 +118,8 @@ npm run test:ui
 
 ## Test Statistics
 
-- **Total Test Files**: 11
-- **Total Tests**: 266
+- **Total Test Files**: 12
+- **Total Tests**: 298
 - **Pass Rate**: 100%
 
 ## Coverage Areas
@@ -118,7 +130,7 @@ The test suite provides comprehensive coverage for:
 - ✅ Data validation and preprocessing
 - ✅ Color utilities and conversion
 - ✅ Coordinate system transformations
-- ✅ Utility functions (clamping, normalization)
+- ✅ Utility functions (clamping, normalization, helpers)
 - ✅ **Composables** (error handling, loading states, theme management)
 - ✅ **Services** (grid update service)
 - ✅ **Stores** (notification store)

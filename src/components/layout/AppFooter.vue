@@ -2,8 +2,8 @@
   <footer class="mt-16 text-center">
     <div class="control-card p-6 max-w-2xl mx-auto">
       <div class="flex items-center justify-center mb-4">
-              <HeartIcon class="w-5 h-5 text-red-500 mr-2" />
-      <p class="text-theme-secondary">
+        <HeartIcon class="w-5 h-5 text-red-500 mr-2" />
+        <p class="text-theme-secondary">
           Built with love for machine learning exploration
         </p>
       </div>

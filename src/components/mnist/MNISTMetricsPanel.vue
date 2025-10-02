@@ -5,11 +5,13 @@
       <div class="header-section">
         <h3>Training Metrics</h3>
         <div class="live-status-container">
-          <div class="api-status" :class="{ 
-            connected: store.apiConnected, 
-            syncing: isLoadingMetrics,
-            error: hasError 
-          }">
+          <div
+            class="api-status" :class="{ 
+              connected: store.apiConnected, 
+              syncing: isLoadingMetrics,
+              error: hasError 
+            }"
+          >
             <div class="status-dot" :class="{ pulsing: store.isTraining }"></div>
             <span class="status-text">
               {{ store.apiConnected ? 'API Connected' : 'Local Mode' }}
@@ -29,11 +31,13 @@
           </div>
           
           <!-- Performance Indicator -->
-          <div class="performance-indicator" :class="{ 
-            high: store.apiConnected && store.useApiCompute,
-            medium: store.apiConnected && !store.useApiCompute,
-            low: !store.apiConnected 
-          }">
+          <div
+            class="performance-indicator" :class="{ 
+              high: store.apiConnected && store.useApiCompute,
+              medium: store.apiConnected && !store.useApiCompute,
+              low: !store.apiConnected 
+            }"
+          >
             <div class="performance-icon">
               {{ store.apiConnected ? (store.useApiCompute ? '🚀' : '⚡') : '💻' }}
             </div>
@@ -46,18 +50,18 @@
       
       <div class="header-controls">
         <button 
-          @click="refreshMetrics" 
-          :disabled="isLoadingMetrics"
+          :disabled="isLoadingMetrics" 
           class="refresh-btn"
           title="Refresh metrics from API"
+          @click="refreshMetrics"
         >
           <div class="refresh-icon" :class="{ spinning: isLoadingMetrics }">🔄</div>
         </button>
         
         <button 
-          @click="toggleAutoRefresh" 
-          :class="['auto-refresh-btn', { active: autoRefresh }]"
+          :class="['auto-refresh-btn', { active: autoRefresh }]" 
           title="Toggle automatic refresh"
+          @click="toggleAutoRefresh"
         >
           <div class="auto-icon">{{ autoRefresh ? '🔄' : '⏸️' }}</div>
         </button>
@@ -66,9 +70,9 @@
           <button
             v-for="view in availableViews"
             :key="view.id"
-            @click="currentView = view.id as 'overview' | 'loss' | 'weights' | 'api'"
             :class="['view-btn', { active: currentView === view.id }]"
             :title="view.description"
+            @click="currentView = view.id as 'overview' | 'loss' | 'weights' | 'api'"
           >
             {{ view.label }}
           </button>
@@ -80,7 +84,7 @@
     <div class="metrics-content">
       <!-- Performance Overview -->
       <div v-if="currentView === 'overview'" class="overview-section">
-    <div class="metrics-grid">
+        <div class="metrics-grid">
           <!-- Training Progress -->
           <div class="metric-card training-progress">
             <div class="card-header">
@@ -162,7 +166,7 @@
           <div class="metric-card weight-stats">
             <div class="card-header">
               <h4>Weight Statistics</h4>
-              <button @click="refreshWeightStats" class="mini-refresh-btn">🔄</button>
+              <button class="mini-refresh-btn" @click="refreshWeightStats">🔄</button>
             </div>
             <div class="weight-content">
               <div class="weight-summary">
@@ -246,7 +250,7 @@
                 <option value="recent">Recent (50 steps)</option>
                 <option value="last100">Last 100 steps</option>
               </select>
-              <button @click="clearLossHistory" class="clear-btn">Clear</button>
+              <button class="clear-btn" @click="clearLossHistory">Clear</button>
             </div>
           </div>
           

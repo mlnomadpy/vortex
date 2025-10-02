@@ -4,7 +4,6 @@
     
     <main class="workspace-main">
       <div class="workspace-container">
-        
         <div class="text-center mb-4">
           <h1 class="text-3xl font-bold text-theme-primary mb-2">Neural Network Playground</h1>
           <p class="text-sm text-theme-secondary">Experiment freely with neural network configurations</p>
@@ -38,15 +37,15 @@
         />
         
         <FloatingPanel
+          v-if="panels.optimization"
           title="Optimization"
           :icon="RocketLaunchIcon"
           :initial-position="{ x: 590, y: 10 }"
           :width="380"
           :height="500"
           :z-index="150"
-          @close="panels.optimization = false"
-          v-if="panels.optimization"
           data-tour="optimization-panel"
+          @close="panels.optimization = false"
         >
           <div class="optimization-content">
             <OptimizationPanel />
@@ -54,15 +53,15 @@
         </FloatingPanel>
         
         <FloatingPanel
+          v-if="panels.metrics"
           title="Metrics & Charts"
           :icon="ChartBarIcon"
           :initial-position="{ x: 10, y: 300 }"
           :width="350"
           :height="400"
           :z-index="150"
-          @close="panels.metrics = false"
-          v-if="panels.metrics"
           data-tour="metrics-panel"
+          @close="panels.metrics = false"
         >
           <div class="metrics-content">
             <div class="metrics-section">
@@ -81,15 +80,15 @@
         </FloatingPanel>
         
         <FloatingPanel
+          v-if="panels.presets"
           title="Presets & Experiments"
           :icon="DocumentTextIcon"
           :initial-position="{ x: 50, y: 500 }"
           :width="600"
           :height="300"
           :z-index="150"
-          @close="panels.presets = false"
-          v-if="panels.presets"
           data-tour="presets-panel"
+          @close="panels.presets = false"
         >
           <div class="presets-content">
             <!-- Dataset Presets -->
@@ -99,8 +98,8 @@
                 <button 
                   v-for="preset in datasetPresets"
                   :key="preset.id"
-                  @click="loadPreset(preset.id)"
                   class="preset-card"
+                  @click="loadPreset(preset.id)"
                 >
                   <component :is="preset.icon" class="preset-icon" />
                   <div class="preset-info">
@@ -118,8 +117,8 @@
                 <button 
                   v-for="preset in networkPresets"
                   :key="preset.id"
-                  @click="loadNetworkPreset(preset.id)"
                   class="preset-card"
+                  @click="loadNetworkPreset(preset.id)"
                 >
                   <component :is="preset.icon" class="preset-icon" />
                   <div class="preset-info">
@@ -137,8 +136,8 @@
                 <button 
                   v-for="experiment in quickExperiments"
                   :key="experiment.id"
-                  @click="runExperiment(experiment.id)"
                   :class="['experiment-btn', experiment.type]"
+                  @click="runExperiment(experiment.id)"
                 >
                   <component :is="experiment.icon" class="experiment-icon" />
                   <span class="experiment-name">{{ experiment.name }}</span>
@@ -181,8 +180,8 @@
           :width="400"
           :height="500"
           :z-index="150"
-          @close="panels.networkConfig = false"
           data-tour="network-config-panel"
+          @close="panels.networkConfig = false"
         >
           <NetworkConfigPanel
             :activation-function="store.activationFunction"
@@ -199,10 +198,10 @@
               <button 
                 v-for="(panel, key) in panels"
                 :key="key"
-                @click="togglePanel(key)"
                 :class="['panel-toggle', { active: panel }]"
                 :title="`Toggle ${getPanelName(key)} panel`"
                 :data-tour="`toggle-${key}`"
+                @click="togglePanel(key)"
               >
                 <component :is="getPanelIcon(key)" class="toggle-icon" />
                 <span class="toggle-label">{{ getPanelName(key) }}</span>
@@ -212,19 +211,18 @@
           
           <div class="sidebar-section">
             <div class="layout-controls">
-              <button @click="resetPanelPositions" class="layout-btn" title="Reset Layout">
+              <button class="layout-btn" title="Reset Layout" @click="resetPanelPositions">
                 <ArrowPathIcon class="btn-icon" />
               </button>
-              <button @click="minimizeAllPanels" class="layout-btn" title="Minimize All">
+              <button class="layout-btn" title="Minimize All" @click="minimizeAllPanels">
                 <MinusIcon class="btn-icon" />
               </button>
-              <button @click="showAllPanels" class="layout-btn" title="Show All">
+              <button class="layout-btn" title="Show All" @click="showAllPanels">
                 <Square3Stack3DIcon class="btn-icon" />
               </button>
             </div>
           </div>
         </div>
-        
       </div>
     </main>
   </div>

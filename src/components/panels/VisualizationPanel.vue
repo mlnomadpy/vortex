@@ -46,20 +46,20 @@
         <!-- Action Buttons -->
         <div class="action-row">
           <Button 
-            @click="toggleFullscreen"
             variant="outline"
             size="sm"
             class="action-btn"
+            @click="toggleFullscreen"
           >
             <CurveIcon class="btn-icon" />
             Fullscreen
           </Button>
           
           <Button 
-            @click="resetView"
             variant="destructive"
             size="sm"
             class="action-btn"
+            @click="resetView"
           >
             <ArrowPathIcon class="btn-icon" />
             Reset
@@ -117,34 +117,34 @@
         <!-- Preset Buttons -->
         <div class="preset-row">
           <Button
-            @click="setCoordinatePreset('standard')"
             variant="outline"
             size="xs"
             class="preset-btn"
+            @click="setCoordinatePreset('standard')"
           >
             ±1
           </Button>
           <Button
-            @click="setCoordinatePreset('extended')"
             variant="outline"
             size="xs"
             class="preset-btn"
+            @click="setCoordinatePreset('extended')"
           >
             ±5
           </Button>
           <Button
-            @click="setCoordinatePreset('large')"
             variant="outline"
             size="xs"
             class="preset-btn"
+            @click="setCoordinatePreset('large')"
           >
             ±10
           </Button>
           <Button
-            @click="setCoordinatePreset('positive')"
             variant="outline"
             size="xs"
             class="preset-btn"
+            @click="setCoordinatePreset('positive')"
           >
             0-10
           </Button>
@@ -201,10 +201,10 @@
         
         <!-- Auto Fit Button -->
         <Button
-          @click="autoFitToData"
           variant="default"
           size="sm"
           class="auto-fit-btn"
+          @click="autoFitToData"
         >
           <component :is="MagicWandIcon" class="btn-icon" />
           Auto-fit to Data

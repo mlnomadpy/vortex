@@ -5,10 +5,10 @@
       <!-- Top Section - Main Controls -->
       <div class="toolbar-section">
         <Button
-          @click="$emit('close')"
           variant="destructive"
           size="icon-sm"
           title="Exit Fullscreen (Esc)"
+          @click="$emit('close')"
         >
           <XMarkIcon class="w-4 h-4" />
         </Button>
@@ -16,28 +16,28 @@
         <div class="toolbar-divider"></div>
         
         <Button
-          @click="toggleBoundaries"
           :variant="store.showBoundaries ? 'default' : 'outline'"
           size="icon-sm"
           title="Toggle Decision Boundaries (Reinitializes Grid)"
+          @click="toggleBoundaries"
         >
           <Square3Stack3DIcon class="w-4 h-4" />
         </Button>
         
         <Button
-          @click="toggleDataPoints"
           :variant="store.showDataPoints ? 'default' : 'outline'"
           size="icon-sm"
           title="Toggle Data Points"
+          @click="toggleDataPoints"
         >
           <ChartLineIcon class="w-4 h-4" />
         </Button>
         
         <Button
-          @click="togglePredictedColors"
           :variant="store.showPredictedColors ? 'default' : 'outline'"
           size="icon-sm"
           title="Toggle Predicted Colors"
+          @click="togglePredictedColors"
         >
           <EyeIcon class="w-4 h-4" />
         </Button>
@@ -59,11 +59,11 @@
         <span class="toolbar-value">{{ store.gridSize }}×{{ store.gridSize }}</span>
         
         <Button
-          @click="reinitializeGrid"
           variant="outline"
           size="icon-sm"
           title="Force Grid Reinitialization"
           :disabled="!store.showBoundaries"
+          @click="reinitializeGrid"
         >
           <ArrowPathIcon class="w-3 h-3" />
         </Button>
@@ -112,10 +112,10 @@
       <div class="toolbar-section">
         <div class="toolbar-label">Presets</div>
         <div class="preset-buttons">
-          <Button @click="setCoordinatePreset('standard')" variant="outline" size="xs" title="[-1, 1]">±1</Button>
-          <Button @click="setCoordinatePreset('extended')" variant="outline" size="xs" title="[-5, 5]">±5</Button>
-          <Button @click="setCoordinatePreset('large')" variant="outline" size="xs" title="[-10, 10]">±10</Button>
-          <Button @click="autoFitToData" variant="default" size="xs" title="Auto-fit to Data">Auto</Button>
+          <Button variant="outline" size="xs" title="[-1, 1]" @click="setCoordinatePreset('standard')">±1</Button>
+          <Button variant="outline" size="xs" title="[-5, 5]" @click="setCoordinatePreset('extended')">±5</Button>
+          <Button variant="outline" size="xs" title="[-10, 10]" @click="setCoordinatePreset('large')">±10</Button>
+          <Button variant="default" size="xs" title="Auto-fit to Data" @click="autoFitToData">Auto</Button>
         </div>
       </div>
 
@@ -140,30 +140,30 @@
       <!-- Actions -->
       <div class="toolbar-section">
         <Button
-          @click="store.removeLastNeuron()"
           :disabled="store.neurons.length === 0"
           variant="destructive"
           size="icon-sm"
           title="Remove Last Neuron"
+          @click="store.removeLastNeuron()"
         >
           <TrashIcon class="w-4 h-4" />
         </Button>
         
         <Button
-          @click="runGradientDescent"
           :disabled="store.neurons.length === 0 || store.filteredDataPoints.length === 0"
           variant="default"
           size="icon-sm"
           title="Run Gradient Descent"
+          @click="runGradientDescent"
         >
           <RocketLaunchIcon class="w-4 h-4" />
         </Button>
         
         <Button
-          @click="store.reset()"
           variant="destructive"
           size="icon-sm"
           title="Reset Everything"
+          @click="store.reset()"
         >
           <ArrowPathIcon class="w-4 h-4" />
         </Button>
@@ -200,7 +200,7 @@
           <span class="stat-label">Neurons</span>
           <span class="stat-value">{{ store.neurons.length }}</span>
         </div>
-        <div class="stat-item" v-if="store.showBoundaries">
+        <div v-if="store.showBoundaries" class="stat-item">
           <span class="stat-label">Grid Cells</span>
           <span class="stat-value">{{ gridCellCount.toLocaleString() }}</span>
         </div>
@@ -208,7 +208,7 @@
           <span class="stat-label">Active Classes</span>
           <span class="stat-value">{{ store.activeClasses.length }}</span>
         </div>
-        <div class="stat-item" v-if="avgLoss !== null">
+        <div v-if="avgLoss !== null" class="stat-item">
           <span class="stat-label">Avg Loss</span>
           <span class="stat-value">{{ avgLoss.toFixed(3) }}</span>
         </div>

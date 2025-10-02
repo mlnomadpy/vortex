@@ -4,8 +4,8 @@
       <h4 class="config-title">Similarity Metric</h4>
       <select 
         :value="similarityMetric" 
-        @change="$emit('update-similarity', ($event.target as HTMLSelectElement).value)"
         class="config-select"
+        @change="$emit('update-similarity', ($event.target as HTMLSelectElement).value)"
       >
         <option value="dotProduct">Dot Product</option>
         <option value="euclidean">Euclidean Distance</option>
@@ -21,8 +21,8 @@
       <h4 class="config-title">Activation Function</h4>
       <select 
         :value="activationFunction" 
-        @change="$emit('update-activation', ($event.target as HTMLSelectElement).value)"
         class="config-select"
+        @change="$emit('update-activation', ($event.target as HTMLSelectElement).value)"
       >
         <option value="none">None</option>
         <option value="softmax">Softmax</option>
@@ -43,8 +43,8 @@
             <input 
               type="checkbox" 
               :checked="store.useTernaryWeights" 
-              @change="store.toggleTernaryWeights()"
               class="toggle-checkbox"
+              @change="store.toggleTernaryWeights()"
             />
             <span class="toggle-slider"></span>
             <span class="toggle-text">Ternary Weights (-1, 0, 1)</span>
@@ -58,11 +58,11 @@
               <input 
                 type="range" 
                 :value="store.ternarySparsityRatio" 
-                @input="store.setTernarySparsity(parseFloat(($event.target as HTMLInputElement).value))"
-                min="0" 
+                min="0"
                 max="0.9" 
                 step="0.1" 
-                class="sparsity-slider"
+                class="sparsity-slider" 
+                @input="store.setTernarySparsity(parseFloat(($event.target as HTMLInputElement).value))"
               />
               <span class="sparsity-value">{{ (store.ternarySparsityRatio * 100).toFixed(0) }}%</span>
             </div>
@@ -70,28 +70,28 @@
           
           <div class="ternary-actions">
             <button 
-              @click="$emit('initialize-ternary')" 
-              class="ternary-btn init-btn"
+              class="ternary-btn init-btn" 
               :disabled="!store.apiConnected"
               title="Initialize network with ternary weights"
+              @click="$emit('initialize-ternary')"
             >
               🔧 Initialize
             </button>
             
             <button 
-              @click="$emit('quantize-weights')" 
-              class="ternary-btn quantize-btn"
+              class="ternary-btn quantize-btn" 
               :disabled="!store.apiConnected"
               title="Quantize current weights to ternary values"
+              @click="$emit('quantize-weights')"
             >
               ⚡ Quantize
             </button>
             
             <button 
-              @click="$emit('refresh-stats')" 
-              class="ternary-btn stats-btn"
+              class="ternary-btn stats-btn" 
               :disabled="!store.apiConnected"
               title="Refresh ternary weight statistics"
+              @click="$emit('refresh-stats')"
             >
               📊 Stats
             </button>

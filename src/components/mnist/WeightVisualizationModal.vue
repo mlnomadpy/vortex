@@ -1,5 +1,5 @@
 <template>
-  <div class="weight-visualization-modal" v-if="isVisible" @click="handleBackdropClick">
+  <div v-if="isVisible" class="weight-visualization-modal" @click="handleBackdropClick">
     <div class="modal-content" @click.stop>
       <!-- Modal Header -->
       <div class="modal-header">
@@ -13,11 +13,11 @@
         
         <div class="header-controls">
           <div class="zoom-controls">
-            <button @click="zoomOut" :disabled="zoomLevel <= 1" class="zoom-btn">
+            <button :disabled="zoomLevel <= 1" class="zoom-btn" @click="zoomOut">
               <span class="zoom-icon">🔍-</span>
             </button>
             <span class="zoom-level">{{ zoomLevel.toFixed(1) }}x</span>
-            <button @click="zoomIn" :disabled="zoomLevel >= 8" class="zoom-btn">
+            <button :disabled="zoomLevel >= 8" class="zoom-btn" @click="zoomIn">
               <span class="zoom-icon">🔍+</span>
             </button>
           </div>
@@ -33,7 +33,7 @@
             </select>
           </div>
           
-          <button @click="close" class="close-btn">
+          <button class="close-btn" @click="close">
             <span class="close-icon">✕</span>
           </button>
         </div>
@@ -73,17 +73,17 @@
             
             <!-- Canvas Controls -->
             <div class="canvas-controls">
-              <button @click="resetView" class="control-btn">
+              <button class="control-btn" @click="resetView">
                 <span class="control-icon">🎯</span>
                 Reset View
               </button>
               
-              <button @click="toggleGrid" class="control-btn" :class="{ active: showGrid }">
+              <button class="control-btn" :class="{ active: showGrid }" @click="toggleGrid">
                 <span class="control-icon">⊞</span>
                 Grid
               </button>
               
-              <button @click="exportImage" class="control-btn">
+              <button class="control-btn" @click="exportImage">
                 <span class="control-icon">💾</span>
                 Export
               </button>
@@ -160,15 +160,15 @@
             <div class="actions-section">
               <h3>Actions</h3>
               <div class="action-buttons">
-                <button @click="resetWeights" class="action-btn reset">
+                <button class="action-btn reset" @click="resetWeights">
                   <span class="action-icon">🔄</span>
                   Reset Weights
                 </button>
-                <button @click="randomizeWeights" class="action-btn randomize">
+                <button class="action-btn randomize" @click="randomizeWeights">
                   <span class="action-icon">🎲</span>
                   Randomize
                 </button>
-                <button @click="normalizeWeights" class="action-btn normalize">
+                <button class="action-btn normalize" @click="normalizeWeights">
                   <span class="action-icon">⚖️</span>
                   Normalize
                 </button>
@@ -182,12 +182,12 @@
       <div class="modal-footer">
         <div class="footer-info">
           <span class="pixel-count">{{ neuron.weights.length }} weights (28×28)</span>
-          <span class="update-time" v-if="lastUpdate">Updated {{ formatTime(lastUpdate) }}</span>
+          <span v-if="lastUpdate" class="update-time">Updated {{ formatTime(lastUpdate) }}</span>
         </div>
         
         <div class="footer-actions">
-          <button @click="close" class="footer-btn secondary">Close</button>
-          <button @click="applyChanges" class="footer-btn primary" :disabled="!hasChanges">
+          <button class="footer-btn secondary" @click="close">Close</button>
+          <button class="footer-btn primary" :disabled="!hasChanges" @click="applyChanges">
             Apply Changes
           </button>
         </div>

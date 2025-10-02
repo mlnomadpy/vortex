@@ -7,9 +7,9 @@
           <button
             v-for="mode in visualizationModes"
             :key="mode.id"
-            @click="currentMode = mode.id as 'weights' | 'activations' | 'similarity'"
             :class="['mode-btn', { active: currentMode === mode.id }]"
             :title="mode.description"
+            @click="currentMode = mode.id as 'weights' | 'activations' | 'similarity'"
           >
             <component :is="mode.icon" class="mode-icon" />
             <span>{{ mode.label }}</span>
@@ -17,11 +17,13 @@
         </div>
 
         <div class="sync-controls">
-          <div class="sync-status" :class="{ 
-            connected: store.apiConnected, 
-            syncing: isSyncing,
-            error: syncError 
-          }">
+          <div
+            class="sync-status" :class="{ 
+              connected: store.apiConnected, 
+              syncing: isSyncing,
+              error: syncError 
+            }"
+          >
             <div class="status-dot"></div>
             <span class="status-text">
               {{ store.apiConnected ? (isSyncing ? 'Syncing...' : 'API Connected') : 'Local Mode' }}
@@ -32,19 +34,19 @@
           </div>
           
           <button 
-            @click="forceSync" 
-            :disabled="!store.apiConnected || isSyncing"
+            :disabled="!store.apiConnected || isSyncing" 
             class="sync-btn"
             title="Force sync weights from API"
+            @click="forceSync"
           >
             <div class="sync-icon" :class="{ spinning: isSyncing }">🔄</div>
             Sync
           </button>
           
           <button 
-            @click="toggleAutoSync" 
-            :class="['auto-sync-btn', { active: store.autoSyncWeights }]"
+            :class="['auto-sync-btn', { active: store.autoSyncWeights }]" 
             title="Toggle automatic weight synchronization"
+            @click="toggleAutoSync"
           >
             <div class="auto-icon">{{ store.autoSyncWeights ? '🔄' : '⏸️' }}</div>
             Auto
@@ -64,7 +66,7 @@
           </select>
         </div>
         
-        <div class="control-group" v-if="currentMode === 'weights'">
+        <div v-if="currentMode === 'weights'" class="control-group">
           <label class="control-label">Colormap:</label>
           <select v-model="colormap" class="colormap-select" @change="updateVisualization">
             <option value="diverging">Diverging (Blue-Red)</option>
@@ -78,7 +80,7 @@
 
         <div class="control-group">
           <label class="control-label">Update Rate:</label>
-          <select v-model="updateRate" @change="adjustUpdateRate" class="update-rate-select">
+          <select v-model="updateRate" class="update-rate-select" @change="adjustUpdateRate">
             <option value="realtime">Real-time</option>
             <option value="fast">Fast (1s)</option>
             <option value="normal">Normal (3s)</option>
@@ -87,7 +89,6 @@
           </select>
         </div>
       </div>
-
     </div>
 
     <!-- Main visualization area with improved layout -->
@@ -99,20 +100,20 @@
             v-for="neuron in store.neurons"
             :key="neuron.id"
             class="neuron-weight-container"
-            @click="openWeightModal(neuron)"
             :class="{ 
               selected: selectedNeuronId === neuron.id.toString(),
               'high-activity': recentWeightUpdates > 0 && isNeuronRecentlyUpdated(neuron.id)
             }"
+            @click="openWeightModal(neuron)"
           >
             <div class="neuron-header">
               <div class="neuron-title">
                 <span class="neuron-label">{{ getClassLabel(neuron.id) }}</span>
                 <span class="neuron-id">Class {{ neuron.id }}</span>
                 <button 
-                  @click.stop="openWeightModal(neuron)" 
-                  class="expand-btn"
+                  class="expand-btn" 
                   title="Click to expand weight visualization"
+                  @click.stop="openWeightModal(neuron)"
                 >
                   🔍
                 </button>
@@ -139,7 +140,7 @@
                 :width="enhancedImageSize"
                 :height="enhancedImageSize"
               ></canvas>
-              <div class="canvas-overlay" v-if="isUpdatingWeights">
+              <div v-if="isUpdatingWeights" class="canvas-overlay">
                 <div class="update-spinner"></div>
               </div>
               <div class="canvas-overlay-hover">
@@ -152,10 +153,12 @@
             <div class="weight-range">
               <span class="range-min">{{ Math.min(...neuron.weights).toFixed(2) }}</span>
               <div class="range-bar">
-                <div class="range-fill" :style="{ 
-                  width: `${Math.abs(getAverageWeight(neuron)) * 100}%`,
-                  backgroundColor: neuron.color 
-                }"></div>
+                <div
+                  class="range-fill" :style="{ 
+                    width: `${Math.abs(getAverageWeight(neuron)) * 100}%`,
+                    backgroundColor: neuron.color 
+                  }"
+                ></div>
               </div>
               <span class="range-max">{{ Math.max(...neuron.weights).toFixed(2) }}</span>
             </div>
@@ -190,8 +193,8 @@
             <div class="detail-title">
               <h3>{{ getClassLabel(selectedNeuron.id) }} (Class {{ selectedNeuron.id }})</h3>
               <div class="detail-actions">
-                <button @click="resetNeuronWeights" class="reset-btn">Reset Weights</button>
-                <button @click="randomizeNeuronWeights" class="randomize-btn">Randomize</button>
+                <button class="reset-btn" @click="resetNeuronWeights">Reset Weights</button>
+                <button class="randomize-btn" @click="randomizeNeuronWeights">Randomize</button>
               </div>
             </div>
             <div class="neuron-detail-stats">
@@ -270,13 +273,13 @@
         <div class="activations-header">
           <h3>Real-time Neural Activations</h3>
           <div class="activation-controls">
-            <button @click="generateRandomSample" class="sample-btn">
+            <button class="sample-btn" @click="generateRandomSample">
               🎲 Random Sample
             </button>
-            <button @click="loadTestSample" class="sample-btn">
+            <button class="sample-btn" @click="loadTestSample">
               📊 Test Sample
             </button>
-            <button @click="clearSample" class="sample-btn">
+            <button class="sample-btn" @click="clearSample">
               🗑️ Clear
             </button>
           </div>
@@ -295,7 +298,7 @@
               ></canvas>
               <p class="sample-hint">Click to generate a new random sample</p>
               
-              <div class="sample-info" v-if="currentSampleInfo">
+              <div v-if="currentSampleInfo" class="sample-info">
                 <div class="info-item">
                   <span class="info-label">Predicted:</span>
                   <span class="info-value prediction">{{ currentSampleInfo.predicted_class }}</span>
@@ -328,7 +331,7 @@
                     }"
                   ></div>
                 </div>
-                <div class="activation-details" v-if="currentSampleInfo">
+                <div v-if="currentSampleInfo" class="activation-details">
                   <span class="similarity-score">
                     Sim: {{ currentSampleInfo.similarity_breakdown?.[index]?.similarity_score?.toFixed(3) || '0.000' }}
                   </span>
@@ -374,8 +377,8 @@
               <div class="metric-header">
                 <h5>{{ metric.label }}</h5>
                 <button 
-                  @click="setActiveMetric(metric.id)"
                   :class="['metric-select-btn', { active: store.similarityMetric === metric.id }]"
+                  @click="setActiveMetric(metric.id)"
                 >
                   {{ store.similarityMetric === metric.id ? 'Active' : 'Select' }}
                 </button>
