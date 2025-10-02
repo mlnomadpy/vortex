@@ -1,6 +1,6 @@
 # Test Suite Documentation
 
-This directory contains comprehensive unit tests for the Vortex Neural Network utility functions.
+This directory contains comprehensive unit tests for the Vortex Neural Network utility functions, composables, services, and stores.
 
 ## Test Coverage
 
@@ -53,6 +53,44 @@ Tests coordinate system utilities:
 - `clampNormalizedCoordinates()` - Coordinate clamping
 - `testCoordinateConversion()` - Coordinate conversion accuracy
 
+### 8. **useLoadingState.test.ts** (13 tests)
+Tests loading state management composable:
+- Basic loading state (on/off)
+- Loading messages and progress tracking
+- Keyed loading states for independent operations
+- Global loading state tracking (`hasAnyLoading`)
+- State isolation between different keys
+
+### 9. **useErrorHandler.test.ts** (25 tests)
+Tests error handling composable:
+- Error creation with string and Error objects
+- Error classification (network, file parse, MathJax, optimization)
+- User-friendly error messages
+- Error recoverability assessment
+- Error context and metadata
+- Error management (add, remove, clear all)
+- Timestamp tracking
+
+### 10. **notification.store.test.ts** (17 tests)
+Tests notification store (Pinia):
+- Adding notifications with types (info, success, warning, error)
+- Unique ID generation
+- Auto-removal after duration
+- Persistent notifications (duration: 0)
+- Manual notification removal
+- Clear all notifications
+
+### 11. **gridUpdateService.test.ts** (31 tests)
+Tests grid update service:
+- Singleton instance management
+- Grid registration and unregistration
+- Update scheduling with priorities
+- Update batching and queuing
+- Cache invalidation strategies
+- Update type handling (neuron operations, data changes, resizing)
+- Helper functions for common update patterns
+- Error handling during updates
+
 ## Running Tests
 
 ```bash
@@ -68,8 +106,8 @@ npm run test:ui
 
 ## Test Statistics
 
-- **Total Test Files**: 7
-- **Total Tests**: 180
+- **Total Test Files**: 11
+- **Total Tests**: 266
 - **Pass Rate**: 100%
 
 ## Coverage Areas
@@ -81,6 +119,9 @@ The test suite provides comprehensive coverage for:
 - ✅ Color utilities and conversion
 - ✅ Coordinate system transformations
 - ✅ Utility functions (clamping, normalization)
+- ✅ **Composables** (error handling, loading states, theme management)
+- ✅ **Services** (grid update service)
+- ✅ **Stores** (notification store)
 
 ## Testing Framework
 
