@@ -4,7 +4,7 @@
     :class="cn(buttonVariants({ variant, size }), props.class)"
     v-bind="$attrs"
   >
-    <slot />
+    <slot></slot>
   </component>
 </template>
 

@@ -66,13 +66,13 @@
       <div class="action-section">
         <Button
           v-if="!isRunning"
-          @click="startOptimization"
           :disabled="!canOptimize"
           variant="default"
           size="sm"
           title="Start Gradient Descent"
           data-tour="train-button"
           class="action-button primary-action"
+          @click="startOptimization"
         >
           <RocketLaunchIcon class="button-icon" />
           Start
@@ -80,23 +80,23 @@
         
         <Button
           v-else
-          @click="stopOptimization"
           variant="destructive"
           size="sm"
           title="Stop Optimization"
           class="action-button stop-action"
+          @click="stopOptimization"
         >
           <StopIcon class="button-icon" />
           Stop
         </Button>
         
         <Button
-          @click="resetOptimization"
           :disabled="isRunning"
           variant="outline"
           size="sm"
           title="Reset History"
           class="action-button reset-action"
+          @click="resetOptimization"
         >
           <ArrowPathIcon class="button-icon" />
           Reset

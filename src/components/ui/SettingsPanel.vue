@@ -8,9 +8,9 @@
       <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
         <h2 class="text-2xl font-bold text-theme-primary">Settings</h2>
         <button 
-          @click="close"
           class="p-2 text-theme-secondary hover:text-theme-primary rounded-lg transition-colors"
           aria-label="Close settings"
+          @click="close"
         >
           ✕
         </button>
@@ -27,31 +27,31 @@
               <div class="flex gap-4">
                 <label class="flex items-center">
                   <input 
-                    type="radio" 
                     v-model="localPreferences.theme" 
+                    type="radio" 
                     value="light"
-                    @change="updateTheme"
                     class="mr-2"
+                    @change="updateTheme"
                   />
                   Light
                 </label>
                 <label class="flex items-center">
                   <input 
-                    type="radio" 
                     v-model="localPreferences.theme" 
+                    type="radio" 
                     value="dark"
-                    @change="updateTheme"
                     class="mr-2"
+                    @change="updateTheme"
                   />
                   Dark
                 </label>
                 <label class="flex items-center">
                   <input 
-                    type="radio" 
                     v-model="localPreferences.theme" 
+                    type="radio" 
                     value="auto"
-                    @change="updateTheme"
                     class="mr-2"
+                    @change="updateTheme"
                   />
                   Auto
                 </label>
@@ -60,10 +60,10 @@
             
             <label class="flex items-center">
               <input 
-                type="checkbox" 
-                v-model="localPreferences.showTooltips"
-                @change="updatePreference('showTooltips', ($event.target as HTMLInputElement).checked)"
+                v-model="localPreferences.showTooltips" 
+                type="checkbox"
                 class="mr-2"
+                @change="updatePreference('showTooltips', ($event.target as HTMLInputElement).checked)"
               />
               Show tooltips
             </label>
@@ -73,14 +73,14 @@
         <!-- Actions -->
         <div class="flex gap-4">
           <button 
-            @click="restartTour" 
-            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors" 
+            @click="restartTour"
           >
             Restart Tutorial
           </button>
           <button 
-            @click="resetAllPreferences" 
-            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+            class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors" 
+            @click="resetAllPreferences"
           >
             Reset Settings
           </button>

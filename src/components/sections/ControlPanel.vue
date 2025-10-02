@@ -6,7 +6,7 @@
       class="control-group"
       :class="{ 'is-open': openGroups.includes(group.id) }"
     >
-      <button @click="toggleGroup(group.id)" class="group-header">
+      <button class="group-header" @click="toggleGroup(group.id)">
         <div class="header-content">
           <component :is="group.icon" class="group-icon" />
           <span class="group-title">{{ group.title }}</span>

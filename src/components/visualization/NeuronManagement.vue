@@ -17,10 +17,10 @@
       
       <div class="header-actions">
         <Button
-          @click="addRandomNeuron"
           variant="default"
           size="xs"
           title="Add Random Neuron"
+          @click="addRandomNeuron"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -29,10 +29,10 @@
         
         <Button
           v-if="neurons.length > 0"
-          @click="clearAllNeurons"
           variant="destructive"
           size="xs"
           title="Clear All Neurons"
+          @click="clearAllNeurons"
         >
           <TrashIcon class="w-4 h-4" />
         </Button>
@@ -55,10 +55,10 @@
           </div>
           
           <Button
-            @click="$emit('close')"
             variant="ghost"
             size="xs"
             title="Close Editor"
+            @click="$emit('close')"
           >
             <XMarkIcon class="w-4 h-4" />
           </Button>
@@ -116,9 +116,9 @@
               <button
                 v-for="preset in positionPresets"
                 :key="preset.name"
-                @click="setPresetPosition(preset)"
                 class="preset-button"
                 :title="preset.description"
+                @click="setPresetPosition(preset)"
               >
                 {{ preset.name }}
               </button>
@@ -157,10 +157,10 @@
                 <button
                   v-for="color in colorPresets"
                   :key="color"
-                  @click="setPresetColor(color)"
                   class="color-preset"
                   :style="{ backgroundColor: color }"
                   :title="color"
+                  @click="setPresetColor(color)"
                 ></button>
               </div>
             </div>
@@ -218,40 +218,40 @@
           
           <div class="action-buttons">
             <Button
-              @click="duplicateNeuron"
               variant="outline"
               size="sm"
               class="action-button"
+              @click="duplicateNeuron"
             >
               <DocumentDuplicateIcon class="w-4 h-4" />
               Duplicate
             </Button>
             
             <Button
-              @click="centerNeuron"
               variant="outline"
               size="sm"
               class="action-button"
+              @click="centerNeuron"
             >
               <ViewfinderCircleIcon class="w-4 h-4" />
               Center
             </Button>
             
             <Button
-              @click="randomizePosition"
               variant="outline"
               size="sm"
               class="action-button"
+              @click="randomizePosition"
             >
               <ArrowPathIcon class="w-4 h-4" />
               Randomize
             </Button>
             
             <Button
-              @click="$emit('remove', selectedNeuron.id)"
               variant="destructive"
               size="sm"
               class="action-button"
+              @click="$emit('remove', selectedNeuron.id)"
             >
               <TrashIcon class="w-4 h-4" />
               Delete
@@ -278,16 +278,16 @@
             
             <div class="view-control">
               <button
-                @click="listView = 'grid'"
                 :class="['view-button', { active: listView === 'grid' }]"
                 title="Grid View"
+                @click="listView = 'grid'"
               >
                 <Squares2X2Icon class="w-4 h-4" />
               </button>
               <button
-                @click="listView = 'list'"
                 :class="['view-button', { active: listView === 'list' }]"
                 title="List View"
+                @click="listView = 'list'"
               >
                 <ListBulletIcon class="w-4 h-4" />
               </button>
@@ -309,9 +309,9 @@
           <div
             v-for="neuron in sortedNeurons"
             :key="neuron.id"
-            @click="$emit('select', neuron)"
             class="neuron-card"
             :class="{ selected: selectedNeuron ? (selectedNeuron as Neuron)?.id === neuron.id : false}"
+            @click="$emit('select', neuron)"
           >
             <div class="neuron-card-header">
               <div class="neuron-icon" :style="{ backgroundColor: neuron.color }">
@@ -338,16 +338,16 @@
             
             <div class="neuron-card-actions">
               <button
-                @click.stop="$emit('select', neuron)"
                 class="quick-action"
                 title="Edit Neuron"
+                @click.stop="$emit('select', neuron)"
               >
                 <PencilIcon class="w-3 h-3" />
               </button>
               <button
-                @click.stop="$emit('remove', neuron.id)"
                 class="quick-action delete"
                 title="Delete Neuron"
+                @click.stop="$emit('remove', neuron.id)"
               >
                 <TrashIcon class="w-3 h-3" />
               </button>

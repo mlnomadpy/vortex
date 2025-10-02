@@ -4,7 +4,6 @@
     
     <main class="workspace-main">
       <div class="workspace-container">
-        
         <div class="text-center mb-4">
           <h1 class="text-3xl font-bold text-theme-primary mb-2">MNIST Neural Network Classifier</h1>
           <p class="text-sm text-theme-secondary">N-dimensional classification with weight visualization</p>
@@ -24,15 +23,15 @@
         
         <!-- Floating Panels -->
         <FloatingPanel
+          v-if="panels.dataset"
           title="Dataset & Loading"
           :icon="DatabaseIcon"
           :initial-position="{ x: 10, y: 10 }"
           :width="380"
           :height="400"
           :z-index="150"
-          @close="panels.dataset = false"
-          v-if="panels.dataset"
           data-tour="dataset-panel"
+          @close="panels.dataset = false"
         >
           <div class="dataset-content">
             <MNISTDataPanel />
@@ -40,15 +39,15 @@
         </FloatingPanel>
         
         <FloatingPanel
+          v-if="panels.visualization"
           title="Weight Visualization"
           :icon="EyeIcon"
           :initial-position="{ x: 400, y: 10 }"
           :width="400"
           :height="500"
           :z-index="150"
-          @close="panels.visualization = false"
-          v-if="panels.visualization"
           data-tour="visualization-panel"
+          @close="panels.visualization = false"
         >
           <div class="visualization-content">
             <MNISTVisualization />
@@ -56,15 +55,15 @@
         </FloatingPanel>
         
         <FloatingPanel
+          v-if="panels.networkConfig"
           title="Network Configuration"
           :icon="CogIcon"
           :initial-position="{ x: 810, y: 10 }"
           :width="380"
           :height="450"
           :z-index="150"
-          @close="panels.networkConfig = false"
-          v-if="panels.networkConfig"
           data-tour="network-config-panel"
+          @close="panels.networkConfig = false"
         >
           <div class="network-config-content">
             <MNISTNetworkConfig
@@ -80,15 +79,15 @@
         </FloatingPanel>
         
         <FloatingPanel
+          v-if="panels.training"
           title="Training & Optimization"
           :icon="RocketLaunchIcon"
           :initial-position="{ x: 10, y: 420 }"
           :width="450"
           :height="400"
           :z-index="150"
-          @close="panels.training = false"
-          v-if="panels.training"
           data-tour="training-panel"
+          @close="panels.training = false"
         >
           <div class="training-content">
             <MNISTTrainingPanel />
@@ -96,15 +95,15 @@
         </FloatingPanel>
         
         <FloatingPanel
+          v-if="panels.metrics"
           title="Metrics & Performance"
           :icon="ChartBarIcon"
           :initial-position="{ x: 470, y: 420 }"
           :width="400"
           :height="400"
           :z-index="150"
-          @close="panels.metrics = false"
-          v-if="panels.metrics"
           data-tour="metrics-panel"
+          @close="panels.metrics = false"
         >
           <div class="metrics-content">
             <MNISTMetricsPanel />
@@ -112,15 +111,15 @@
         </FloatingPanel>
         
         <FloatingPanel
+          v-if="panels.apiStatus"
           title="API Status"
           :icon="CpuChipIcon"
           :initial-position="{ x: 880, y: 420 }"
           :width="400"
           :height="350"
           :z-index="150"
-          @close="panels.apiStatus = false"
-          v-if="panels.apiStatus"
           data-tour="api-status-panel"
+          @close="panels.apiStatus = false"
         >
           <div class="api-status-content">
             <MNISTApiStatus />
@@ -134,10 +133,10 @@
               <button 
                 v-for="(panel, key) in panels"
                 :key="key"
-                @click="togglePanel(key)"
                 :class="['panel-toggle', { active: panel }]"
                 :title="`Toggle ${getPanelName(key)} panel`"
                 :data-tour="`toggle-${key}`"
+                @click="togglePanel(key)"
               >
                 <component :is="getPanelIcon(key)" class="toggle-icon" />
                 <span class="toggle-label">{{ getPanelName(key) }}</span>
@@ -147,22 +146,21 @@
           
           <div class="sidebar-section">
             <div class="layout-controls">
-              <button @click="resetPanelPositions" class="layout-btn" title="Reset Layout">
+              <button class="layout-btn" title="Reset Layout" @click="resetPanelPositions">
                 <ArrowPathIcon class="btn-icon" />
               </button>
-              <button @click="minimizeAllPanels" class="layout-btn" title="Minimize All">
+              <button class="layout-btn" title="Minimize All" @click="minimizeAllPanels">
                 <MinusIcon class="btn-icon" />
               </button>
-              <button @click="showAllPanels" class="layout-btn" title="Show All">
+              <button class="layout-btn" title="Show All" @click="showAllPanels">
                 <Square3Stack3DIcon class="btn-icon" />
               </button>
-              <button @click="quickDemo" class="layout-btn demo-btn" title="Quick Demo">
+              <button class="layout-btn demo-btn" title="Quick Demo" @click="quickDemo">
                 <BoltIcon class="btn-icon" />
               </button>
             </div>
           </div>
         </div>
-        
       </div>
     </main>
   </div>

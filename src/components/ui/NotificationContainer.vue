@@ -15,10 +15,10 @@
             />
             <span class="flex-1">{{ notification.message }}</span>
             <Button
-              @click="removeNotification(notification.id)"
               variant="ghost"
               size="icon-sm"
               class="ml-2 hover:bg-white/20"
+              @click="removeNotification(notification.id)"
             >
               <XMarkIcon class="w-3 h-3" />
             </Button>

@@ -4,13 +4,13 @@
       <button
         v-for="digit in digits"
         :key="digit"
-        @click="store.toggleClass(digit)"
         :class="['digit-toggle', { 
           active: store.activeClasses.includes(digit),
           training: store.isTraining 
         }]"
         :disabled="store.isTraining"
         :title="`Toggle digit ${digit}`"
+        @click="store.toggleClass(digit)"
       >
         <span class="digit-label">{{ digit }}</span>
         <span class="digit-count">{{ getDigitCount(digit) }}</span>
@@ -18,10 +18,10 @@
     </div>
     
     <div class="toggle-actions">
-      <button @click="toggleAll" class="action-btn" :disabled="store.isTraining">
+      <button class="action-btn" :disabled="store.isTraining" @click="toggleAll">
         {{ allActive ? 'Hide All' : 'Show All' }}
       </button>
-      <button @click="toggleOddEven" class="action-btn" :disabled="store.isTraining">
+      <button class="action-btn" :disabled="store.isTraining" @click="toggleOddEven">
         {{ evenActive ? 'Odds Only' : 'Evens Only' }}
       </button>
     </div>

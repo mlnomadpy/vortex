@@ -3,29 +3,31 @@
     <!-- Header with live connection status -->
     <div class="status-header">
       <div class="connection-indicator" :class="connectionStatusClass">
-        <div class="status-dot" :class="{ 
-          pulsing: store.apiConnected && isConnecting,
-          error: !store.apiConnected && hasConnectionError 
-        }"></div>
+        <div
+          class="status-dot" :class="{ 
+            pulsing: store.apiConnected && isConnecting,
+            error: !store.apiConnected && hasConnectionError 
+          }"
+        ></div>
         <span class="status-text">{{ connectionStatusText }}</span>
-        <span class="uptime" v-if="store.apiConnected">{{ formatUptime(connectionUptime) }}</span>
+        <span v-if="store.apiConnected" class="uptime">{{ formatUptime(connectionUptime) }}</span>
       </div>
       
       <div class="actions">
         <button 
-          @click="testConnection" 
-          :disabled="isTestingConnection"
+          :disabled="isTestingConnection" 
           class="test-btn"
           :class="{ testing: isTestingConnection }"
+          @click="testConnection"
         >
           <div class="btn-icon" :class="{ spinning: isTestingConnection }">🔄</div>
           {{ isTestingConnection ? 'Testing...' : 'Test' }}
         </button>
         
         <button 
-          @click="toggleAutoRefresh"
           class="auto-refresh-btn"
           :class="{ active: autoRefreshEnabled }"
+          @click="toggleAutoRefresh"
         >
           <div class="btn-icon">{{ autoRefreshEnabled ? '⏸️' : '▶️' }}</div>
           Auto
@@ -62,7 +64,7 @@
       <div class="metric-card" :class="{ active: store.isTraining }">
         <div class="metric-label">Training Status</div>
         <div class="metric-value">{{ store.isTraining ? 'Active' : 'Idle' }}</div>
-        <div class="metric-trend" v-if="store.isTraining">
+        <div v-if="store.isTraining" class="metric-trend">
           <span class="training-indicator">Epoch {{ currentEpoch }}</span>
         </div>
       </div>

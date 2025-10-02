@@ -6,7 +6,7 @@
       class="fixed pointer-events-none z-50 bg-gray-900/95 text-white px-3 py-2 rounded-lg text-sm max-w-xs transition-opacity duration-150 shadow-lg"
       :style="{ left: x + 'px', top: y + 'px' }"
       v-html="content"
-    />
+    ></div>
   </Teleport>
 </template>
 

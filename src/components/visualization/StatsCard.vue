@@ -32,10 +32,10 @@
       
       <!-- Toggle for extended stats -->
       <Button
-        @click="showExtendedStats = !showExtendedStats"
         variant="link"
         size="sm"
         class="text-xs mt-2 p-0 h-auto"
+        @click="showExtendedStats = !showExtendedStats"
       >
         {{ showExtendedStats ? 'Show Less' : 'Show More' }}
       </Button>

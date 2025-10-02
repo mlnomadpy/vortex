@@ -8,9 +8,9 @@
         <label class="selector-label">Choose Dataset:</label>
         <select 
           v-model="store.selectedDataset" 
-          @change="onDatasetChange"
           class="dataset-select"
           :disabled="isLoading"
+          @change="onDatasetChange"
         >
           <option 
             v-for="(info, name) in store.availableDatasets" 
@@ -22,14 +22,14 @@
         </select>
       </div>
       
-      <div class="api-status" v-if="store.apiConnected">
+      <div v-if="store.apiConnected" class="api-status">
         <div class="status-indicator connected">
           <div class="status-dot"></div>
           <span>API Connected - Real Datasets Available</span>
         </div>
       </div>
       
-      <div class="api-status" v-else>
+      <div v-else class="api-status">
         <div class="status-indicator disconnected">
           <div class="status-dot"></div>
           <span>API Offline - Using Synthetic Data</span>
@@ -40,7 +40,7 @@
     <div class="panel-section">
       <h3 class="section-title">Dataset</h3>
       
-      <div class="dataset-stats" v-if="store.datasetInfo.trainSize > 0">
+      <div v-if="store.datasetInfo.trainSize > 0" class="dataset-stats">
         <div class="stat-card">
           <div class="stat-value">{{ store.datasetInfo.trainSize }}</div>
           <div class="stat-label">Training Samples</div>
@@ -57,27 +57,27 @@
       
       <div class="dataset-actions">
         <button 
-          @click="loadQuickDemo" 
-          class="action-btn primary"
+          class="action-btn primary" 
           :disabled="isLoading"
+          @click="loadQuickDemo"
         >
           <BoltIcon class="btn-icon" />
           Quick Demo (200 samples)
         </button>
         
         <button 
-          @click="loadSmallDataset" 
-          class="action-btn"
+          class="action-btn" 
           :disabled="isLoading"
+          @click="loadSmallDataset"
         >
           <DatabaseIcon class="btn-icon" />
           Small Dataset (1K samples)
         </button>
         
         <button 
-          @click="loadMediumDataset" 
-          class="action-btn"
+          class="action-btn" 
           :disabled="isLoading"
+          @click="loadMediumDataset"
         >
           <CpuChipIcon class="btn-icon" />
           Medium Dataset (5K samples)
@@ -90,7 +90,7 @@
       </div>
     </div>
     
-    <div class="panel-section" v-if="store.datasetInfo.trainSize > 0">
+    <div v-if="store.datasetInfo.trainSize > 0" class="panel-section">
       <h3 class="section-title">Class Distribution</h3>
       
       <div class="class-distribution">
@@ -114,7 +114,7 @@
       </div>
     </div>
     
-    <div class="panel-section" v-if="store.datasetInfo.trainSize > 0">
+    <div v-if="store.datasetInfo.trainSize > 0" class="panel-section">
       <h3 class="section-title">Sample Visualization</h3>
       
       <div class="sample-grid">
@@ -134,7 +134,7 @@
         </div>
       </div>
       
-      <button @click="refreshSamples" class="refresh-btn">
+      <button class="refresh-btn" @click="refreshSamples">
         <ArrowPathIcon class="btn-icon" />
         Refresh Samples
       </button>

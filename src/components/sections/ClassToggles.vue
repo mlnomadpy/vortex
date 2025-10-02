@@ -10,7 +10,6 @@
       <Button
         v-for="classLabel in sortedClasses"
         :key="classLabel"
-        @click="store.toggleClass(classLabel)"
         :variant="store.activeClasses.includes(classLabel) ? 'default' : 'outline'"
         size="xs"
         :class="`class-btn ${store.activeClasses.includes(classLabel) ? 'active' : 'inactive'}`"
@@ -18,6 +17,7 @@
           '--class-color': getClassColor(classLabel)
         }"
         :title="`Class ${classLabel} (${getClassCount(classLabel)} points)`"
+        @click="store.toggleClass(classLabel)"
       >
         <div class="class-indicator"></div>
         <span class="class-label">{{ classLabel }}</span>

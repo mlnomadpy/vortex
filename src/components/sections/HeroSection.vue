@@ -2,7 +2,7 @@
   <section class="text-center mb-8">
     <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mb-6 animate-bounce-gentle">
       <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
+        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" />
       </svg>
     </div>
     

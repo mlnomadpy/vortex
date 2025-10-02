@@ -23,20 +23,20 @@
         <div class="header-actions">
           <Button
             v-if="store.optimizationHistory.steps.length > 0"
-            @click="exportHistory"
             variant="ghost"
             size="xs"
             title="Export History"
+            @click="exportHistory"
           >
             <ArrowDownTrayIcon class="w-4 h-4" />
           </Button>
           
           <Button
             v-if="store.optimizationHistory.steps.length > 0"
-            @click="clearHistory"
             variant="ghost"
             size="xs"
             title="Clear History"
+            @click="clearHistory"
           >
             <TrashIcon class="w-4 h-4" />
           </Button>
@@ -53,7 +53,7 @@
         </div>
         <h4>No Training History</h4>
         <p>Start optimization to see training progress and metrics</p>
-        <Button @click="$emit('start-training')" variant="default" size="sm">
+        <Button variant="default" size="sm" @click="$emit('start-training')">
           Start Training
         </Button>
       </div>
@@ -91,8 +91,8 @@
             <button 
               v-for="view in chartViews"
               :key="view.id"
-              @click="activeView = view.id"
               :class="['view-tab', { active: activeView === view.id }]"
+              @click="activeView = view.id"
             >
               <component :is="view.icon" class="w-4 h-4" />
               <span>{{ view.label }}</span>
@@ -151,7 +151,6 @@
                 <span class="metric-dot"></span>
                 <span>Accuracy: {{ tooltip.data?.accuracy?.toFixed(1) }}%</span>
               </div>
-
             </div>
           </div>
         </div>

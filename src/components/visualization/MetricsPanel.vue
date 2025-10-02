@@ -73,8 +73,8 @@
         <button
           v-for="tab in metricsTabs"
           :key="tab.id"
-          @click="activeTab = tab.id"
           :class="['tab-header', { active: activeTab === tab.id }]"
+          @click="activeTab = tab.id"
         >
           <component :is="tab.icon" class="w-4 h-4" />
           <span>{{ tab.label }}</span>
@@ -352,29 +352,29 @@
     <!-- Action Bar -->
     <div class="metrics-actions">
       <Button
-        @click="exportMetrics"
         variant="outline"
         size="sm"
         :disabled="!hasMetricsData"
+        @click="exportMetrics"
       >
         <ArrowDownTrayIcon class="w-4 h-4" />
         Export Metrics
       </Button>
       
       <Button
-        @click="resetMetrics"
         variant="outline"
         size="sm"
         :disabled="!hasMetricsData"
+        @click="resetMetrics"
       >
         <ArrowPathIcon class="w-4 h-4" />
         Reset
       </Button>
       
       <Button
-        @click="toggleAutoUpdate"
         :variant="autoUpdate ? 'default' : 'outline'"
         size="sm"
+        @click="toggleAutoUpdate"
       >
         <BoltIcon class="w-4 h-4" />
         {{ autoUpdate ? 'Auto' : 'Manual' }}

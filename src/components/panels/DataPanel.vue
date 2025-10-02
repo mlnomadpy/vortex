@@ -19,8 +19,8 @@
         <!-- File Upload Area -->
         <FileUpload
           accept=".csv"
-          @file-selected="handleFileSelected"
           class="file-upload-area"
+          @file-selected="handleFileSelected"
         >
           <template #default="{ isDragging }">
             <div :class="['upload-zone', { 'is-dragging': isDragging, 'has-file': selectedFile }]">
@@ -38,23 +38,23 @@
         <!-- Action Buttons -->
         <div class="action-row">
           <Button 
-            @click="loadData"
             :disabled="!selectedFile || isLoading"
             variant="default"
             size="sm"
             class="action-btn primary"
+            @click="loadData"
           >
             <PlayIcon v-if="!isLoading" class="btn-icon" />
-            <div v-else class="loading-spinner" />
+            <div v-else class="loading-spinner"></div>
             Load Data
           </Button>
           
           <Button 
-            @click="exportData"
             :disabled="store.dataPoints.length === 0"
             variant="outline"
             size="sm"
             class="action-btn"
+            @click="exportData"
           >
             <ArrowDownTrayIcon class="btn-icon" />
             Export
@@ -103,21 +103,21 @@
         <!-- Neuron Actions -->
         <div class="action-row">
           <Button 
-            @click="addRandomNeuron"
             variant="default"
             size="sm"
             class="action-btn"
+            @click="addRandomNeuron"
           >
             <component :is="PlusIcon" class="btn-icon" />
             Add Random
           </Button>
           
           <Button 
-            @click="store.removeLastNeuron()"
             :disabled="store.neurons.length === 0"
             variant="destructive"
             size="sm"
             class="action-btn"
+            @click="store.removeLastNeuron()"
           >
             <TrashIcon class="btn-icon" />
             Remove Last
@@ -128,8 +128,8 @@
         <div class="file-actions">
           <FileUpload
             accept=".csv"
-            @file-selected="handleNeuronFileSelected"
             class="neuron-upload"
+            @file-selected="handleNeuronFileSelected"
           >
             <template #default>
               <Button variant="outline" size="sm" class="action-btn">
@@ -140,11 +140,11 @@
           </FileUpload>
           
           <Button 
-            @click="saveNeurons"
             :disabled="store.neurons.length === 0"
             variant="outline"
             size="sm"
             class="action-btn"
+            @click="saveNeurons"
           >
             <DocumentArrowDownIcon class="btn-icon" />
             Save Neurons
@@ -154,20 +154,20 @@
         <!-- Quick Actions -->
         <div class="quick-actions">
           <Button 
-            @click="clearAllNeurons"
             :disabled="store.neurons.length === 0"
             variant="ghost"
             size="xs"
             class="quick-btn"
+            @click="clearAllNeurons"
           >
             Clear All
           </Button>
           <Button 
-            @click="randomizeNeurons"
             :disabled="store.neurons.length === 0"
             variant="ghost"
             size="xs"
             class="quick-btn"
+            @click="randomizeNeurons"
           >
             Randomize
           </Button>

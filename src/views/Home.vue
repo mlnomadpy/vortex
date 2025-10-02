@@ -10,7 +10,7 @@
         <svg viewBox="0 0 400 400" class="w-full h-full">
           <defs>
             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1"/>
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -21,7 +21,7 @@
         <!-- Main Brand Identity -->
         <div class="inline-flex items-center justify-center w-32 h-32 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 rounded-full mb-8 animate-bounce-gentle shadow-2xl">
           <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
+            <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" />
           </svg>
         </div>
         
@@ -52,7 +52,7 @@
           <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-6 border border-indigo-200 dark:border-indigo-700 animate-fade-in" style="animation-delay: 0.3s;">
             <div class="flex items-center mb-3">
               <svg class="w-6 h-6 text-indigo-500 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
               <h3 class="text-lg font-semibold text-indigo-700 dark:text-indigo-300">Research Paper</h3>
             </div>
@@ -96,7 +96,6 @@
     <!-- Main Options Section -->
     <section class="container mx-auto px-6 pb-16 max-w-6xl">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-        
         <!-- Interactive Playground -->
         <div class="option-card group">
           <div class="flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-500 to-violet-600 rounded-3xl mb-8 group-hover:scale-110 transition-all duration-300 shadow-lg">
@@ -188,11 +187,11 @@
       <div class="text-center max-w-4xl mx-auto">
         <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl p-8 border border-indigo-200 dark:border-indigo-700">
           <svg class="w-8 h-8 text-indigo-500 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
           </svg>
           <h4 class="text-xl font-semibold text-indigo-700 dark:text-indigo-300 mb-3">The Cartesian Vortex in AI</h4>
           <p class="text-indigo-600 dark:text-indigo-400 leading-relaxed">
-            "All matter in the universe is in motion and forms whirlpools." — Descartes' Vortex Theory<br>
+            "All matter in the universe is in motion and forms whirlpools." — Descartes' Vortex Theory<br />
             <span class="text-sm mt-2 block">In Vortex, neurons and data points form gravitational systems governed by the YAT metric, where similarity acts as the fundamental force shaping the neural universe's structure and dynamics.</span>
           </p>
         </div>
@@ -201,7 +200,7 @@
 
     <!-- Fullscreen Canvas -->
     <FullscreenCanvas 
-      :isVisible="showFullscreen" 
+      :is-visible="showFullscreen" 
       @close="showFullscreen = false" 
     />
   </div>
